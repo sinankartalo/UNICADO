@@ -1,0 +1,126 @@
+<aircraft_exchange_file version="3.0">
+    <component_design>
+        <propulsion>
+            <specific>
+                <nacelle ID="0" description="Test nacelle">
+                    <position description="Origin of the nacelle in the global aircraft coordinate system">
+                        <x description="x coordinate of point">
+                            <value>0</value>
+                            <unit>m</unit>
+                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                            <upper_boundary>1.797693135e+308</upper_boundary>
+                        </x>
+                        <y description="y coordinate of point">
+                            <value>0</value>
+                            <unit>m</unit>
+                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                            <upper_boundary>1.797693135e+308</upper_boundary>
+                        </y>
+                        <z description="z coordinate of point">
+                            <value>0</value>
+                            <unit>m</unit>
+                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                            <upper_boundary>1.797693135e+308</upper_boundary>
+                        </z>
+                    </position>
+                    <normal description="Normal direction of the nacelle in the global aircraft coordinate system">
+                        <x description="x direction of unit vector">
+                            <value>0</value>
+                            <unit>1</unit>
+                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                            <upper_boundary>1.797693135e+308</upper_boundary>
+                        </x>
+                        <y description="y direction of unit vector">
+                            <value>0</value>
+                            <unit>1</unit>
+                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                            <upper_boundary>1.797693135e+308</upper_boundary>
+                        </y>
+                        <z description="z direction of unit vector">
+                            <value>1</value>
+                            <unit>1</unit>
+                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                            <upper_boundary>1.797693135e+308</upper_boundary>
+                        </z>
+                    </normal>
+                    <sections description="Geometrical description of the nacelle sections">
+                        <section ID="0">
+                            <origin description="Origin of the section (local)">
+                                <x description="x coordinate of point">
+                                    <value>0</value>
+                                    <unit>m</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </x>
+                                <y description="y coordinate of point">
+                                    <value>0</value>
+                                    <unit>m</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </y>
+                                <z description="z coordinate of point">
+                                    <value>0</value>
+                                    <unit>m</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </z>
+                            </origin>
+                            <width description="width of the section">
+                                <value>2</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </width>
+                            <height description="Height of the section">
+                                <value>1.5</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </height>
+                            <profile description="The profile name of the section">
+                                <value>circle-tab</value>
+                            </profile>
+                        </section>
+                        <section ID="1">
+                            <origin description="Origin of the section (local)">
+                                <x description="x coordinate of point">
+                                    <value>0</value>
+                                    <unit>m</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </x>
+                                <y description="y coordinate of point">
+                                    <value>0</value>
+                                    <unit>m</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </y>
+                                <z description="z coordinate of point">
+                                    <value>2</value>
+                                    <unit>m</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </z>
+                            </origin>
+                            <width description="width of the section">
+                                <value>1</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </width>
+                            <height description="Height of the section">
+                                <value>1</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </height>
+                            <profile description="The profile name of the section">
+                                <value>circle-tab</value>
+                            </profile>
+                        </section>
+                    </sections>
+                </nacelle>
+            </specific>
+        </propulsion>
+    </component_design>
+</aircraft_exchange_file>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AcftExchangeFile>
+    <Geometry Desc="Contains the geometry description of the aircraft">
+        <Fuselage Desc="Fuselage geometry" ID="SimpleFuselage">
+            <FuselageRefPoint Desc="Position of the reference point to global point of reference">
+                <r_Fuselage Desc="Position in global X direction" ToolLevel="1" Unit="m">0.0</r_Fuselage>
+                <y_Fuselage Desc="Position in global Y direction" ToolLevel="1" Unit="m">0.0</y_Fuselage>
+                <h_Fuselage Desc="Position in global Z direction" ToolLevel="1" Unit="m">0.0</h_Fuselage>
+            </FuselageRefPoint>
+            <FuselageParameters Desc="parametric description of the fuselage">
+                <NoseDescription>
+                    <NoseSegments Desc="No of nose segments" ToolLevel="1">1</NoseSegments>
+                    <TipSegment>
+                        <h_Tip Desc="offset of nosetip" ToolLevel="1" Unit="m">0.0</h_Tip>
+                    </TipSegment>
+                    <NoseSegment ID="1">
+                        <SegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</SegmentPointData>
+                        <w_Segment Desc="Breite des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</w_Segment>
+                        <h_Segment Desc="Hoehe des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</h_Segment>
+                        <l_Segment Desc="Laenge des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</l_Segment>
+                        <deltah_Segment Desc="Verticales Offset des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</deltah_Segment>
+                    </NoseSegment>
+                </NoseDescription>
+                <MidSectionDescription>
+                    <MidSectionSegments Desc="No of mid-segment segments" ToolLevel="1">1</MidSectionSegments>
+                    <MidSectionSegment ID="1">
+                        <SegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</SegmentPointData>
+                        <w_Segment Desc="Breite des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</w_Segment>
+                        <h_Segment Desc="Hoehe des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</h_Segment>
+                        <l_Segment Desc="Laenge des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</l_Segment>
+                        <deltah_Segment Desc="Verticales Offset des Rumpf-Segments" ToolLevel="1" Unit="m">0</deltah_Segment>
+                    </MidSectionSegment>
+                </MidSectionDescription>
+                <TailDescription>
+                    <TailSegments Desc="No of tail segments" ToolLevel="1">1</TailSegments>
+                    <TailSegment ID="1">
+                        <SegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</SegmentPointData>
+                        <w_Segment Desc="Breite des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</w_Segment>
+                        <h_Segment Desc="Hoehe des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</h_Segment>
+                        <l_Segment Desc="Laenge des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</l_Segment>
+                        <deltah_Segment Desc="Verticales Offset des Rumpf-Segments" ToolLevel="1" Unit="m">0.0</deltah_Segment>
+                    </TailSegment>
+                </TailDescription>
+            </FuselageParameters>
+        </Fuselage>
+    </Geometry>
+</AcftExchangeFile>

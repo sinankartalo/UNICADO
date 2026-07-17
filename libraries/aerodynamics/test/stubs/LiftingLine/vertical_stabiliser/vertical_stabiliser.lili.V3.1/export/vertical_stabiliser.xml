@@ -1,0 +1,3705 @@
+<?xml version="1.0"?>
+<lifting_line-exchange-file version="3.0">
+  <copyright>Copyright 2003 - 2020, Carsten Liersch (DLR)</copyright>
+  <global_data>
+    <name>vertical_stabiliser</name>
+    <geometry_parameters>
+      <reference_area>  59.82690    </reference_area>
+      <reference_span>  15.07790    </reference_span>
+      <reference_length_cmx>  6.272310    </reference_length_cmx>
+      <reference_length_cmy>  3.967854    </reference_length_cmy>
+      <reference_length_cmz>  15.07788    </reference_length_cmz>
+      <moment_reference_point_x>  0.000000    </moment_reference_point_x>
+      <moment_reference_point_y>  0.000000    </moment_reference_point_y>
+      <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+      <symmetry>true</symmetry>
+    </geometry_parameters>
+    <flow_parameters>
+      <mach_number> 0.2000000    </mach_number>
+      <reynolds_number>  500000.0    </reynolds_number>
+      <angle_of_sideslip>  0.000000    </angle_of_sideslip>
+      <normalized_roll_rate>  0.000000    </normalized_roll_rate>
+      <normalized_pitch_rate>  0.000000    </normalized_pitch_rate>
+      <normalized_yaw_rate>  0.000000    </normalized_yaw_rate>
+    </flow_parameters>
+  </global_data>
+  <wing_data count="     1">
+    <wing number="     1">
+      <geometry_parameters>
+        <reference_area>  59.82692    </reference_area>
+        <reference_span>  15.07788    </reference_span>
+        <reference_length_cmx>  15.07788    </reference_length_cmx>
+        <reference_length_cmy>  3.967860    </reference_length_cmy>
+        <reference_length_cmz>  15.07788    </reference_length_cmz>
+        <moment_reference_point_x>  0.000000    </moment_reference_point_x>
+        <moment_reference_point_y>  0.000000    </moment_reference_point_y>
+        <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+      </geometry_parameters>
+      <airfoil_data count="     1">
+        <airfoil number="     1">
+          <name>FLAT_PLATE</name>
+          <eta_coordinate_data count="     1">
+            <eta_coordinate number="     1">  0.000000    </eta_coordinate>
+          </eta_coordinate_data>
+        </airfoil>
+      </airfoil_data>
+      <segment_data count="     8">
+        <segment number="     1">
+          <geometry_parameters>
+            <reference_area>  5.639364    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423670    </reference_length_cmx>
+            <reference_length_cmy>  5.984255    </reference_length_cmy>
+            <reference_length_cmz> 0.9423670    </reference_length_cmz>
+            <moment_reference_point_x>  1.851126    </moment_reference_point_x>
+            <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  1.568078    </x_quarter_chord>
+            <y_quarter_chord>  0.000000    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  6.272310    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  2.134174    </x_quarter_chord>
+            <y_quarter_chord> 0.9423670    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  5.696200    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x> 0.5046685    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord> 0.1568080    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord> 0.8525290    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  1.103094    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3843230E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord> 0.7840380    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord> 0.4028230E-08</z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  1.422150    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.3658230E-08</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  1.701520    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1152970E-07</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  1.411270    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord> 0.1208470E-07</z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  1.991770    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.1097470E-07</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  2.299945    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.038500    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  2.561390    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  2.898370    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.665730    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.131010    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  3.496795    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z> 0.4411855E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.292960    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord> 0.4624220E-08</z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.700630    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.4199490E-08</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  4.095220    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1323560E-07</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.920190    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord> 0.1387270E-07</z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.270250    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.1259850E-07</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  4.693645    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.547420    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.839870    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  5.292070    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.174650    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.409490    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.5639364    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423670    </reference_length_cmx>
+                <reference_length_cmy> 0.5984255    </reference_length_cmy>
+                <reference_length_cmz> 0.9423670    </reference_length_cmz>
+                <moment_reference_point_x>  5.890490    </moment_reference_point_x>
+                <moment_reference_point_y> 0.4711835    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.801880    </x_quarter_chord>
+                <y_quarter_chord>  0.000000    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.6272310    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.979100    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     2">
+          <geometry_parameters>
+            <reference_area>  5.096431    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423630    </reference_length_cmx>
+            <reference_length_cmy>  5.408140    </reference_length_cmy>
+            <reference_length_cmz> 0.9423630    </reference_length_cmz>
+            <moment_reference_point_x>  2.417221    </moment_reference_point_x>
+            <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  2.134174    </x_quarter_chord>
+            <y_quarter_chord> 0.9423670    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  5.696200    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  2.700268    </x_quarter_chord>
+            <y_quarter_chord>  1.884730    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  5.120080    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  1.200389    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord> 0.8525290    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  1.548250    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  1.741205    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3473235E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  1.422150    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.3658230E-08</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  2.060260    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.3288240E-08</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  2.282020    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1041971E-07</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  1.991770    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.1097470E-07</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  2.572270    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.9864720E-08</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  2.822835    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.561390    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.084280    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  3.363645    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.131010    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.596280    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  3.904460    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3987120E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.700630    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.4199490E-08</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.108290    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.3774750E-08</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  4.445275    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1196140E-07</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.270250    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord> 0.1259850E-07</z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.620300    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.1132430E-07</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  4.986090    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.839870    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.132310    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  5.526905    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.409490    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.644320    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.5096431    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423630    </reference_length_cmx>
+                <reference_length_cmy> 0.5408140    </reference_length_cmy>
+                <reference_length_cmz> 0.9423630    </reference_length_cmz>
+                <moment_reference_point_x>  6.067715    </moment_reference_point_x>
+                <moment_reference_point_y>  1.413549    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.979100    </x_quarter_chord>
+                <y_quarter_chord> 0.9423670    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5696200    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.156330    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     3">
+          <geometry_parameters>
+            <reference_area>  4.553555    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423700    </reference_length_cmx>
+            <reference_length_cmy>  4.832025    </reference_length_cmy>
+            <reference_length_cmz> 0.9423700    </reference_length_cmz>
+            <moment_reference_point_x>  2.983316    </moment_reference_point_x>
+            <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  2.700268    </x_quarter_chord>
+            <y_quarter_chord>  1.884730    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  5.120080    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  3.266363    </x_quarter_chord>
+            <y_quarter_chord>  2.827100    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  4.543970    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  1.896110    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  1.548250    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  2.243970    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  2.379315    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3103245E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.060260    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.3288240E-08</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  2.698370    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.2918250E-08</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  2.862520    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z> 0.9309735E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.572270    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.9864720E-08</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.152770    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.8754750E-08</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  3.345720    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.084280    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.607160    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  3.828920    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.596280    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.061560    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.312125    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3562385E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.108290    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.3774750E-08</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.515960    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.3350020E-08</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.795330    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1068720E-07</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.620300    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord> 0.1132430E-07</z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.970360    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.1005010E-07</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.278530    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.132310    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.424750    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.761735    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.644320    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.879150    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.4553555    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4832025    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.244940    </moment_reference_point_x>
+                <moment_reference_point_y>  2.355915    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.156330    </x_quarter_chord>
+                <y_quarter_chord>  1.884730    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.5120080    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.333550    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     4">
+          <geometry_parameters>
+            <reference_area>  4.010647    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423700    </reference_length_cmx>
+            <reference_length_cmy>  4.255915    </reference_length_cmy>
+            <reference_length_cmz> 0.9423700    </reference_length_cmz>
+            <moment_reference_point_x>  3.549411    </moment_reference_point_x>
+            <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  3.266363    </x_quarter_chord>
+            <y_quarter_chord>  2.827100    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  4.543970    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  3.832459    </x_quarter_chord>
+            <y_quarter_chord>  3.769470    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  3.967860    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  2.591830    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.243970    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  2.939690    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  3.017425    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z> 0.2733255E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.698370    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.2918250E-08</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.336480    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.2548260E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  3.443020    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z> 0.8199760E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.152770    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.8754750E-08</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.733270    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.7644770E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  3.868605    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.607160    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.130050    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.294200    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.061560    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.526840    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.719790    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3137650E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.515960    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.3350020E-08</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.923620    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.2925280E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.145385    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z> 0.9412975E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.970360    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord> 0.1005010E-07</z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.320410    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.8775850E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.570975    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.424750    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.717200    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.996565    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.879150    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.113980    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.4010647    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.4255915    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.422160    </moment_reference_point_x>
+                <moment_reference_point_y>  3.298285    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.333550    </x_quarter_chord>
+                <y_quarter_chord>  2.827100    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.4543970    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.510770    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     5">
+          <geometry_parameters>
+            <reference_area>  3.467701    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423600    </reference_length_cmx>
+            <reference_length_cmy>  3.679805    </reference_length_cmy>
+            <reference_length_cmz> 0.9423600    </reference_length_cmz>
+            <moment_reference_point_x>  4.115511    </moment_reference_point_x>
+            <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  3.832459    </x_quarter_chord>
+            <y_quarter_chord>  3.769470    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  3.967860    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  4.398564    </x_quarter_chord>
+            <y_quarter_chord>  4.711830    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  3.391750    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  3.287555    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  2.939690    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.635420    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  3.655535    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z> 0.2363260E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.336480    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.2548260E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  3.974590    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.2178260E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  4.023520    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z> 0.7089780E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.733270    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.7644770E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.313770    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.6534790E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  4.391495    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.130050    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.652940    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  4.759480    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.526840    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.992120    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  5.127455    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z> 0.2712915E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.923620    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.2925280E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.331290    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.2500550E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  5.495440    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z> 0.8138750E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.320410    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord> 0.8775850E-08</z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.670470    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.7501650E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  5.863420    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.717200    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.009640    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  6.231400    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.113980    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.348820    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.3467701    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423600    </reference_length_cmx>
+                <reference_length_cmy> 0.3679805    </reference_length_cmy>
+                <reference_length_cmz> 0.9423600    </reference_length_cmz>
+                <moment_reference_point_x>  6.599380    </moment_reference_point_x>
+                <moment_reference_point_y>  4.240650    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.510770    </x_quarter_chord>
+                <y_quarter_chord>  3.769470    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3967860    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.687990    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     6">
+          <geometry_parameters>
+            <reference_area>  2.924829    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423700    </reference_length_cmx>
+            <reference_length_cmy>  3.103695    </reference_length_cmy>
+            <reference_length_cmz> 0.9423700    </reference_length_cmz>
+            <moment_reference_point_x>  4.681611    </moment_reference_point_x>
+            <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  4.398564    </x_quarter_chord>
+            <y_quarter_chord>  4.711830    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  3.391750    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  4.964659    </x_quarter_chord>
+            <y_quarter_chord>  5.654200    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  2.815640    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  3.983280    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.635420    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.331140    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.293645    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1993265E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  3.974590    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.2178260E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.612700    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.1808270E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.604020    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z> 0.5979800E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.313770    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.6534790E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  4.894270    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.5424810E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.914385    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.652940    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.175830    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.224755    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.992120    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.457390    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.535125    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z> 0.2288180E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.331290    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.2500550E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.738960    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.2075810E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.845495    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z> 0.6864545E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.670470    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord> 0.7501650E-08</z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.020520    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.6227440E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.155860    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.009640    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.302080    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.466235    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.348820    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.583650    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.2924829    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.3103695    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.776600    </moment_reference_point_x>
+                <moment_reference_point_y>  5.183015    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.687990    </x_quarter_chord>
+                <y_quarter_chord>  4.711830    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.3391750    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.865210    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     7">
+          <geometry_parameters>
+            <reference_area>  2.381920    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423700    </reference_length_cmx>
+            <reference_length_cmy>  2.527585    </reference_length_cmy>
+            <reference_length_cmz> 0.9423700    </reference_length_cmz>
+            <moment_reference_point_x>  5.247707    </moment_reference_point_x>
+            <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  4.964659    </x_quarter_chord>
+            <y_quarter_chord>  5.654200    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  2.815640    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  5.530754    </x_quarter_chord>
+            <y_quarter_chord>  6.596570    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  2.239530    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.679000    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.331140    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.026860    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  4.931755    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1623275E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.612700    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.1808270E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.250810    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.1438280E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.184515    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z> 0.4869825E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  4.894270    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.5424810E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.474760    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.4314840E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.437275    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.175830    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.698720    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.690030    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.457390    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.922670    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.942790    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1863445E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.738960    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.2075810E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.146620    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.1651080E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.195550    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z> 0.5590340E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.020520    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord> 0.6227440E-08</z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.370580    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.4953240E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.448305    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.302080    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.594530    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.701065    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.583650    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.818480    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.2381920    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.2527585    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.953820    </moment_reference_point_x>
+                <moment_reference_point_y>  6.125385    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.865210    </x_quarter_chord>
+                <y_quarter_chord>  5.654200    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2815640    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  7.042430    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+        <segment number="     8">
+          <geometry_parameters>
+            <reference_area>  1.839011    </reference_area>
+            <reference_span>  15.07790    </reference_span>
+            <reference_length_cmx> 0.9423700    </reference_length_cmx>
+            <reference_length_cmy>  1.951475    </reference_length_cmy>
+            <reference_length_cmz> 0.9423700    </reference_length_cmz>
+            <moment_reference_point_x>  5.813802    </moment_reference_point_x>
+            <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+            <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+          </geometry_parameters>
+          <section number="1">
+            <x_quarter_chord>  5.530754    </x_quarter_chord>
+            <y_quarter_chord>  6.596570    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  2.239530    </chordlength>
+          </section>
+          <section number="2">
+            <x_quarter_chord>  6.096849    </x_quarter_chord>
+            <y_quarter_chord>  7.538940    </y_quarter_chord>
+            <z_quarter_chord>  0.000000    </z_quarter_chord>
+            <chordlength>  1.663420    </chordlength>
+          </section>
+          <panel_data count="    10">
+            <panel number="     1">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.374720    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.026860    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.722580    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     2">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.569865    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1253285E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.250810    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.1438280E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  5.888920    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord> 0.1068290E-08</z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist> 0.2568900E-07</twist>
+            </panel>
+            <panel number="     3">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.765010    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z> 0.3759850E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.474760    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.4314840E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.055260    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord> 0.3204860E-08</z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>-0.2568900E-07</twist>
+            </panel>
+            <panel number="     4">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  5.960165    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.698720    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.221610    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     5">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.155310    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  5.922670    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.387950    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     6">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.350455    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z> 0.1438710E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.146620    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.1651080E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.554290    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord> 0.1226340E-08</z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist> 0.2948980E-07</twist>
+            </panel>
+            <panel number="     7">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.545605    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z> 0.4316135E-08</moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.370580    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord> 0.4953240E-08</z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.720630    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord> 0.3679030E-08</z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>-0.2948980E-07</twist>
+            </panel>
+            <panel number="     8">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.740750    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.594530    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  6.886970    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="     9">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  6.935895    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  6.818480    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  7.053310    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+            <panel number="    10">
+              <geometry_parameters>
+                <reference_area> 0.1839011    </reference_area>
+                <reference_span>  15.07790    </reference_span>
+                <reference_length_cmx> 0.9423700    </reference_length_cmx>
+                <reference_length_cmy> 0.1951475    </reference_length_cmy>
+                <reference_length_cmz> 0.9423700    </reference_length_cmz>
+                <moment_reference_point_x>  7.131045    </moment_reference_point_x>
+                <moment_reference_point_y>  7.067755    </moment_reference_point_y>
+                <moment_reference_point_z>  0.000000    </moment_reference_point_z>
+              </geometry_parameters>
+              <section number="1">
+                <x_quarter_chord>  7.042430    </x_quarter_chord>
+                <y_quarter_chord>  6.596570    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.2239530    </chordlength>
+              </section>
+              <section number="2">
+                <x_quarter_chord>  7.219660    </x_quarter_chord>
+                <y_quarter_chord>  7.538940    </y_quarter_chord>
+                <z_quarter_chord>  0.000000    </z_quarter_chord>
+                <chordlength> 0.1663420    </chordlength>
+              </section>
+              <twist>  0.000000    </twist>
+            </panel>
+          </panel_data>
+        </segment>
+      </segment_data>
+    </wing>
+  </wing_data>
+  <result_data count="     1">
+    <result number="     1">
+      <angle_of_attack>  0.000000    </angle_of_attack>
+      <cfx_from_cdi>-0.1907288E-20</cfx_from_cdi>
+      <cfy> 0.2415686E-18</cfy>
+      <cfz> 0.4993628E-10</cfz>
+      <cmx> 0.1289137E-10</cmx>
+      <cmx_from_cfy>-0.3861253E-27</cmx_from_cfy>
+      <cmx_from_cfz> 0.1289137E-10</cmx_from_cfz>
+      <cmy>-0.5696019E-10</cmy>
+      <cmy_from_cdi> 0.2430607E-28</cmy_from_cdi>
+      <cmy_from_cfz>-0.5696019E-10</cmy_from_cfz>
+      <cmz> 0.7150984E-19</cmz>
+      <cmz_from_cdi> 0.7186614E-21</cmz_from_cdi>
+      <cmz_from_cfy> 0.7079118E-19</cmz_from_cfy>
+      <wing number="     1">
+        <cfx_from_cdi>-0.1907288E-20</cfx_from_cdi>
+        <cfy> 0.2415685E-18</cfy>
+        <cfz> 0.4993626E-10</cfz>
+        <cmx> 0.5362732E-11</cmx>
+        <cmx_from_cfy>-0.1606258E-27</cmx_from_cfy>
+        <cmx_from_cfz> 0.5362732E-11</cmx_from_cfz>
+        <cmy>-0.5696008E-10</cmy>
+        <cmy_from_cdi> 0.2430602E-28</cmy_from_cdi>
+        <cmy_from_cfz>-0.5696008E-10</cmy_from_cfz>
+        <cmz> 0.7150981E-19</cmz>
+        <cmz_from_cdi> 0.7186611E-21</cmz_from_cdi>
+        <cmz_from_cfy> 0.7079115E-19</cmz_from_cfy>
+        <segment number="     1">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.8176560E-11</local_circulation>
+          <cfx_from_cdi> 0.2209796E-19</cfx_from_cdi>
+          <cfy> 0.4688623E-18</cfy>
+          <cfz> 0.4118903E-10</cfz>
+          <cfnormal>-0.4118903E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.4780097E-11</local_circulation>
+            <cfx_from_cdi> 0.1846235E-20</cfx_from_cdi>
+            <cfy>-0.1363019E-20</cfy>
+            <cfz>-0.2394301E-09</cfz>
+            <cfnormal> 0.2394301E-09</cfnormal>
+            <cmx>-0.8569501E-36</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.8569501E-36</cmx_from_cfz>
+            <cmy> 0.9962781E-36</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.9962781E-36</cmy_from_cfz>
+            <cmz> 0.3187929E-28</cmz>
+            <cmz_from_cdi> 0.2063328E-28</cmz_from_cdi>
+            <cmz_from_cfy> 0.1124601E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.1401638E-10</local_circulation>
+            <cfx_from_cdi> 0.1196893E-18</cfx_from_cdi>
+            <cfy>-0.3563329E-18</cfy>
+            <cfz>-0.7011383E-09</cfz>
+            <cfnormal> 0.7011383E-09</cfnormal>
+            <cmx>-0.1813577E-34</cmx>
+            <cmx_from_cfy> 0.3556275E-36</cmx_from_cfy>
+            <cmx_from_cfz>-0.1849139E-34</cmx_from_cfz>
+            <cmy> 0.2054475E-34</cmy>
+            <cmy_from_cdi> 0.8270437E-36</cmy_from_cdi>
+            <cmy_from_cfz> 0.1971771E-34</cmy_from_cfz>
+            <cmz> 0.1950957E-26</cmz>
+            <cmz_from_cdi> 0.1337632E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.6133247E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.3789520E-10</local_circulation>
+            <cfx_from_cdi> 0.7993674E-19</cfx_from_cdi>
+            <cfy> 0.2188807E-17</cfy>
+            <cfz> 0.1900057E-08</cfz>
+            <cfnormal>-0.1900057E-08</cfnormal>
+            <cmx> 0.5671869E-34</cmx>
+            <cmx_from_cfy> 0.6482057E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.5607048E-34</cmx_from_cfz>
+            <cmy>-0.5273386E-34</cmy>
+            <cmy_from_cdi> 0.1657069E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.5439093E-34</cmy_from_cfz>
+            <cmz> 0.1232357E-26</cmz>
+            <cmz_from_cdi> 0.8933627E-27</cmz_from_cdi>
+            <cmz_from_cfy> 0.3389941E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.1450226E-10</local_circulation>
+            <cfx_from_cdi>-0.1050370E-18</cfx_from_cdi>
+            <cfy> 0.5828174E-19</cfy>
+            <cfz>-0.7284592E-09</cfz>
+            <cfnormal> 0.7284592E-09</cfnormal>
+            <cmx>-0.3099369E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3099369E-34</cmx_from_cfz>
+            <cmy> 0.2708155E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2708155E-34</cmy_from_cfz>
+            <cmz>-0.1535293E-26</cmz>
+            <cmz_from_cdi>-0.1173880E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.3614133E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.6123697E-11</local_circulation>
+            <cfx_from_cdi> 0.3574411E-20</cfx_from_cdi>
+            <cfy>-0.1764813E-20</cfy>
+            <cfz>-0.3067978E-09</cfz>
+            <cfnormal> 0.3067978E-09</cfnormal>
+            <cmx>-0.4457309E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4457309E-35</cmx_from_cfz>
+            <cmy> 0.3465589E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.3465589E-35</cmy_from_cfz>
+            <cmz> 0.4968526E-28</cmz>
+            <cmz_from_cdi> 0.3994716E-28</cmz_from_cdi>
+            <cmz_from_cfy> 0.9738106E-29</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.1767114E-10</local_circulation>
+            <cfx_from_cdi> 0.1714172E-18</cfx_from_cdi>
+            <cfy>-0.4727337E-18</cfy>
+            <cfz>-0.8843431E-09</cfz>
+            <cfnormal> 0.8843431E-09</cfnormal>
+            <cmx>-0.3392466E-34</cmx>
+            <cmx_from_cfy> 0.3735230E-36</cmx_from_cfy>
+            <cmx_from_cfz>-0.3429819E-34</cmx_from_cfz>
+            <cmy> 0.2472490E-34</cmy>
+            <cmy_from_cdi> 0.1359686E-35</cmy_from_cdi>
+            <cmy_from_cfz> 0.2336522E-34</cmy_from_cfz>
+            <cmz> 0.2274256E-26</cmz>
+            <cmz_from_cdi> 0.1915736E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.3585198E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.4812371E-10</local_circulation>
+            <cfx_from_cdi> 0.9936670E-19</cfx_from_cdi>
+            <cfy> 0.3227392E-17</cfy>
+            <cfz> 0.2414199E-08</cfz>
+            <cfnormal>-0.2414199E-08</cfnormal>
+            <cmx> 0.9019692E-34</cmx>
+            <cmx_from_cfy> 0.5577790E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.8963914E-34</cmx_from_cfz>
+            <cmy>-0.5007151E-34</cmy>
+            <cmy_from_cdi> 0.2364557E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.5243606E-34</cmy_from_cfz>
+            <cmz> 0.1263748E-26</cmz>
+            <cmz_from_cdi> 0.1110509E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.1532382E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.1649435E-10</local_circulation>
+            <cfx_from_cdi>-0.1474898E-18</cfx_from_cdi>
+            <cfy> 0.4577132E-19</cfy>
+            <cfz>-0.8282989E-09</cfz>
+            <cfnormal> 0.8282989E-09</cfnormal>
+            <cmx>-0.4395930E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4395930E-34</cmx_from_cfz>
+            <cmy> 0.2148287E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2148287E-34</cmy_from_cfz>
+            <cmz>-0.1807074E-26</cmz>
+            <cmz_from_cdi>-0.1648326E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.1587473E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.3161431E-11</local_circulation>
+            <cfx_from_cdi>-0.2083483E-20</cfx_from_cdi>
+            <cfy> 0.5192086E-21</cfy>
+            <cfz>-0.1589550E-09</cfz>
+            <cfnormal> 0.1589550E-09</cfnormal>
+            <cmx>-0.2168832E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2168832E-35</cmx_from_cfz>
+            <cmy> 0.8511142E-36</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.8511142E-36</cmy_from_cfz>
+            <cmz>-0.2473076E-28</cmz>
+            <cmz_from_cdi>-0.2328473E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.1446023E-29</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.1092991E-11</local_circulation>
+            <cfx_from_cdi>-0.2407202E-21</cfx_from_cdi>
+            <cfy> 0.4526944E-22</cfy>
+            <cfz>-0.5494309E-10</cfz>
+            <cfnormal> 0.5494309E-10</cfnormal>
+            <cmx>-0.3367125E-36</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3367125E-36</cmx_from_cfz>
+            <cmy> 0.9971533E-37</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.9971533E-37</cmy_from_cfz>
+            <cmz>-0.2785401E-29</cmz>
+            <cmz_from_cdi>-0.2690258E-29</cmz_from_cdi>
+            <cmz_from_cfy>-0.9514353E-31</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     2">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.8100955E-11</local_circulation>
+          <cfx_from_cdi>-0.7137689E-20</cfx_from_cdi>
+          <cfy> 0.4888049E-18</cfy>
+          <cfz> 0.4514053E-10</cfz>
+          <cfnormal>-0.4514053E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.4167674E-11</local_circulation>
+            <cfx_from_cdi>-0.1610656E-20</cfx_from_cdi>
+            <cfy> 0.1189103E-20</cfy>
+            <cfz>-0.2322232E-09</cfz>
+            <cfnormal> 0.2322232E-09</cfnormal>
+            <cmx>-0.4691316E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4691316E-35</cmx_from_cfz>
+            <cmy> 0.6035063E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.6035063E-35</cmy_from_cfz>
+            <cmz>-0.8343499E-28</cmz>
+            <cmz_from_cdi>-0.5400159E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.2943339E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.1201520E-10</local_circulation>
+            <cfx_from_cdi> 0.1040127E-18</cfx_from_cdi>
+            <cfy>-0.3346039E-18</cfy>
+            <cfz>-0.6728473E-09</cfz>
+            <cfnormal> 0.6728473E-09</cfnormal>
+            <cmx>-0.6498037E-34</cmx>
+            <cmx_from_cfy> 0.9271273E-36</cmx_from_cfy>
+            <cmx_from_cfz>-0.6590750E-34</cmx_from_cfz>
+            <cmy> 0.8015048E-34</cmy>
+            <cmy_from_cdi> 0.2385791E-35</cmy_from_cdi>
+            <cmy_from_cfz> 0.7776469E-34</cmy_from_cfz>
+            <cmz> 0.5086295E-26</cmz>
+            <cmz_from_cdi> 0.3487308E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.1598987E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.3404816E-10</local_circulation>
+            <cfx_from_cdi>-0.2323780E-19</cfx_from_cdi>
+            <cfy> 0.2253478E-17</cfy>
+            <cfz> 0.1901029E-08</cfz>
+            <cfnormal>-0.1901029E-08</cfnormal>
+            <cmx> 0.1682136E-33</cmx>
+            <cmx_from_cfy>-0.5653011E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.1687789E-33</cmx_from_cfz>
+            <cmy>-0.1827633E-33</cmy>
+            <cmy_from_cdi>-0.1599065E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.1811642E-33</cmy_from_cfz>
+            <cmz>-0.1074753E-26</cmz>
+            <cmz_from_cdi>-0.7791102E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.2956425E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.1347008E-10</local_circulation>
+            <cfx_from_cdi>-0.1208219E-18</cfx_from_cdi>
+            <cfy> 0.6704058E-19</cfy>
+            <cfz>-0.7500125E-09</cfz>
+            <cfnormal> 0.7500125E-09</cfnormal>
+            <cmx>-0.8938179E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.8938179E-34</cmx_from_cfz>
+            <cmy> 0.8641944E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.8641944E-34</cmy_from_cfz>
+            <cmz>-0.5298074E-26</cmz>
+            <cmz_from_cdi>-0.4050881E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.1247193E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.5396052E-11</local_circulation>
+            <cfx_from_cdi>-0.1201441E-21</cfx_from_cdi>
+            <cfy> 0.5931836E-22</cfy>
+            <cfz>-0.3012007E-09</cfz>
+            <cfnormal> 0.3012007E-09</cfnormal>
+            <cmx>-0.1410093E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1410093E-34</cmx_from_cfz>
+            <cmy> 0.1213123E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1213123E-34</cmy_from_cfz>
+            <cmz>-0.5010083E-29</cmz>
+            <cmz_from_cdi>-0.4028155E-29</cmz_from_cdi>
+            <cmz_from_cfy>-0.9819283E-30</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.1528142E-10</local_circulation>
+            <cfx_from_cdi> 0.1510239E-18</cfx_from_cdi>
+            <cfy>-0.4507984E-18</cfy>
+            <cfz>-0.8552276E-09</cfz>
+            <cfnormal> 0.8552276E-09</cfnormal>
+            <cmx>-0.1113506E-33</cmx>
+            <cmx_from_cfy> 0.9872665E-36</cmx_from_cfy>
+            <cmx_from_cfz>-0.1123379E-33</cmx_from_cfz>
+            <cmy> 0.8865584E-34</cmy>
+            <cmy_from_cdi> 0.3976718E-35</cmy_from_cdi>
+            <cmy_from_cfz> 0.8467913E-34</cmy_from_cfz>
+            <cmz> 0.6011051E-26</cmz>
+            <cmz_from_cdi> 0.5063486E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.9475657E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.4367632E-10</local_circulation>
+            <cfx_from_cdi>-0.1694514E-19</cfx_from_cdi>
+            <cfy> 0.3301093E-17</cfy>
+            <cfz> 0.2436742E-08</cfz>
+            <cfnormal>-0.2436742E-08</cfnormal>
+            <cmx> 0.2535559E-33</cmx>
+            <cmx_from_cfy>-0.2853516E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.2538412E-33</cmx_from_cfz>
+            <cmy>-0.1656411E-33</cmy>
+            <cmy_from_cdi>-0.1338563E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.1643025E-33</cmy_from_cfz>
+            <cmz>-0.6465239E-27</cmz>
+            <cmz_from_cdi>-0.5681317E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.7839218E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.1526254E-10</local_circulation>
+            <cfx_from_cdi>-0.1606805E-18</cfx_from_cdi>
+            <cfy> 0.4986337E-19</cfy>
+            <cfz>-0.8504739E-09</cfz>
+            <cfnormal> 0.8504739E-09</cfnormal>
+            <cmx>-0.1262179E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1262179E-33</cmx_from_cfz>
+            <cmy> 0.6825115E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.6825115E-34</cmy_from_cfz>
+            <cmz>-0.5906053E-26</cmz>
+            <cmz_from_cdi>-0.5387248E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.5188049E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.2997215E-11</local_circulation>
+            <cfx_from_cdi>-0.2691072E-20</cfx_from_cdi>
+            <cfy> 0.6705956E-21</cfy>
+            <cfz>-0.1668263E-09</cfz>
+            <cfnormal> 0.1668263E-09</cfnormal>
+            <cmx>-0.6272276E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.6272276E-35</cmx_from_cfz>
+            <cmy> 0.2723522E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2723522E-35</cmy_from_cfz>
+            <cmz>-0.9582821E-28</cmz>
+            <cmz_from_cdi>-0.9022548E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.5602733E-29</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.1033338E-11</local_circulation>
+            <cfx_from_cdi>-0.3063312E-21</cfx_from_cdi>
+            <cfy> 0.5761164E-22</cfy>
+            <cfz>-0.5755419E-10</cfz>
+            <cfnormal> 0.5755419E-10</cfnormal>
+            <cmx>-0.9870446E-36</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.9870446E-36</cmx_from_cfz>
+            <cmy> 0.3234641E-36</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.3234641E-36</cmy_from_cfz>
+            <cmz>-0.1063386E-28</cmz>
+            <cmz_from_cdi>-0.1027058E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.3632730E-30</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     3">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.7896652E-11</local_circulation>
+          <cfx_from_cdi>-0.6878854E-20</cfx_from_cdi>
+          <cfy> 0.4890073E-18</cfy>
+          <cfz> 0.4923567E-10</cfz>
+          <cfnormal>-0.4923567E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.3434984E-11</local_circulation>
+            <cfx_from_cdi>-0.1045601E-20</cfx_from_cdi>
+            <cfy> 0.7719318E-21</cfy>
+            <cfz>-0.2147798E-09</cfz>
+            <cfnormal> 0.2147798E-09</cfnormal>
+            <cmx>-0.8192688E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.8192688E-35</cmx_from_cfz>
+            <cmy> 0.1179592E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1179592E-34</cmy_from_cfz>
+            <cmz>-0.9027227E-28</cmz>
+            <cmz_from_cdi>-0.5842725E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.3184502E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.1061444E-10</local_circulation>
+            <cfx_from_cdi> 0.1036262E-18</cfx_from_cdi>
+            <cfy>-0.3300770E-18</cfy>
+            <cfz>-0.6619901E-09</cfz>
+            <cfnormal> 0.6619901E-09</cfnormal>
+            <cmx>-0.1073459E-33</cmx>
+            <cmx_from_cfy> 0.1539437E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.1088853E-33</cmx_from_cfz>
+            <cmy> 0.1482261E-33</cmy>
+            <cmy_from_cdi> 0.4433841E-35</cmy_from_cdi>
+            <cmy_from_cfz> 0.1437923E-33</cmy_from_cfz>
+            <cmz> 0.8445561E-26</cmz>
+            <cmz_from_cdi> 0.5790543E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.2655018E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.3043091E-10</local_circulation>
+            <cfx_from_cdi>-0.2025836E-19</cfx_from_cdi>
+            <cfy> 0.2249147E-17</cfy>
+            <cfz> 0.1898942E-08</cfz>
+            <cfnormal>-0.1898942E-08</cfnormal>
+            <cmx> 0.2813010E-33</cmx>
+            <cmx_from_cfy>-0.8213428E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.2821224E-33</cmx_from_cfz>
+            <cmy>-0.3415308E-33</cmy>
+            <cmy_from_cdi>-0.2600375E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.3389304E-33</cmy_from_cfz>
+            <cmz>-0.1561571E-26</cmz>
+            <cmz_from_cdi>-0.1132019E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.4295517E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.1196172E-10</local_circulation>
+            <cfx_from_cdi>-0.1208180E-18</cfx_from_cdi>
+            <cfy> 0.6703666E-19</cfy>
+            <cfz>-0.7467483E-09</cfz>
+            <cfnormal> 0.7467483E-09</cfnormal>
+            <cmx>-0.1496651E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1496651E-33</cmx_from_cfz>
+            <cmy> 0.1619547E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1619547E-33</cmy_from_cfz>
+            <cmz>-0.8829670E-26</cmz>
+            <cmz_from_cdi>-0.6751206E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.2078464E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.4679006E-11</local_circulation>
+            <cfx_from_cdi>-0.6101730E-22</cfx_from_cdi>
+            <cfy> 0.3012631E-22</cfy>
+            <cfz>-0.2923150E-09</cfz>
+            <cfnormal> 0.2923150E-09</cfnormal>
+            <cmx>-0.2348755E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2348755E-34</cmx_from_cfz>
+            <cmy> 0.2261637E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2261637E-34</cmy_from_cfz>
+            <cmz>-0.4240760E-29</cmz>
+            <cmz_from_cdi>-0.3409593E-29</cmz_from_cdi>
+            <cmz_from_cfy>-0.8311672E-30</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.1352813E-10</local_circulation>
+            <cfx_from_cdi> 0.1502677E-18</cfx_from_cdi>
+            <cfy>-0.4454248E-18</cfy>
+            <cfz>-0.8440546E-09</cfz>
+            <cfnormal> 0.8440546E-09</cfnormal>
+            <cmx>-0.1829857E-33</cmx>
+            <cmx_from_cfy> 0.1637171E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.1846229E-33</cmx_from_cfz>
+            <cmy> 0.1631440E-33</cmy>
+            <cmy_from_cdi> 0.7380723E-35</cmy_from_cdi>
+            <cmy_from_cfz> 0.1557633E-33</cmy_from_cfz>
+            <cmz> 0.9968237E-26</cmz>
+            <cmz_from_cdi> 0.8396826E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.1571411E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.3901217E-10</local_circulation>
+            <cfx_from_cdi>-0.1609011E-19</cfx_from_cdi>
+            <cfy> 0.3297776E-17</cfy>
+            <cfz> 0.2434542E-08</cfz>
+            <cfnormal>-0.2434542E-08</cfnormal>
+            <cmx> 0.4193904E-33</cmx>
+            <cmx_from_cfy>-0.4515915E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.4198420E-33</cmx_from_cfz>
+            <cmy>-0.3065288E-33</cmy>
+            <cmy_from_cdi>-0.2370921E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.3041579E-33</cmy_from_cfz>
+            <cmz>-0.1023167E-26</cmz>
+            <cmz_from_cdi>-0.8991012E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.1240654E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.1367408E-10</local_circulation>
+            <cfx_from_cdi>-0.1613399E-18</cfx_from_cdi>
+            <cfy> 0.5006763E-19</cfy>
+            <cfz>-0.8533236E-09</cfz>
+            <cfnormal> 0.8533236E-09</cfnormal>
+            <cmx>-0.2098342E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2098342E-33</cmx_from_cfz>
+            <cmy> 0.1269942E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1269942E-33</cmy_from_cfz>
+            <cmz>-0.9883733E-26</cmz>
+            <cmz_from_cdi>-0.9015529E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.8682042E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.2711897E-11</local_circulation>
+            <cfx_from_cdi>-0.2751891E-20</cfx_from_cdi>
+            <cfy> 0.6857460E-21</cfy>
+            <cfz>-0.1691701E-09</cfz>
+            <cfnormal> 0.1691701E-09</cfnormal>
+            <cmx>-0.1042301E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1042301E-34</cmx_from_cfz>
+            <cmy> 0.5065446E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.5065446E-35</cmy_from_cfz>
+            <cmz>-0.1633219E-27</cmz>
+            <cmz_from_cdi>-0.1537732E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.9548715E-29</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.9421719E-12</local_circulation>
+            <cfx_from_cdi>-0.3175891E-21</cfx_from_cdi>
+            <cfy> 0.5972510E-22</cfy>
+            <cfz>-0.5874537E-10</cfz>
+            <cfnormal> 0.5874537E-10</cfnormal>
+            <cmx>-0.1641778E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1641778E-35</cmx_from_cfz>
+            <cmy> 0.6021406E-36</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.6021406E-36</cmy_from_cfz>
+            <cmz>-0.1837422E-28</cmz>
+            <cmz_from_cdi>-0.1774660E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.6276213E-30</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     4">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.7520444E-11</local_circulation>
+          <cfx_from_cdi>-0.6949112E-20</cfx_from_cdi>
+          <cfy> 0.4902796E-18</cfy>
+          <cfz> 0.5323243E-10</cfz>
+          <cfnormal>-0.5323243E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.2815894E-11</local_circulation>
+            <cfx_from_cdi>-0.5016154E-21</cfx_from_cdi>
+            <cfy> 0.3703257E-21</cfy>
+            <cfz>-0.1996342E-09</cfz>
+            <cfnormal> 0.1996342E-09</cfnormal>
+            <cmx>-0.1110235E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1110235E-34</cmx_from_cfz>
+            <cmy> 0.1814915E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1814915E-34</cmy_from_cfz>
+            <cmz>-0.6063004E-28</cmz>
+            <cmz_from_cdi>-0.3924180E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.2138824E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.9249013E-11</local_circulation>
+            <cfx_from_cdi> 0.1026995E-18</cfx_from_cdi>
+            <cfy>-0.3269055E-18</cfy>
+            <cfz>-0.6555104E-09</cfz>
+            <cfnormal> 0.6555104E-09</cfnormal>
+            <cmx>-0.1494766E-33</cmx>
+            <cmx_from_cfy> 0.2135941E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.1516125E-33</cmx_from_cfz>
+            <cmy> 0.2343046E-33</cmy>
+            <cmy_from_cdi> 0.6984633E-35</cmy_from_cdi>
+            <cmy_from_cfz> 0.2273200E-33</cmy_from_cfz>
+            <cmz> 0.1171806E-25</cmz>
+            <cmz_from_cdi> 0.8034273E-26</cmz_from_cdi>
+            <cmz_from_cfy> 0.3683789E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.2688610E-10</local_circulation>
+            <cfx_from_cdi>-0.2089884E-19</cfx_from_cdi>
+            <cfy> 0.2256599E-17</cfy>
+            <cfz> 0.1904917E-08</cfz>
+            <cfnormal>-0.1904917E-08</cfnormal>
+            <cmx> 0.3924441E-33</cmx>
+            <cmx_from_cfy>-0.1186246E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.3936303E-33</cmx_from_cfz>
+            <cmy>-0.5411695E-33</cmy>
+            <cmy_from_cdi>-0.4264052E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.5369055E-33</cmy_from_cfz>
+            <cmz>-0.2255320E-26</cmz>
+            <cmz_from_cdi>-0.1634934E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.6203858E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.1046546E-10</local_circulation>
+            <cfx_from_cdi>-0.1198592E-18</cfx_from_cdi>
+            <cfy> 0.6650590E-19</cfy>
+            <cfz>-0.7415740E-09</cfz>
+            <cfnormal> 0.7415740E-09</cfnormal>
+            <cmx>-0.2090956E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2090956E-33</cmx_from_cfz>
+            <cmy> 0.2568989E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2568989E-33</cmy_from_cfz>
+            <cmz>-0.1226356E-25</cmz>
+            <cmz_from_cdi>-0.9376686E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.2886869E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.4069461E-11</local_circulation>
+            <cfx_from_cdi>-0.5331377E-24</cfx_from_cdi>
+            <cfy> 0.2632281E-24</cfy>
+            <cfz>-0.2883942E-09</cfz>
+            <cfnormal> 0.2883942E-09</cfnormal>
+            <cmx>-0.3257109E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3257109E-34</cmx_from_cfz>
+            <cmy> 0.3560851E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.3560851E-34</cmy_from_cfz>
+            <cmz>-0.5187506E-31</cmz>
+            <cmz_from_cdi>-0.4170782E-31</cmz_from_cdi>
+            <cmz_from_cfy>-0.1016725E-31</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.1188544E-10</local_circulation>
+            <cfx_from_cdi> 0.1499986E-18</cfx_from_cdi>
+            <cfy>-0.4444917E-18</cfy>
+            <cfz>-0.8422264E-09</cfz>
+            <cfnormal> 0.8422264E-09</cfnormal>
+            <cmx>-0.2552609E-33</cmx>
+            <cmx_from_cfy> 0.2287935E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.2575489E-33</cmx_from_cfz>
+            <cmy> 0.2584086E-33</cmy>
+            <cmy_from_cdi> 0.1171104E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.2466975E-33</cmy_from_cfz>
+            <cmz> 0.1393045E-25</cmz>
+            <cmz_from_cdi> 0.1173452E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.2195931E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.3437873E-10</local_circulation>
+            <cfx_from_cdi>-0.1661062E-19</cfx_from_cdi>
+            <cfy> 0.3299931E-17</cfy>
+            <cfz> 0.2435897E-08</cfz>
+            <cfnormal>-0.2435897E-08</cfnormal>
+            <cmx> 0.5851730E-33</cmx>
+            <cmx_from_cfy>-0.6526883E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.5858257E-33</cmx_from_cfz>
+            <cmy>-0.4857337E-33</cmy>
+            <cmy_from_cdi>-0.3890682E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.4818430E-33</cmy_from_cfz>
+            <cmz>-0.1478764E-26</cmz>
+            <cmz_from_cdi>-0.1299463E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.1793004E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.1203818E-10</local_circulation>
+            <cfx_from_cdi>-0.1612437E-18</cfx_from_cdi>
+            <cfy> 0.5003950E-19</cfy>
+            <cfz>-0.8529273E-09</cfz>
+            <cfnormal> 0.8529273E-09</cfnormal>
+            <cmx>-0.2932814E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2932814E-33</cmx_from_cfz>
+            <cmy> 0.2015316E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2015316E-33</cmy_from_cfz>
+            <cmz>-0.1382908E-25</cmz>
+            <cmz_from_cdi>-0.1261423E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.1214846E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.2389043E-11</local_circulation>
+            <cfx_from_cdi>-0.2754942E-20</cfx_from_cdi>
+            <cfy> 0.6865064E-21</cfy>
+            <cfz>-0.1692794E-09</cfz>
+            <cfnormal> 0.1692794E-09</cfnormal>
+            <cmx>-0.1452170E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1452170E-34</cmx_from_cfz>
+            <cmy> 0.8012684E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.8012684E-35</cmy_from_cfz>
+            <cmz>-0.2289045E-27</cmz>
+            <cmz_from_cdi>-0.2155215E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.1338304E-28</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.8319010E-12</local_circulation>
+            <cfx_from_cdi>-0.3198097E-21</cfx_from_cdi>
+            <cfy> 0.6014271E-22</cfy>
+            <cfz>-0.5894344E-10</cfz>
+            <cfnormal> 0.5894344E-10</cfnormal>
+            <cmx>-0.2284281E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2284281E-35</cmx_from_cfz>
+            <cmy> 0.9511945E-36</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.9511945E-36</cmy_from_cfz>
+            <cmz>-0.2590381E-28</cmz>
+            <cmz_from_cdi>-0.2501899E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.8848147E-30</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     5">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.6957691E-11</local_circulation>
+          <cfx_from_cdi>-0.6931633E-20</cfx_from_cdi>
+          <cfy> 0.4915404E-18</cfy>
+          <cfz> 0.5694739E-10</cfz>
+          <cfnormal>-0.5694739E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.2253557E-11</local_circulation>
+            <cfx_from_cdi>-0.5733747E-22</cfx_from_cdi>
+            <cfy> 0.4233138E-22</cfy>
+            <cfz>-0.1849236E-09</cfz>
+            <cfnormal> 0.1849236E-09</cfnormal>
+            <cmx>-0.1355131E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1355131E-34</cmx_from_cfz>
+            <cmy> 0.2562107E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2562107E-34</cmy_from_cfz>
+            <cmz>-0.8910706E-29</cmz>
+            <cmz_from_cdi>-0.5767207E-29</cmz_from_cdi>
+            <cmz_from_cfy>-0.3143499E-29</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.7910089E-11</local_circulation>
+            <cfx_from_cdi> 0.1018920E-18</cfx_from_cdi>
+            <cfy>-0.3235826E-18</cfy>
+            <cfz>-0.6484135E-09</cfz>
+            <cfnormal> 0.6484135E-09</cfnormal>
+            <cmx>-0.1903537E-33</cmx>
+            <cmx_from_cfy> 0.2724775E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.1930785E-33</cmx_from_cfz>
+            <cmy> 0.3451197E-33</cmy>
+            <cmy_from_cdi> 0.1030490E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.3348148E-33</cmy_from_cfz>
+            <cmz> 0.1494786E-25</cmz>
+            <cmz_from_cdi> 0.1024866E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.4699205E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.2330952E-10</local_circulation>
+            <cfx_from_cdi>-0.2108955E-19</cfx_from_cdi>
+            <cfy> 0.2263314E-17</cfy>
+            <cfz> 0.1910498E-08</cfz>
+            <cfnormal>-0.1910498E-08</cfnormal>
+            <cmx> 0.5022017E-33</cmx>
+            <cmx_from_cfy>-0.1539139E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.5037408E-33</cmx_from_cfz>
+            <cmy>-0.8010645E-33</cmy>
+            <cmy_from_cdi>-0.6398595E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.7946659E-33</cmy_from_cfz>
+            <cmz>-0.2926204E-26</cmz>
+            <cmz_from_cdi>-0.2121262E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.8049428E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.9004907E-11</local_circulation>
+            <cfx_from_cdi>-0.1191839E-18</cfx_from_cdi>
+            <cfy> 0.6613190E-19</cfy>
+            <cfz>-0.7383923E-09</cfz>
+            <cfnormal> 0.7383923E-09</cfnormal>
+            <cmx>-0.2686014E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2686014E-33</cmx_from_cfz>
+            <cmy> 0.3816751E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.3816751E-33</cmy_from_cfz>
+            <cmz>-0.1567883E-25</cmz>
+            <cmz_from_cdi>-0.1198794E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.3690893E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.3488581E-11</local_circulation>
+            <cfx_from_cdi> 0.3522294E-22</cfx_from_cdi>
+            <cfy>-0.1739094E-22</cfy>
+            <cfz>-0.2859369E-09</cfz>
+            <cfnormal> 0.2859369E-09</cfnormal>
+            <cmx>-0.4160823E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4160823E-34</cmx_from_cfz>
+            <cmy> 0.5261006E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.5261006E-34</cmy_from_cfz>
+            <cmz> 0.4406517E-29</cmz>
+            <cmz_from_cdi> 0.3542848E-29</cmz_from_cdi>
+            <cmz_from_cfy> 0.8636695E-30</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.1025518E-10</local_circulation>
+            <cfx_from_cdi> 0.1498279E-18</cfx_from_cdi>
+            <cfy>-0.4436566E-18</cfy>
+            <cfz>-0.8405432E-09</cfz>
+            <cfnormal> 0.8405432E-09</cfnormal>
+            <cmx>-0.3273015E-33</cmx>
+            <cmx_from_cfy> 0.2938378E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.3302399E-33</cmx_from_cfz>
+            <cmy> 0.3832531E-33</cmy>
+            <cmy_from_cdi> 0.1739433E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.3658587E-33</cmy_from_cfz>
+            <cmz> 0.1789057E-25</cmz>
+            <cmz_from_cdi> 0.1507022E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.2820353E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.2974251E-10</local_circulation>
+            <cfx_from_cdi>-0.1650977E-19</cfx_from_cdi>
+            <cfy> 0.3302414E-17</cfy>
+            <cfz> 0.2437830E-08</cfz>
+            <cfnormal>-0.2437830E-08</cfnormal>
+            <cmx> 0.7508542E-33</cmx>
+            <cmx_from_cfy>-0.8340930E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.7516883E-33</cmx_from_cfz>
+            <cmy>-0.7208316E-33</cmy>
+            <cmy_from_cdi>-0.5750172E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.7150814E-33</cmy_from_cfz>
+            <cmz>-0.1889761E-26</cmz>
+            <cmz_from_cdi>-0.1660612E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.2291497E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.1040107E-10</local_circulation>
+            <cfx_from_cdi>-0.1611654E-18</cfx_from_cdi>
+            <cfy> 0.5001403E-19</cfy>
+            <cfz>-0.8527589E-09</cfz>
+            <cfnormal> 0.8527589E-09</cfnormal>
+            <cmx>-0.3770221E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3770221E-33</cmx_from_cfz>
+            <cmy> 0.2996255E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2996255E-33</cmy_from_cfz>
+            <cmz>-0.1777172E-25</cmz>
+            <cmz_from_cdi>-0.1621059E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.1561129E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.2062933E-11</local_circulation>
+            <cfx_from_cdi>-0.2746859E-20</cfx_from_cdi>
+            <cfy> 0.6845285E-21</cfy>
+            <cfz>-0.1690595E-09</cfz>
+            <cfnormal> 0.1690595E-09</cfnormal>
+            <cmx>-0.1859312E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1859312E-34</cmx_from_cfz>
+            <cmy> 0.1186587E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1186587E-34</cmy_from_cfz>
+            <cmz>-0.2934471E-27</cmz>
+            <cmz_from_cdi>-0.2762888E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.1715828E-28</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.7180156E-12</local_circulation>
+            <cfx_from_cdi>-0.3185777E-21</cfx_from_cdi>
+            <cfy> 0.5991166E-22</cfy>
+            <cfz>-0.5882627E-10</cfz>
+            <cfnormal> 0.5882627E-10</cfnormal>
+            <cmx>-0.2912062E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2912062E-35</cmx_from_cfz>
+            <cmy> 0.1402454E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1402454E-35</cmy_from_cfz>
+            <cmz>-0.3317695E-28</cmz>
+            <cmz_from_cdi>-0.3204368E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.1133272E-29</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     6">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.6186799E-11</local_circulation>
+          <cfx_from_cdi>-0.7387886E-20</cfx_from_cdi>
+          <cfy> 0.4913463E-18</cfy>
+          <cfz> 0.6001385E-10</cfz>
+          <cfnormal>-0.6001385E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.1751796E-11</local_circulation>
+            <cfx_from_cdi> 0.3150616E-21</cfx_from_cdi>
+            <cfy>-0.2325994E-21</cfy>
+            <cfz>-0.1702677E-09</cfz>
+            <cfnormal> 0.1702677E-09</cfnormal>
+            <cmx>-0.1547549E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1547549E-34</cmx_from_cfz>
+            <cmy> 0.3468964E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.3468964E-34</cmy_from_cfz>
+            <cmz> 0.5984210E-28</cmz>
+            <cmz_from_cdi> 0.3873182E-28</cmz_from_cdi>
+            <cmz_from_cfy> 0.2111028E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.6599913E-11</local_circulation>
+            <cfx_from_cdi> 0.1006564E-18</cfx_from_cdi>
+            <cfy>-0.3196843E-18</cfy>
+            <cfz>-0.6406415E-09</cfz>
+            <cfnormal> 0.6406415E-09</cfnormal>
+            <cmx>-0.2294885E-33</cmx>
+            <cmx_from_cfy> 0.3289702E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.2327782E-33</cmx_from_cfz>
+            <cmy> 0.4933357E-33</cmy>
+            <cmy_from_cdi> 0.1475112E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.4785846E-33</cmy_from_cfz>
+            <cmz> 0.1804775E-25</cmz>
+            <cmz_from_cdi> 0.1237411E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.5673645E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.1968906E-10</local_circulation>
+            <cfx_from_cdi>-0.2330359E-19</cfx_from_cdi>
+            <cfy> 0.2263675E-17</cfy>
+            <cfz> 0.1909667E-08</cfz>
+            <cfnormal>-0.1909667E-08</cfnormal>
+            <cmx> 0.6077514E-33</cmx>
+            <cmx_from_cfy>-0.2078594E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.6098300E-33</cmx_from_cfz>
+            <cmy>-0.1150842E-32</cmy>
+            <cmy_from_cdi>-0.1024546E-34</cmy_from_cdi>
+            <cmy_from_cfz>-0.1140596E-32</cmy_from_cfz>
+            <cmz>-0.3951874E-26</cmz>
+            <cmz_from_cdi>-0.2864806E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.1087068E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.7569983E-11</local_circulation>
+            <cfx_from_cdi>-0.1184318E-18</cfx_from_cdi>
+            <cfy> 0.6571389E-19</cfy>
+            <cfz>-0.7331281E-09</cfz>
+            <cfnormal> 0.7331281E-09</cfnormal>
+            <cmx>-0.3251459E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3251459E-33</cmx_from_cfz>
+            <cmy> 0.5477844E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.5477844E-33</cmy_from_cfz>
+            <cmz>-0.1904179E-25</cmz>
+            <cmz_from_cdi>-0.1455931E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.4482481E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.2913321E-11</local_circulation>
+            <cfx_from_cdi> 0.2100470E-22</cfx_from_cdi>
+            <cfy>-0.1037051E-22</cfy>
+            <cfz>-0.2828246E-09</cfz>
+            <cfnormal> 0.2828246E-09</cfnormal>
+            <cmx>-0.5020451E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.5020451E-34</cmx_from_cfz>
+            <cmy> 0.7526079E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.7526079E-34</cmy_from_cfz>
+            <cmz> 0.3211636E-29</cmz>
+            <cmz_from_cdi> 0.2582194E-29</cmz_from_cdi>
+            <cmz_from_cfy> 0.6294424E-30</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.8628157E-11</local_circulation>
+            <cfx_from_cdi> 0.1489367E-18</cfx_from_cdi>
+            <cfy>-0.4418398E-18</cfy>
+            <cfz>-0.8373583E-09</cfz>
+            <cfnormal> 0.8373583E-09</cfnormal>
+            <cmx>-0.3973751E-33</cmx>
+            <cmx_from_cfy> 0.3569958E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.4009450E-33</cmx_from_cfz>
+            <cmy> 0.5516972E-33</cmy>
+            <cmy_from_cdi> 0.2505637E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.5266409E-33</cmy_from_cfz>
+            <cmz> 0.2173588E-25</cmz>
+            <cmz_from_cdi> 0.1830940E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.3426484E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.2507382E-10</local_circulation>
+            <cfx_from_cdi>-0.1839607E-19</cfx_from_cdi>
+            <cfy> 0.3295254E-17</cfy>
+            <cfz> 0.2432024E-08</cfz>
+            <cfnormal>-0.2432024E-08</cfnormal>
+            <cmx> 0.9112268E-33</cmx>
+            <cmx_from_cfy>-0.1135862E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.9123627E-33</cmx_from_cfz>
+            <cmy>-0.1038292E-32</cmy>
+            <cmy_from_cdi>-0.9284519E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.1029008E-32</cmy_from_cfz>
+            <cmz>-0.2573548E-26</cmz>
+            <cmz_from_cdi>-0.2261504E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.3120432E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.8773304E-11</local_circulation>
+            <cfx_from_cdi>-0.1606147E-18</cfx_from_cdi>
+            <cfy> 0.4984259E-19</cfy>
+            <cfz>-0.8499749E-09</cfz>
+            <cfnormal> 0.8499749E-09</cfnormal>
+            <cmx>-0.4571132E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4571132E-33</cmx_from_cfz>
+            <cmy> 0.4307066E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.4307066E-33</cmy_from_cfz>
+            <cmz>-0.2164649E-25</cmz>
+            <cmz_from_cdi>-0.1974503E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.1901465E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.1734834E-11</local_circulation>
+            <cfx_from_cdi>-0.2742467E-20</cfx_from_cdi>
+            <cfy> 0.6833978E-21</cfy>
+            <cfz>-0.1684692E-09</cfz>
+            <cfnormal> 0.1684692E-09</cfnormal>
+            <cmx>-0.2248850E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2248850E-34</cmx_from_cfz>
+            <cmy> 0.1701512E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1701512E-34</cmy_from_cfz>
+            <cmz>-0.3580780E-27</cmz>
+            <cmz_from_cdi>-0.3371427E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.2093525E-28</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.6047712E-12</local_circulation>
+            <cfx_from_cdi>-0.3194394E-21</cfx_from_cdi>
+            <cfy> 0.6007306E-22</cfy>
+            <cfz>-0.5888819E-10</cfz>
+            <cfnormal> 0.5888819E-10</cfnormal>
+            <cmx>-0.3524901E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3524901E-35</cmx_from_cfz>
+            <cmy> 0.2012707E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2012707E-35</cmy_from_cfz>
+            <cmz>-0.4065881E-28</cmz>
+            <cmz_from_cdi>-0.3927000E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.1388812E-29</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     7">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.5132119E-11</local_circulation>
+          <cfx_from_cdi>-0.4458842E-20</cfx_from_cdi>
+          <cfy> 0.4990482E-18</cfy>
+          <cfz> 0.6092344E-10</cfz>
+          <cfnormal>-0.6092344E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.1333173E-11</local_circulation>
+            <cfx_from_cdi> 0.7236785E-21</cfx_from_cdi>
+            <cfy>-0.5342675E-21</cfy>
+            <cfz>-0.1615517E-09</cfz>
+            <cfnormal> 0.1615517E-09</cfnormal>
+            <cmx>-0.1745896E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1745896E-34</cmx_from_cfz>
+            <cmy> 0.4805595E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.4805595E-34</cmy_from_cfz>
+            <cmz> 0.1624456E-27</cmz>
+            <cmz_from_cdi> 0.1051402E-27</cmz_from_cdi>
+            <cmz_from_cfy> 0.5730534E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.5373677E-11</local_circulation>
+            <cfx_from_cdi> 0.1046510E-18</cfx_from_cdi>
+            <cfy>-0.3255510E-18</cfy>
+            <cfz>-0.6486949E-09</cfz>
+            <cfnormal> 0.6486949E-09</cfnormal>
+            <cmx>-0.2768639E-33</cmx>
+            <cmx_from_cfy> 0.4042121E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.2809060E-33</cmx_from_cfz>
+            <cmy> 0.7314270E-33</cmy>
+            <cmy_from_cdi> 0.2225620E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.7091708E-33</cmy_from_cfz>
+            <cmz> 0.2217563E-25</cmz>
+            <cmz_from_cdi> 0.1520431E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.6971318E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.1611625E-10</local_circulation>
+            <cfx_from_cdi>-0.1162212E-19</cfx_from_cdi>
+            <cfy> 0.2302622E-17</cfy>
+            <cfz> 0.1948860E-08</cfz>
+            <cfnormal>-0.1948860E-08</cfnormal>
+            <cmx> 0.7407108E-33</cmx>
+            <cmx_from_cfy>-0.1225101E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.7419359E-33</cmx_from_cfz>
+            <cmy>-0.1711359E-32</cmy>
+            <cmy_from_cdi>-0.7415053E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.1703944E-32</cmy_from_cfz>
+            <cmz>-0.2329231E-26</cmz>
+            <cmz_from_cdi>-0.1688530E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.6407009E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.6113790E-11</local_circulation>
+            <cfx_from_cdi>-0.1202071E-18</cfx_from_cdi>
+            <cfy> 0.6669895E-19</cfy>
+            <cfz>-0.7454484E-09</cfz>
+            <cfnormal> 0.7454484E-09</cfnormal>
+            <cmx>-0.4034881E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4034881E-33</cmx_from_cfz>
+            <cmy> 0.8347094E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.8347094E-33</cmy_from_cfz>
+            <cmz>-0.2284128E-25</cmz>
+            <cmz_from_cdi>-0.1746439E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.5376891E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.2410512E-11</local_circulation>
+            <cfx_from_cdi> 0.3713759E-21</cfx_from_cdi>
+            <cfy>-0.1833609E-21</cfy>
+            <cfz>-0.2921420E-09</cfz>
+            <cfnormal> 0.2921420E-09</cfnormal>
+            <cmx>-0.6206550E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.6206550E-34</cmx_from_cfz>
+            <cmy> 0.1142507E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1142507E-33</cmy_from_cfz>
+            <cmz> 0.6710861E-28</cmz>
+            <cmz_from_cdi> 0.5395566E-28</cmz_from_cdi>
+            <cmz_from_cfy> 0.1315294E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.7099291E-11</local_circulation>
+            <cfx_from_cdi> 0.1561564E-18</cfx_from_cdi>
+            <cfy>-0.4541586E-18</cfy>
+            <cfz>-0.8577843E-09</cfz>
+            <cfnormal> 0.8577843E-09</cfnormal>
+            <cmx>-0.4874230E-33</cmx>
+            <cmx_from_cfy> 0.4423348E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.4918463E-33</cmx_from_cfz>
+            <cmy> 0.8313946E-33</cmy>
+            <cmy_from_cdi> 0.3812327E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.7932713E-33</cmy_from_cfz>
+            <cmz> 0.2693288E-25</cmz>
+            <cmz_from_cdi> 0.2268731E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.4245573E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.2047424E-10</local_circulation>
+            <cfx_from_cdi>-0.5855167E-20</cfx_from_cdi>
+            <cfy> 0.3349424E-17</cfy>
+            <cfz> 0.2475551E-08</cfz>
+            <cfnormal>-0.2475551E-08</cfnormal>
+            <cmx> 0.1121916E-32</cmx>
+            <cmx_from_cfy>-0.4272675E-36</cmx_from_cfy>
+            <cmx_from_cfz> 0.1122343E-32</cmx_from_cfz>
+            <cmy>-0.1558687E-32</cmy>
+            <cmy_from_cdi>-0.4288392E-35</cmy_from_cdi>
+            <cmy_from_cfz>-0.1554398E-32</cmy_from_cfz>
+            <cmz>-0.9680558E-27</cmz>
+            <cmz_from_cdi>-0.8506730E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.1173829E-27</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.7138850E-11</local_circulation>
+            <cfx_from_cdi>-0.1655319E-18</cfx_from_cdi>
+            <cfy> 0.5137026E-19</cfy>
+            <cfz>-0.8689044E-09</cfz>
+            <cfnormal> 0.8689044E-09</cfnormal>
+            <cmx>-0.5668312E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.5668312E-33</cmx_from_cfz>
+            <cmy> 0.6558426E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.6558426E-33</cmy_from_cfz>
+            <cmz>-0.2636558E-25</cmz>
+            <cmz_from_cdi>-0.2404944E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.2316142E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.1460685E-11</local_circulation>
+            <cfx_from_cdi>-0.2902297E-20</cfx_from_cdi>
+            <cfy> 0.7232259E-21</cfy>
+            <cfz>-0.1770657E-09</cfz>
+            <cfnormal> 0.1770657E-09</cfnormal>
+            <cmx>-0.2816623E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2816623E-34</cmx_from_cfz>
+            <cmy> 0.2616836E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2616836E-34</cmy_from_cfz>
+            <cmz>-0.4478463E-27</cmz>
+            <cmz_from_cdi>-0.4216627E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.2618360E-28</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.5283901E-12</local_circulation>
+            <cfx_from_cdi>-0.3722896E-21</cfx_from_cdi>
+            <cfy> 0.7001195E-22</cfy>
+            <cfz>-0.6358468E-10</cfz>
+            <cfnormal> 0.6358468E-10</cfnormal>
+            <cmx>-0.4400740E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.4400740E-35</cmx_from_cfz>
+            <cmy> 0.3085550E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.3085550E-35</cmy_from_cfz>
+            <cmz>-0.5600129E-28</cmz>
+            <cmz_from_cdi>-0.5408841E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.1912876E-29</cmz_from_cfy>
+          </panel>
+        </segment>
+        <segment number="     8">
+          <local_velocity> 1.0000000    </local_velocity>
+          <local_circulation>-0.2891948E-11</local_circulation>
+          <cfx_from_cdi>-0.1622388E-19</cfx_from_cdi>
+          <cfy> 0.4315808E-18</cfy>
+          <cfz> 0.4111738E-10</cfz>
+          <cfnormal>-0.4111738E-10</cfnormal>
+          <cmx>  0.000000    </cmx>
+          <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+          <cmx_from_cfz>  0.000000    </cmx_from_cfz>
+          <cmy>  0.000000    </cmy>
+          <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+          <cmy_from_cfz>  0.000000    </cmy_from_cfz>
+          <cmz>  0.000000    </cmz>
+          <cmz_from_cdi>  0.000000    </cmz_from_cdi>
+          <cmz_from_cfy>  0.000000    </cmz_from_cfy>
+          <panel number="     1">
+            <local_circulation> 0.9668604E-12</local_circulation>
+            <cfx_from_cdi> 0.4721203E-21</cfx_from_cdi>
+            <cfy>-0.3485505E-21</cfy>
+            <cfz>-0.1326136E-09</cfz>
+            <cfnormal> 0.1326136E-09</cfnormal>
+            <cmx>-0.1639403E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.1639403E-34</cmx_from_cfz>
+            <cmy> 0.5844633E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.5844633E-34</cmy_from_cfz>
+            <cmz> 0.1222821E-27</cmz>
+            <cmz_from_cdi> 0.7914512E-28</cmz_from_cdi>
+            <cmz_from_cfy> 0.4313703E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     2">
+            <local_circulation> 0.3942876E-11</local_circulation>
+            <cfx_from_cdi> 0.8272732E-19</cfx_from_cdi>
+            <cfy>-0.2683539E-18</cfy>
+            <cfz>-0.5408243E-09</cfz>
+            <cfnormal> 0.5408243E-09</cfnormal>
+            <cmx>-0.2634685E-33</cmx>
+            <cmx_from_cfy> 0.3686914E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.2671554E-33</cmx_from_cfz>
+            <cmy> 0.8998612E-33</cmy>
+            <cmy_from_cdi> 0.2629344E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.8735677E-33</cmy_from_cfz>
+            <cmz> 0.2022691E-25</cmz>
+            <cmz_from_cdi> 0.1386821E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.6358703E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     3">
+            <local_circulation>-0.1216711E-10</local_circulation>
+            <cfx_from_cdi>-0.5056551E-19</cfx_from_cdi>
+            <cfy> 0.1990402E-17</cfy>
+            <cfz> 0.1663401E-08</cfz>
+            <cfnormal>-0.1663401E-08</cfnormal>
+            <cmx> 0.7064348E-33</cmx>
+            <cmx_from_cfy>-0.6150356E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.7125852E-33</cmx_from_cfz>
+            <cmy>-0.2167922E-32</cmy>
+            <cmy_from_cdi>-0.4821453E-34</cmy_from_cdi>
+            <cmy_from_cfz>-0.2119708E-32</cmy_from_cfz>
+            <cmz>-0.1169321E-25</cmz>
+            <cmz_from_cdi>-0.8476679E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.3216528E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     4">
+            <local_circulation> 0.5090649E-11</local_circulation>
+            <cfx_from_cdi>-0.1177086E-18</cfx_from_cdi>
+            <cfy> 0.6531261E-19</cfy>
+            <cfz>-0.6881498E-09</cfz>
+            <cfnormal> 0.6881498E-09</cfnormal>
+            <cmx>-0.3709628E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3709628E-33</cmx_from_cfz>
+            <cmy> 0.9939802E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.9939802E-33</cmy_from_cfz>
+            <cmz>-0.2580754E-25</cmz>
+            <cmz_from_cdi>-0.1973238E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.6075155E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     5">
+            <local_circulation> 0.1903948E-11</local_circulation>
+            <cfx_from_cdi>-0.4294433E-21</cfx_from_cdi>
+            <cfy> 0.2120307E-21</cfy>
+            <cfz>-0.2590247E-09</cfz>
+            <cfnormal> 0.2590247E-09</cfnormal>
+            <cmx>-0.5246430E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.5246430E-34</cmx_from_cfz>
+            <cmy> 0.1250879E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.1250879E-33</cmy_from_cfz>
+            <cmz>-0.8954028E-28</cmz>
+            <cmz_from_cdi>-0.7199085E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.1754944E-28</cmz_from_cfy>
+          </panel>
+          <panel number="     6">
+            <local_circulation> 0.5333964E-11</local_circulation>
+            <cfx_from_cdi> 0.1279558E-18</cfx_from_cdi>
+            <cfy>-0.3842580E-18</cfy>
+            <cfz>-0.7297393E-09</cfz>
+            <cfnormal> 0.7297393E-09</cfnormal>
+            <cmx>-0.4497710E-33</cmx>
+            <cmx_from_cfy> 0.4182350E-35</cmx_from_cfy>
+            <cmx_from_cfz>-0.4539533E-33</cmx_from_cfz>
+            <cmy> 0.9950110E-33</cmy>
+            <cmy_from_cdi> 0.4668653E-34</cmy_from_cdi>
+            <cmy_from_cfz> 0.9483245E-33</cmy_from_cfz>
+            <cmz> 0.2546447E-25</cmz>
+            <cmz_from_cdi> 0.2145020E-25</cmz_from_cdi>
+            <cmz_from_cfy> 0.4014265E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     7">
+            <local_circulation>-0.1539347E-10</local_circulation>
+            <cfx_from_cdi>-0.4499769E-19</cfx_from_cdi>
+            <cfy> 0.2863493E-17</cfy>
+            <cfz> 0.2105398E-08</cfz>
+            <cfnormal>-0.2105398E-08</cfnormal>
+            <cmx> 0.1025662E-32</cmx>
+            <cmx_from_cfy>-0.3788697E-35</cmx_from_cfy>
+            <cmx_from_cfz> 0.1029451E-32</cmx_from_cfz>
+            <cmy>-0.1895853E-32</cmy>
+            <cmy_from_cdi>-0.4925379E-34</cmy_from_cdi>
+            <cmy_from_cfz>-0.1846599E-32</cmy_from_cfz>
+            <cmz>-0.8584133E-26</cmz>
+            <cmz_from_cdi>-0.7543305E-26</cmz_from_cdi>
+            <cmz_from_cfy>-0.1040828E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     8">
+            <local_circulation> 0.5852379E-11</local_circulation>
+            <cfx_from_cdi>-0.1566047E-18</cfx_from_cdi>
+            <cfy> 0.4859819E-19</cfy>
+            <cfz>-0.7925765E-09</cfz>
+            <cfnormal> 0.7925765E-09</cfnormal>
+            <cmx>-0.5128654E-33</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.5128654E-33</cmx_from_cfz>
+            <cmy> 0.7685590E-33</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.7685590E-33</cmy_from_cfz>
+            <cmz>-0.2878101E-25</cmz>
+            <cmz_from_cdi>-0.2625283E-25</cmz_from_cdi>
+            <cmz_from_cfy>-0.2528173E-26</cmz_from_cfy>
+          </panel>
+          <panel number="     9">
+            <local_circulation> 0.1177324E-11</local_circulation>
+            <cfx_from_cdi>-0.2784505E-20</cfx_from_cdi>
+            <cfy> 0.6938732E-21</cfy>
+            <cfz>-0.1598674E-09</cfz>
+            <cfnormal> 0.1598674E-09</cfnormal>
+            <cmx>-0.2222663E-34</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.2222663E-34</cmx_from_cfz>
+            <cmy> 0.2674633E-34</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2674633E-34</cmy_from_cfz>
+            <cmz>-0.4957734E-27</cmz>
+            <cmz_from_cdi>-0.4667877E-27</cmz_from_cdi>
+            <cmz_from_cfy>-0.2898569E-28</cmz_from_cfy>
+          </panel>
+          <panel number="    10">
+            <local_circulation> 0.4006268E-12</local_circulation>
+            <cfx_from_cdi>-0.3035817E-21</cfx_from_cdi>
+            <cfy> 0.5709411E-22</cfy>
+            <cfz>-0.5482898E-10</cfz>
+            <cfnormal> 0.5482898E-10</cfnormal>
+            <cmx>-0.3045687E-35</cmx>
+            <cmx_from_cfy>  0.000000    </cmx_from_cfy>
+            <cmx_from_cfz>-0.3045687E-35</cmx_from_cfz>
+            <cmy> 0.2766046E-35</cmy>
+            <cmy_from_cdi>  0.000000    </cmy_from_cdi>
+            <cmy_from_cfz> 0.2766046E-35</cmy_from_cfz>
+            <cmz>-0.5269172E-28</cmz>
+            <cmz_from_cdi>-0.5089170E-28</cmz_from_cdi>
+            <cmz_from_cfy>-0.1800025E-29</cmz_from_cfy>
+          </panel>
+        </segment>
+      </wing>
+    </result>
+  </result_data>
+</lifting_line-exchange-file>

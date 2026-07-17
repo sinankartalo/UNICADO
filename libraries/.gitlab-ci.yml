@@ -1,0 +1,37 @@
+# UNICADO - UNIversity Conceptual Aircraft Design and Optimization
+#
+# Copyright (C) 2025 UNICADO consortium
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# Description:
+# This file is part of UNICADO.
+
+# === Configure pipeline ===
+stages:
+  - deploy
+
+# === Trigger the website deployment when new commit to default branch ===
+trigger_documentation:
+  stage: deploy
+  image: alpine:latest
+  tags:
+    - documentation
+  before_script:
+    - apk update && apk add curl
+  script:
+    - "curl --fail --request POST --form token=$TRIGGER_DEPLOY_WEBSITE_UPDATE --form ref=$CI_DEFAULT_BRANCH https://git.rwth-aachen.de/api/v4/projects/87829/trigger/pipeline"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: on_success

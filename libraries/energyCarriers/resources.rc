@@ -1,0 +1,26 @@
+#ifdef _WIN32
+    #include <windows.h>
+#endif // _WIN32
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION    0,5,0
+    PRODUCTVERSION 0,5,0
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904b0"
+        {
+            VALUE "CompanyName",        "UNICADO consortium\0"
+            VALUE "FileDescription",    "energyCarriers\0"
+            VALUE "FileVersion",        "0.5.0\0"
+            VALUE "LegalCopyright",     "(C) 2025 UNICADO consortium - All rights reserved.\0"
+            VALUE "OriginalFilename",   "energyCarriers.dll\0"
+            VALUE "ProductName",        "energyCarriers\0"
+            VALUE "ProductVersion",     "0.5.0\0"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
+

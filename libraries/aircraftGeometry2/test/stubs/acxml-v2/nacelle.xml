@@ -1,0 +1,48 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<AcftExchangeFile>
+    <Geometry Desc="Contains the geometry description of the aircraft">
+        <Nacelle Desc="Nacelle geometry" ID="SimpleHull">
+            <NacelleRefPoint Desc="Position of the reference point to global point of reference">
+                <r_Nacelle Desc="Position in global X direction" ToolLevel="1" Unit="m">0.0</r_Nacelle>
+                <y_Nacelle Desc="Position in global Y direction" ToolLevel="1" Unit="m">0.0</y_Nacelle>
+                <h_Nacelle Desc="Position in global Z direction" ToolLevel="1" Unit="m">0.0</h_Nacelle>
+            </NacelleRefPoint>
+            <NacelleParameters Desc="parametric description of the nacelle">
+                <i_Nacelle Desc="Angle of incidence in reference to the aircrafts coordinate system" ToolLevel="1" Unit="degree" lowerBoundary="-90" upperBoundary="90">0</i_Nacelle>
+                <Points Desc="No of points describing the section" ToolLevel="1">20</Points>
+                <Segments Desc="No of segments" ToolLevel="1" lowerBoundary="0" upperBoundary="inf">2</Segments>
+                <InletSegment>
+                    <SegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</SegmentPointData>
+                    <w_Inlet Desc="Breite des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">1.976823221</w_Inlet>
+                    <h_Inlet Desc="Hoehe des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">2.289180745</h_Inlet>
+                    <l_Inlet Desc="Laenge des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="-0.01" upperBoundary="200">0.6776753197</l_Inlet>
+                </InletSegment>
+                <NacelleSegment ID="1">
+                    <InnerSegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</InnerSegmentPointData>
+                    <OuterSegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</OuterSegmentPointData>
+                    <w_i_Segment Desc="Innere Breite des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">1.976823221</w_i_Segment>
+                    <w_o_Segment Desc="aeussere Breite des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="1.01337" upperBoundary="100">2.471029026</w_o_Segment>
+                    <h_i_Segment Desc="Innere Hoehe des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">2.289180745</h_i_Segment>
+                    <h_o_Segment Desc="aeussere Hoehe des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="1.17349" upperBoundary="100">2.861475931</h_o_Segment>
+                    <l_Segment Desc="Laenge des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="-0.01" upperBoundary="200">1.355350639</l_Segment>
+                </NacelleSegment>
+                <NacelleSegment ID="2">
+                    <InnerSegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</InnerSegmentPointData>
+                    <OuterSegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</OuterSegmentPointData>
+                    <w_i_Segment Desc="Innere Breite des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">1.976823221</w_i_Segment>
+                    <w_o_Segment Desc="aeussere Breite des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="1.01337" upperBoundary="100">2.471029026</w_o_Segment>
+                    <h_i_Segment Desc="Innere Hoehe des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">2.289180745</h_i_Segment>
+                    <h_o_Segment Desc="aeussere Hoehe des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="1.17349" upperBoundary="100">2.861475931</h_o_Segment>
+                    <l_Segment Desc="Laenge des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="-0.01" upperBoundary="200">0.6776753197</l_Segment>
+                </NacelleSegment>
+                <ExitSegment>
+                    <SegmentPointData ToolLevel="1">../dat-files/circle-tab.dat</SegmentPointData>
+                    <h_Exit Desc="Hoehe des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">2.289180745</h_Exit>
+                    <w_Exit Desc="Breite des Nacelle-Segments" ToolLevel="1" Unit="m" lowerBoundary="0" upperBoundary="100">1.976823221</w_Exit>
+                </ExitSegment>
+            </NacelleParameters>
+            <EngineTypeID Desc="Angabe der EngineType ID zwecks Zuordnung des korrekten Motors in dieser Nacelle" ToolLevel="1">0</EngineTypeID>
+        </Nacelle>
+    </Geometry>
+</AcftExchangeFile>

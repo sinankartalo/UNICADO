@@ -1,0 +1,58 @@
+<cases>
+	<case ID="0">
+		<n_chordwise_panel>
+			<value>10</value>
+		</n_chordwise_panel>
+		<n_spanwise_section>
+			<value>2</value>
+		</n_spanwise_section>
+		<independent_parameter type="alpha">
+			<n_inputs>
+				<value>5</value>
+			</n_inputs>
+			<inputs>
+				<value>-5.0,-2.5,0.0,2.5,5.0</value>
+			</inputs>
+		</independent_parameter>
+		<M_correction>
+			<value>0.0</value>
+		</M_correction>
+		<freestream_M>
+			<value>0.5</value>
+		</freestream_M>
+		<Re>
+			<value>500000</value>
+		</Re>
+		<n_spanwise_panel>
+			<value>3</value>
+		</n_spanwise_panel>
+	</case>
+	<case ID="1">
+		<n_chordwise_panel>
+			<value>10</value>
+		</n_chordwise_panel>
+		<n_spanwise_section>
+			<value>2</value>
+		</n_spanwise_section>
+		<independent_parameter type="alpha">
+			<n_inputs>
+				<value>5</value>
+			</n_inputs>
+			<inputs>
+				<value>-5.0,-2.5,0.0,2.5,5.0</value>
+			</inputs>
+		</independent_parameter>
+		<M_correction>
+			<value>0.99</value>
+		</M_correction>
+		<freestream_M>
+			<value>0.99</value>
+		</freestream_M>
+		<Re>
+			<value>500000</value>
+		</Re>
+		<n_spanwise_panel>
+			<value>1</value>
+		</n_spanwise_panel>
+	</case>
+</cases>

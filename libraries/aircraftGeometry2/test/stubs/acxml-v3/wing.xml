@@ -1,0 +1,291 @@
+<aircraft_exchange_file version="3.0">
+    <component_design>
+        <wing>
+            <specific>
+                <geometry>
+                    <aerodynamic_surface ID="0" description="I lift">
+                        <name description="name of surface">
+                            <value>Example Wing</value>
+                        </name>
+                        <position description="reference position in global coordinates">
+                            <x description="x coordinate of point">
+                                <value>0</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </x>
+                            <y description="y coordinate of point">
+                                <value>0</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </y>
+                            <z description="z coordinate of point">
+                                <value>0</value>
+                                <unit>m</unit>
+                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                <upper_boundary>1.797693135e+308</upper_boundary>
+                            </z>
+                        </position>
+                        <parameters description="aerodynamic surface parameters">
+                            <direction description="unit vector according to global coordinate system for direction applied at position">
+                                <x description="x direction of unit vector">
+                                    <value>0</value>
+                                    <unit>1</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </x>
+                                <y description="y direction of unit vector">
+                                    <value>-1</value>
+                                    <unit>1</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </y>
+                                <z description="z direction of unit vector">
+                                    <value>0</value>
+                                    <unit>1</unit>
+                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                </z>
+                            </direction>
+                            <symmetric description="symmetric to x-z plane (global) aerodynamic surface">
+                                <value>true</value>
+                            </symmetric>
+                            <sections description="sections">
+                                <section ID="0">
+                                    <chord_origin description="origin of chord (local)">
+                                        <x description="x coordinate of point">
+                                            <value>0</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </x>
+                                        <y description="y coordinate of point">
+                                            <value>0</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </y>
+                                        <z description="z coordinate of point">
+                                            <value>0</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </z>
+                                    </chord_origin>
+                                    <chord_length description="chord length of the section">
+                                        <value>2</value>
+                                        <unit>m</unit>
+                                        <lower_boundary>-1.797693135e+308</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </chord_length>
+                                    <geometric_twist description="geometric twist of the section around leading edge">
+                                        <value>0</value>
+                                        <unit>rad</unit>
+                                        <lower_boundary>-1.797693135e+308</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </geometric_twist>
+                                    <scale_thickness description="scale the thickness defined by the profile with this factor">
+                                        <value>1.0</value>
+                                        <unit>1</unit>
+                                        <lower_boundary>0.0</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </scale_thickness>
+                                    <profile description="profile (data normalized to chord length)">
+                                        <value>n0012-tab</value>
+                                    </profile>
+                                </section>
+                                <section ID="1">
+                                    <chord_origin description="origin of chord (local)">
+                                        <x description="x coordinate of point">
+                                            <value>0</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </x>
+                                        <y description="y coordinate of point">
+                                            <value>0</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </y>
+                                        <z description="z coordinate of point">
+                                            <value>-1</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </z>
+                                    </chord_origin>
+                                    <chord_length description="chord length of the section">
+                                        <value>2</value>
+                                        <unit>m</unit>
+                                        <lower_boundary>-1.797693135e+308</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </chord_length>
+                                    <geometric_twist description="geometric twist of the section around leading edge">
+                                        <value>0</value>
+                                        <unit>rad</unit>
+                                        <lower_boundary>-1.797693135e+308</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </geometric_twist>
+                                    <scale_thickness description="">
+                                        <value>1.0</value>
+                                        <unit>1</unit>
+                                        <lower_boundary>0.0</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </scale_thickness>
+                                    <profile description="profile (data normalized to chord length)">
+                                        <value>n0012-tab</value>
+                                    </profile>
+                                </section>
+                                <section ID="2">
+                                    <chord_origin description="origin of chord (local)">
+                                        <x description="x coordinate of point">
+                                            <value>1</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </x>
+                                        <y description="y coordinate of point">
+                                            <value>0</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </y>
+                                        <z description="z coordinate of point">
+                                            <value>-2</value>
+                                            <unit>m</unit>
+                                            <lower_boundary>-1.797693135e+308</lower_boundary>
+                                            <upper_boundary>1.797693135e+308</upper_boundary>
+                                        </z>
+                                    </chord_origin>
+                                    <chord_length description="chord length of the section">
+                                        <value>1</value>
+                                        <unit>m</unit>
+                                        <lower_boundary>-1.797693135e+308</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </chord_length>
+                                    <scale_thickness description="scale the thickness defined by the profile with this factor">
+                                        <value>1.0</value>
+                                        <unit>1</unit>
+                                        <lower_boundary>0.0</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </scale_thickness>
+                                    <geometric_twist description="geometric twist of the section around leading edge">
+                                        <value>0</value>
+                                        <unit>rad</unit>
+                                        <lower_boundary>-1.797693135e+308</lower_boundary>
+                                        <upper_boundary>1.797693135e+308</upper_boundary>
+                                    </geometric_twist>
+                                    <profile description="profile (data normalized to chord length)">
+                                        <value>n0012-tab</value>
+                                    </profile>
+                                </section>
+                            </sections>
+                            <spars>
+                                <spar ID="0" description="I bend">
+                                    <position description="chord relative position of spar">
+                                        <inner_position description="relative inner position">
+                                            <chord description="chord position">
+                                                <from description="relative chord position">
+                                                    <value>0.3</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </from>
+                                                <to description="relative chord position">
+                                                    <value>0.5</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </to>
+                                            </chord>
+                                            <spanwise description="relative spanwise position">
+                                                <value>0.0</value>
+                                                <unit>1</unit>
+                                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                <upper_boundary>1.797693135e+308</upper_boundary>
+                                            </spanwise>
+                                        </inner_position>
+                                        <outer_position description="relative outer position">
+                                            <chord description="chord position">
+                                                <from description="relative chord position">
+                                                    <value>0.3</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </from>
+                                                <to description="relative chord position">
+                                                    <value>0.4</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </to>
+                                            </chord>
+                                            <spanwise description="relative spanwise position">
+                                                <value>0.9</value>
+                                                <unit>1</unit>
+                                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                <upper_boundary>1.797693135e+308</upper_boundary>
+                                            </spanwise>
+                                        </outer_position>
+                                    </position>
+                                </spar>
+                            </spars>
+                            <control_devices>
+                                <control_device ID="0" description="I control">
+                                    <position description="chord relative position of spar">
+                                        <inner_position description="relative inner position">
+                                            <chord description="chord position">
+                                                <from description="relative chord position">
+                                                    <value>0.7</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </from>
+                                                <to description="relative chord position">
+                                                    <value>0.9</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </to>
+                                            </chord>
+                                            <spanwise description="relative spanwise position">
+                                                <value>-0</value>
+                                                <unit>1</unit>
+                                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                <upper_boundary>1.797693135e+308</upper_boundary>
+                                            </spanwise>
+                                        </inner_position>
+                                        <outer_position description="relative outer position">
+                                            <chord description="chord position">
+                                                <from description="relative chord position">
+                                                    <value>0.8</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </from>
+                                                <to description="relative chord position">
+                                                    <value>0.9</value>
+                                                    <unit>1</unit>
+                                                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                    <upper_boundary>1.797693135e+308</upper_boundary>
+                                                </to>
+                                            </chord>
+                                            <spanwise description="relative spanwise position">
+                                                <value>0.4</value>
+                                                <unit>1</unit>
+                                                <lower_boundary>-1.797693135e+308</lower_boundary>
+                                                <upper_boundary>1.797693135e+308</upper_boundary>
+                                            </spanwise>
+                                        </outer_position>
+                                    </position>
+                                </control_device>
+                            </control_devices>
+                        </parameters>
+                    </aerodynamic_surface>
+                </geometry>
+            </specific>
+        </wing>
+    </component_design>
+</aircraft_exchange_file>

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+pycoordinatesystemconversion = ["*.so", "*.dll", "*.pyd"]
+
+[project]
+name = "pycoordinatesystemconversion"
+version = "1.0.1"
+description = "Python binding of the pycoordinatesystemconversion C++ library of UNICADO"
+requires-python = ">=3.10"
+authors = [
+    {name = "Meric Taneri", email = "meric.taneri@tum.de"},
+]
+classifiers = [
+"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+]

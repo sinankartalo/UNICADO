@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AcftExchangeFile>
+    <Geometry Desc="Contains the geometry description of the aircraft">
+        <Pylon Desc="Pylon Geometry" ID="SimplePylon">
+            <SurfaceRefPoint Desc="Position of the reference point to global point of reference">
+                <r_Surface Desc="Position in global X direction" ToolLevel="1" Unit="m">0.0</r_Surface>
+                <y_Surface Desc="Position in global Y direction" ToolLevel="1" Unit="m">0.0</y_Surface>
+                <h_Surface Desc="Position in global Z direction" ToolLevel="1" Unit="m">0.0</h_Surface>
+            </SurfaceRefPoint>
+            <SurfaceParameters Desc="Parametric description of pylon geometry">
+                <SectionPoints Desc="number of points of profile. Will be used by spline interpolation if DoInterpolate attribute is set true" DoInterpolate="0" ToolLevel="1" Unit="-">0</SectionPoints>
+                <SurfaceSegments Desc="Number of segments in this pylon" ToolLevel="1">2</SurfaceSegments>
+                <SurfaceSegment Desc="Segmentbeschreibung" ID="1" Type="Surface">
+                    <InnerProfile_Segment Desc="Inner airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</InnerProfile_Segment>
+                    <OuterProfile_Segment Desc="Outer airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</OuterProfile_Segment>
+                    <l_i_Segment Desc="Chord length of segments inner profile" ToolLevel="1" Unit="m">0.0</l_i_Segment>
+                    <l_o_Segment Desc="Chord length of segments outer profile" ToolLevel="1" Unit="m">0.0</l_o_Segment>
+                    <s_Segment Desc="Span of surface segment" ToolLevel="1" Unit="m">0.0</s_Segment>
+                    <epsilon_Segment Desc="Angle of twist of surface segment" ToolLevel="1" Unit="deg">0</epsilon_Segment>
+                    <nu_Segment Desc="Angle of dihedral of surface segment" ToolLevel="1" Unit="deg">0</nu_Segment>
+                    <phi_Segment Desc="Angle of sweep of surface segment" ToolLevel="1" Unit="deg">0</phi_Segment>
+                </SurfaceSegment>
+                <SurfaceSegment Desc="Segmentbeschreibung" ID="2" Type="Surface">
+                    <InnerProfile_Segment Desc="Inner airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</InnerProfile_Segment>
+                    <OuterProfile_Segment Desc="Outer airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</OuterProfile_Segment>
+                    <l_i_Segment Desc="Chord length of segments inner profile" ToolLevel="1" Unit="m">0.0</l_i_Segment>
+                    <l_o_Segment Desc="Chord length of segments outer profile" ToolLevel="1" Unit="m">0.0</l_o_Segment>
+                    <s_Segment Desc="Span of surface segment" ToolLevel="1" Unit="m">0.0</s_Segment>
+                    <epsilon_Segment Desc="Angle of twist of surface segment" ToolLevel="1" Unit="deg">0</epsilon_Segment>
+                    <nu_Segment Desc="Angle of dihedral of surface segment" ToolLevel="1" Unit="deg">0</nu_Segment>
+                    <phi_Segment Desc="Angle of sweep of surface segment" ToolLevel="1" Unit="deg">0.0</phi_Segment>
+                </SurfaceSegment>
+            </SurfaceParameters>
+        </Pylon>
+    </Geometry>
+</AcftExchangeFile>
+

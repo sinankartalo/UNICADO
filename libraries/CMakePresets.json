@@ -1,0 +1,124 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "unix-common",
+            "description": "Common settings for Unix compilers",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-fexceptions -fno-builtin"
+            }
+
+        },
+        {
+            "name": "unix-debug",
+            "description": "Base settings for building debug configuration with Unix compilers.",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS_DEBUG": "-Wextra -Wsign-conversion -Wfloat-equal -g"
+            }
+        },
+        {
+            "name": "unix-release",
+            "description": "Base settings for building release configuration with Unix compilers.",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_FLAGS_RELEASE": "-O2 -s"
+            }
+        },
+        {
+            "name": "windows-common",
+            "description": "Common settings for Windows compilers",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "generator": "Visual Studio 17 2022",
+            "toolset": "ClangCL",
+            "toolchainFile": "C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "Python_EXECUTABLE": {"type": "FILEPATH", "value": "$ENV{HOMEDRIVE}$ENV{HOMEPATH}/AppData/Local/Programs/Python/Python311/python.exe"},
+                "CMAKE_CXX_FLAGS": "/permissive- /EHsc"
+            }
+        },
+        {
+            "name": "windows-debug",
+            "description": "Base settings for building debug configuration with Windows compilers.",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS_DEBUG": "/W4"
+            }
+        },
+        {
+            "name": "windows-release",
+            "description": "Base settings for building release configuration with Windows compilers.",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_FLAGS_RELEASE": "/O2"
+            }
+        },
+        {
+            "name": "x64-linux-debug",
+            "description": "Default debug configuration for building on Linux",
+            "generator": "Unix Makefiles",
+            "inherits": ["unix-common", "unix-debug"]
+        },
+        {
+            "name": "x64-linux-release",
+            "description": "Default release configuration for building on Linux",
+            "generator": "Unix Makefiles",
+            "inherits": ["unix-common", "unix-release"]
+        },
+        {
+            "name": "x64-mingw-debug",
+            "description": "Default debug configuration for building with MSYS2/MinGW on Windows",
+            "generator": "MinGW Makefiles",
+            "inherits": ["unix-common", "unix-debug"]
+        },
+        {
+            "name": "x64-mingw-release",
+            "description": "Default release configuration for building with MSYS2/MinGW on Windows",
+            "generator": "MinGW Makefiles",
+            "inherits": ["unix-common", "unix-release"]
+        },
+        {
+            "name": "x64-windows-debug",
+            "description": "Default debug configuration for building on Windows",
+            "architecture": "x64",
+            "inherits": ["windows-common", "windows-debug"]
+        },
+        {
+            "name": "x64-windows-release",
+            "description": "Default release configuration for building on Windows",
+            "architecture": "x64",
+            "inherits": ["windows-common", "windows-release"]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "x64-linux-debug",
+            "description": "Sets the build type to Debug for the Linux build system.",
+            "configurePreset": "x64-linux-debug"
+        },
+        {
+            "name": "x64-linux-release",
+            "description": "Sets the build type to Release for the Linux build system.",
+            "configurePreset": "x64-linux-release"
+        },
+        {
+            "name": "x64-windows-debug",
+            "description": "Sets the build type to Debug for the Windows build system.",
+            "configurePreset": "x64-windows-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "x64-windows-release",
+            "description": "Sets the build type to Release for the Windows build system.",
+            "configurePreset": "x64-windows-release",
+            "configuration": "Release"
+        }
+    ]
+}

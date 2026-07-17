@@ -1,0 +1,10 @@
+# Exclude all binaries from the diff
+*.exe binary
+*.dll binary
+*.so binary
+*.a binary
+
+# Exclude image files from the diff
+*.png binary
+*.jpg binary
+*.jpeg binary

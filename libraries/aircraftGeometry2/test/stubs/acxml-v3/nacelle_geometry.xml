@@ -1,0 +1,276 @@
+<nacelle description="Nacelle of the propulsion assembly">
+    <position description="Origin of the nacelle RELATIVE to the engine position.">
+        <x description="x coordinate of point">
+            <value>0</value>
+            <unit>m</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </x>
+        <y description="y coordinate of point">
+            <value>0</value>
+            <unit>m</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </y>
+        <z description="z coordinate of point">
+            <value>0</value>
+            <unit>m</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </z>
+    </position>
+    <normal description="Normal direction of the nacelle in the global aircraft coordinate system">
+        <x description="x direction of unit vector">
+            <value>1</value>
+            <unit>1</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </x>
+        <y description="y direction of unit vector">
+            <value>0</value>
+            <unit>1</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </y>
+        <z description="z direction of unit vector">
+            <value>0</value>
+            <unit>1</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </z>
+    </normal>
+    <sections description="Geometrical description nacelle sections">
+        <section ID="0">
+            <origin description="Origin of the section (local)">
+                <x description="x coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </x>
+                <y description="y coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </y>
+                <z description="z coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </z>
+            </origin>
+            <width description="width of the section">
+                <value>1.6</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </width>
+            <height description="Height of the section">
+                <value>1.6</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </height>
+            <profile description="The profile name of the section">
+                <value>nacelle</value>
+            </profile>
+        </section>
+        <section ID="1">
+            <origin description="Origin of the section (local)">
+                <x description="x coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </x>
+                <y description="y coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </y>
+                <z description="z coordinate of point">
+                    <value>1.2</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </z>
+            </origin>
+            <width description="width of the section">
+                <value>2.1</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </width>
+            <height description="Height of the section">
+                <value>2.3</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </height>
+            <profile description="The profile name of the section">
+                <value>nacelle</value>
+            </profile>
+        </section>
+        <section ID="2">
+            <origin description="Origin of the section (local)">
+                <x description="x coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </x>
+                <y description="y coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </y>
+                <z description="z coordinate of point">
+                    <value>2.5</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </z>
+            </origin>
+            <width description="width of the section">
+                <value>2.1</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </width>
+            <height description="Height of the section">
+                <value>2.3</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </height>
+            <profile description="The profile name of the section">
+                <value>nacelle</value>
+            </profile>
+        </section>
+        <section ID="3">
+            <origin description="Origin of the section (local)">
+                <x description="x coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </x>
+                <y description="y coordinate of point">
+                    <value>0</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </y>
+                <z description="z coordinate of point">
+                    <value>2.5</value>
+                    <unit>m</unit>
+                    <lower_boundary>-1.797693135e+308</lower_boundary>
+                    <upper_boundary>1.797693135e+308</upper_boundary>
+                </z>
+            </origin>
+            <width description="width of the section">
+                <value>3.3</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </width>
+            <height description="Height of the section">
+                <value>2.1</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </height>
+            <profile description="The profile name of the section">
+                <value>nacelle</value>
+            </profile>
+        </section>
+    </sections>
+    <mass_properties description="Mass properties of the nacelle">
+        <mass description="mass of the of the component">
+            <value>2765.122497</value>
+            <unit>kg</unit>
+            <lower_boundary>-1.797693135e+308</lower_boundary>
+            <upper_boundary>1.797693135e+308</upper_boundary>
+        </mass>
+        <inertia description="Inertia of the component in respect to the CG">
+            <j_xx description="inertia of the component">
+                <value>854.2983885</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_xx>
+            <j_yy description="inertia of the component">
+                <value>779.3337537</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_yy>
+            <j_zz description="inertia of the component">
+                <value>779.3014389</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_zz>
+            <j_xy description="inertia of the component">
+                <value>0.01365983884</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_xy>
+            <j_xz description="inertia of the component">
+                <value>-0.01534077583</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_xz>
+            <j_yx description="inertia of the component">
+                <value>0.01365983884</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_yx>
+            <j_yz description="inertia of the component">
+                <value>-0.004950141479</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_yz>
+            <j_zx description="inertia of the component">
+                <value>-0.01534077583</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_zx>
+            <j_zy description="inertia of the component">
+                <value>-0.004950141479</value>
+                <unit>kgm^2</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </j_zy>
+        </inertia>
+        <center_of_gravity description="Center of gravity of the component with respect to the global coordinate system">
+            <x description="x coordinate of the center of gravity">
+                <value>21.14752845</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </x>
+            <y description="y coordinate of the center of gravity">
+                <value>-8.999830887</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </y>
+            <z description="z coordinate of the center of gravity">
+                <value>2.949671974</value>
+                <unit>m</unit>
+                <lower_boundary>-1.797693135e+308</lower_boundary>
+                <upper_boundary>1.797693135e+308</upper_boundary>
+            </z>
+        </center_of_gravity>
+    </mass_properties>
+</nacelle>

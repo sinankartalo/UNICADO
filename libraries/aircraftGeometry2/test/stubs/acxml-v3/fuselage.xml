@@ -1,0 +1,169 @@
+<aircraft_exchange_file version="3.0">
+    <component_design>
+        <fuselage description="Geometric description of the aircraft fuselages" tool_level="0">
+			<position description="Position of the fuselages with regard to the global reference point.">
+				<x description="Distance in x direction with regard to the global reference point. (fuselage nose point)">
+					<value>0</value>
+					<unit>m</unit>
+					<lower_boundary>-Inf</lower_boundary>
+					<upper_boundary>Inf</upper_boundary>
+				</x>
+				<y description="Distance in y direction with regard to the global reference point. (fuselage nose point)">
+					<value>0</value>
+					<unit>m</unit>
+					<lower_boundary>-Inf</lower_boundary>
+					<upper_boundary>Inf</upper_boundary>
+				</y>
+				<z description="Distance in z direction with regard to the global reference point. (distance to fuselage center line)">
+					<value>0</value>
+					<unit>m</unit>
+					<lower_boundary>-Inf</lower_boundary>
+					<upper_boundary>Inf</upper_boundary>
+				</z>
+			</position>
+			<specific>
+				<geometry>
+					<fuselage ID="0" description="Geometrical description of one entire fuselage.">
+						<name description="Name of the fuselage.">
+							<value>center_fuselage</value>
+						</name>
+						<position description="Position of one entire fuselage with regard to the global reference point.">
+							<x description="Distance in x direction with regard to the global reference point. (fuselage nose point)">
+								<value>0</value>
+								<unit>m</unit>
+								<lower_boundary>-Inf</lower_boundary>
+								<upper_boundary>Inf</upper_boundary>
+							</x>
+							<y description="Distance in y direction with regard to the global reference point. (fuselage nose point)">
+								<value>0</value>
+								<unit>m</unit>
+								<lower_boundary>-Inf</lower_boundary>
+							<upper_boundary>Inf</upper_boundary>
+							</y>
+							<z description="Distance in z direction with regard to the global reference point. (distance to fuselage center line)">
+								<value>0</value>
+								<unit>m</unit>
+								<lower_boundary>-Inf</lower_boundary>
+								<upper_boundary>Inf</upper_boundary>
+							</z>
+						</position>
+						<direction description="unit vector according to global coordinate system for direction applied at position">
+							<x description="Distance in x direction with regard to the global reference point. (fuselage nose point)">
+								<value>1</value>
+								<unit>1</unit>
+								<lower_boundary>0</lower_boundary>
+								<upper_boundary>1</upper_boundary>
+							</x>
+							<y description="Distance in y direction with regard to the global reference point. (fuselage nose point)">
+								<value>0</value>
+								<unit>1</unit>
+								<lower_boundary>0</lower_boundary>
+							<upper_boundary>1</upper_boundary>
+							</y>
+							<z description="Distance in z direction with regard to the global reference point. (distance to fuselage center line)">
+								<value>0</value>
+								<unit>1</unit>
+								<lower_boundary>0</lower_boundary>
+								<upper_boundary>1</upper_boundary>
+							</z>
+						</direction>
+						<sections description="Geometrical description of the fuselage sections of one entire fuselage">
+							<section ID="0" description="Geometrical description of one fuselage section.">
+								<name description="Name of the fuselage section.">
+									<value>section_1</value>
+								</name>		
+								<section_shape dedication="Contains a Strig with path to *.dat file or the key word 'ellipse'">
+									<value>../dat-files/circle-tab</value>
+								</section_shape>
+								<origin description="Origin of fuselage section (local).">
+									<x description="Distance in x direction in the local coordinate space.">
+										<value>0</value>
+										<unit>m</unit>
+										<lower_boundary>-Inf</lower_boundary>
+										<upper_boundary>Inf</upper_boundary>
+									</x>
+									<y description="Distance in y direction in the local coordinate space.">
+										<value>0</value>
+										<unit>m</unit>
+										<lower_boundary>-Inf</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+									</y>
+									<z description="Distance in z direction in the local coordinate space.">
+										<value>0</value>
+										<unit>m</unit>
+										<lower_boundary>-Inf</lower_boundary>
+										<upper_boundary>Inf</upper_boundary>
+									</z>
+								</origin>
+								<upper_height description="Height of the upper half of the fuselage section.">
+									<value>1</value>
+									<unit>m</unit>
+									<lower_boundary>0</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+								</upper_height>
+								<lower_height description="Height of the lower half of the fuselage section.">
+									<value>1</value>
+									<unit>m</unit>
+									<lower_boundary>0</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+								</lower_height>								
+								<width description="Width of the fuselage section.">
+									<value>0.5</value>
+									<unit>m</unit>
+									<lower_boundary>0</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+								</width>
+							</section>
+							<section ID="1" description="Geometrical description of one fuselage section.">
+								<name description="Name of the fuselage section.">
+									<value>section_2</value>
+								</name>		
+								<section_shape dedication="Contains a String with path to *.dat file or the key word 'ellipse'">
+									<value>../dat-files/circle-tab</value>
+								</section_shape>
+								<origin description="Origin of fuselage section (local).">
+									<x description="Distance in x direction in the local coordinate space.">
+										<value>0</value>
+										<unit>m</unit>
+										<lower_boundary>-Inf</lower_boundary>
+										<upper_boundary>Inf</upper_boundary>
+									</x>
+									<y description="Distance in y direction in the local coordinate space.">
+										<value>0</value>
+										<unit>m</unit>
+										<lower_boundary>-Inf</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+									</y>
+									<z description="Distance in z direction in the local coordinate space.">
+										<value>2</value>
+										<unit>m</unit>
+										<lower_boundary>-Inf</lower_boundary>
+										<upper_boundary>Inf</upper_boundary>
+									</z>
+								</origin>
+								<upper_height description="Height of the upper half of the fuselage section.">
+									<value>1.5</value>
+									<unit>m</unit>
+									<lower_boundary>0</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+								</upper_height>
+								<lower_height description="Height of the lower half of the fuselage section.">
+									<value>1.5</value>
+									<unit>m</unit>
+									<lower_boundary>0</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+								</lower_height>								
+								<width description="Width of the fuselage section.">
+									<value>4</value>
+									<unit>m</unit>
+									<lower_boundary>0</lower_boundary>
+									<upper_boundary>Inf</upper_boundary>
+								</width>
+							</section>
+						</sections>
+					</fuselage>
+				</geometry>
+			</specific>
+		</fuselage>
+    </component_design>
+</aircraft_exchange_file>

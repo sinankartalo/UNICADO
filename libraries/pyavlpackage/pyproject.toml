@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyavl"
+version = "1.0.0"
+description = "Simple python avl interface to build .avl files and runcase files."
+authors = [{ name = "Christopher Ruwisch", email = "christopher.ruwisch@tu-berlin.de" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = ["avl"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.26.4",
+]
+
+[tool.setuptools]
+packages = ["pyavl"]
+
+[project.urls]
+homepage = "https://unicado.pages.rwth-aachen.de/unicado.gitlab.io/"
+repository = "https://git.rwth-aachen.de/unicado/libraries"

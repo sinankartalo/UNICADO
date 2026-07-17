@@ -1,0 +1,158 @@
+<polar-exchange-file version="1.0">
+    <components>
+        <component ID="main-wing">
+			<aerodynamic_center>
+				<value>10.;0.;0.</value>
+			</aerodynamic_center>
+            <area description="-">
+                <value>124.020829;</value>
+            </area>
+            <chord description="-">
+                <value>4.315319;</value>
+            </chord>
+            <configurations>
+                <configuration ID="clean">
+                    <polars>
+                        <polar ID="1">
+                            <machnumber description="-">
+                                <value>0.500000</value>
+                            </machnumber>
+                            <altitude description="-">
+                                <value>9999.997200</value>
+                            </altitude>
+                            <Cd description="-">
+                                <value>0.005635;0.001390;0.000000;0.001475;0.005803</value>
+                            </Cd>
+                            <Cl description="-">
+                                <value>-0.403682;-0.201161;0.002984;0.208015;0.413178</value>
+                            </Cl>
+                            <Cm description="-">
+                                <value>0.441249;0.220660;-0.004580;-0.232808;-0.462302</value>
+                            </Cm>
+                            <Alpha description="-">
+                                <value>-5.000000;-2.500000;0.000000;2.500000;5.000000</value>
+                            </Alpha>
+                        </polar>
+                        <polar ID="2">
+                            <machnumber description="-">
+                                <value>0.200000</value>
+                            </machnumber>
+                            <altitude description="-">
+                                <value>1036.192411</value>
+                            </altitude>
+                            <Cd description="-">
+                                <value>0.005635;0.001390;0.000000;0.001475;0.005803</value>
+                            </Cd>
+                            <Cl description="-">
+                                <value>-0.403682;-0.201161;0.002984;0.208015;0.413178</value>
+                            </Cl>
+                            <Cm description="-">
+                                <value>0.441249;0.220660;-0.004580;-0.232808;-0.462302</value>
+                            </Cm>
+                            <Alpha description="-">
+                                <value>-5.000000;-2.500000;0.000000;2.500000;5.000000</value>
+                            </Alpha>
+                        </polar>
+                        <polar ID="3">
+                            <machnumber description="-">
+                                <value>0.760000</value>
+                            </machnumber>
+                            <altitude description="-">
+                                <value>12920.185926</value>
+                            </altitude>
+                            <Cd description="-">
+                                <value>0.005635;0.001390;0.000000;0.001475;0.005803</value>
+                            </Cd>
+                            <Cl description="-">
+                                <value>-0.403682;-0.201161;0.002984;0.208015;0.413178</value>
+                            </Cl>
+                            <Cm description="-">
+                                <value>0.441249;0.220660;-0.004580;-0.232808;-0.462302</value>
+                            </Cm>
+                            <Alpha description="-">
+                                <value>-5.000000;-2.500000;0.000000;2.500000;5.000000</value>
+                            </Alpha>
+                        </polar>
+                    </polars>
+                </configuration>
+            </configurations>
+        </component>
+        <component ID="horizontal-stabiliser">
+            <area description="-">
+                <value>26.198930;</value>
+            </area>
+            <chord description="-">
+                <value>2.519384;</value>
+            </chord>
+			<aerodynamic_center>
+				<value>30.;0.;0.</value>
+			</aerodynamic_center>
+            <configurations>
+                <configuration ID="clean">
+                    <polars>
+                        <polar ID="1">
+                            <machnumber description="-">
+                                <value>0.500000</value>
+                            </machnumber>
+                            <altitude description="-">
+                                <value>9999.997200</value>
+                            </altitude>
+                            <Cd description="-">
+                                <value>0.007609;0.001906;0.000000;0.001906;0.007609</value>
+                            </Cd>
+                            <Cl description="-">
+                                <value>-0.344660;-0.172870;0.000000;0.173135;0.345717</value>
+                            </Cl>
+                            <Cm description="-">
+                                <value>0.305578;0.153924;0.000000;-0.155044;-0.310040</value>
+                            </Cm>
+                            <Alpha description="-">
+                                <value>-5.000000;-2.500000;0.000000;2.500000;5.000000</value>
+                            </Alpha>
+                        </polar>
+                        <polar ID="2">
+                            <machnumber description="-">
+                                <value>0.200000</value>
+                            </machnumber>
+                            <altitude description="-">
+                                <value>1036.192411</value>
+                            </altitude>
+                            <Cd description="-">
+                                <value>0.007609;0.001906;0.000000;0.001906;0.007609</value>
+                            </Cd>
+                            <Cl description="-">
+                                <value>-0.344660;-0.172870;0.000000;0.173135;0.345717</value>
+                            </Cl>
+                            <Cm description="-">
+                                <value>0.305578;0.153924;0.000000;-0.155044;-0.310040</value>
+                            </Cm>
+                            <Alpha description="-">
+                                <value>-5.000000;-2.500000;0.000000;2.500000;5.000000</value>
+                            </Alpha>
+                        </polar>
+                        <polar ID="3">
+                            <machnumber description="-">
+                                <value>0.760000</value>
+                            </machnumber>
+                            <altitude description="-">
+                                <value>12920.185926</value>
+                            </altitude>
+                            <Cd description="-">
+                                <value>0.007609;0.001906;0.000000;0.001906;0.007609</value>
+                            </Cd>
+                            <Cl description="-">
+                                <value>-0.344660;-0.172870;0.000000;0.173135;0.345717</value>
+                            </Cl>
+                            <Cm description="-">
+                                <value>0.305578;0.153924;0.000000;-0.155044;-0.310040</value>
+                            </Cm>
+                            <Alpha description="-">
+                                <value>-5.000000;-2.500000;0.000000;2.500000;5.000000</value>
+                            </Alpha>
+                        </polar>
+                    </polars>
+                </configuration>
+            </configurations>
+        </component>
+    </components>
+</polar-exchange-file>

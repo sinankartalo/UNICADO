@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<polar-exchange-file version="1.0">
+	<components>
+		<component ID="main-wing">
+			<aerodynamic_center>0.1;0.2;0.3</aerodynamic_center>
+			<area>10</area>
+			<chord>1</chord>
+			<configurations>
+				<configuration ID="clean">
+					<polars>
+						<polar ID="1" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>10000</altitude>
+							<machnumber>0.3</machnumber>
+							<Alpha>
+								<value>0;0.0477479;0.0954958;0.143244;0.190992</value>
+							</Alpha>
+							<Cl>
+								<value>0;0.3;0.6;0.9;1.2</value>
+							</Cl>
+							<Cd>0.00037;0.00314;0.01239;0.02818;0.05052</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="2" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>12000</altitude>
+							<machnumber>0.5</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00042;0.00315;0.0123;0.02791;0.05002</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="3" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>10000</altitude>
+							<machnumber>0.7</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00052;0.0032;0.01216;0.02746;0.04914</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="4" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>9000</altitude>
+							<machnumber>0.72</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00054;0.00321;0.01215;0.02741;0.04903</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="5" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>11000</altitude>
+							<machnumber>0.74</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00056;0.00322;0.01214;0.02735;0.04891</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="6" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>12000</altitude>
+							<machnumber>0.76</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00058;0.00324;0.01212;0.02729;0.04878</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="7" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>13000</altitude>
+							<machnumber>0.78</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.0006;0.00325;0.01211;0.02722;0.04865</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+					</polars>
+				</configuration>
+				<configuration ID="climb">
+					<polars>
+						<polar ID="1" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>10000</altitude>
+							<machnumber>0.3</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00037;0.00314;0.01239;0.02818;0.05052</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="2" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>12000</altitude>
+							<machnumber>0.5</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00042;0.00315;0.0123;0.02791;0.05002</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="3" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>10000</altitude>
+							<machnumber>0.7</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00052;0.0032;0.01216;0.02746;0.04914</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="4" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>9000</altitude>
+							<machnumber>0.72</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00054;0.00321;0.01215;0.02741;0.04903</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="5" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>11000</altitude>
+							<machnumber>0.74</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00056;0.00322;0.01214;0.02735;0.04891</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="6" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>12000</altitude>
+							<machnumber>0.76</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.00058;0.00324;0.01212;0.02729;0.04878</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+						<polar ID="7" ExtrapolationMargin="1" AllowGridChange="1">
+							<altitude>13000</altitude>
+							<machnumber>0.78</machnumber>
+							<Alpha>0;0.0477479;0.0954958;0.143244;0.190992</Alpha>
+							<Cl>0;0.3;0.6;0.9;1.2</Cl>
+							<Cd>0.0006;0.00325;0.01211;0.02722;0.04865</Cd>
+							<Cm>0.00037;0.00314;0.01239;0.02818;0.05052</Cm>
+						</polar>
+					</polars>
+				</configuration>
+			</configurations>
+		</component>
+	</components>
+</polar-exchange-file>

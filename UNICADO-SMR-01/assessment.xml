@@ -1,0 +1,53 @@
+<assessment_file>
+    <inputs>
+        <engineering>
+            <annual_working_hours description="Working hours of one engineer per year">
+                <value>1712</value>
+                <unit>h</unit>
+                <lower_boundary>0</lower_boundary>
+                <upper_boundary>2500</upper_boundary>
+            </annual_working_hours>
+            <wage_per_hour description="Wage per hours of one engineer">
+                <value>153</value>
+                <unit>US</unit>
+                <lower_boundary>0</lower_boundary>
+                <upper_boundary>500</upper_boundary>
+            </wage_per_hour>
+        </engineering>
+        <production_phase>
+            <number_produced_aircraft description="Number of produced aircraft per program">
+                <value>1500</value>
+                <unit>1</unit>
+                <lower_boundary>0</lower_boundary>
+                <upper_boundary>10000</upper_boundary>
+            </number_produced_aircraft>
+            <primary_material_recycling_switch description="Enables primary material recycling. Switch: true (primary material will be recycled) / false (no recycling)">
+                <value>true</value>
+            </primary_material_recycling_switch>
+        </production_phase>
+        <testing_phase>
+            <number_of_structural_test_aircraft description="Number of aircraft for structural tests">
+                <value>2</value>
+                <unit>1</unit>
+                <lower_boundary>0</lower_boundary>
+                <upper_boundary>10</upper_boundary>
+            </number_of_structural_test_aircraft>
+            <number_of_flight_test_aircraft description="Number of aircraft for flight tests">
+                <value>6</value>
+                <unit>1</unit>
+                <lower_boundary>0</lower_boundary>
+                <upper_boundary>10</upper_boundary>
+            </number_of_flight_test_aircraft>
+        </testing_phase>
+        <operating_phase>
+            <duration_operation description="Operating years of aircraft">
+                <value>25</value>
+                <unit>a</unit>
+                <lower_boundary>0</lower_boundary>
+                <upper_boundary>50</upper_boundary>
+            </duration_operation>
+        </operating_phase>
+    </inputs>
+    <calculation_results>
+    </calculation_results>
+</assessment_file>

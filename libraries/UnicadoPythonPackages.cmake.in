@@ -1,0 +1,2 @@
+# Make the list of python packages available to the parent scope by including this file
+set(PYTHON_PACKAGES @PYTHON_TARGETS@)

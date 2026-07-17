@@ -1,0 +1,28 @@
+# Folder-specific code ownership
+aerodynamics/                @lukas.neuerburg   @ellen.seabrooke   @gPauls-TUHH
+aircraftGeometry2/           @meric.taneri      @AndiGob           @JensViloehr
+airfoils/                    @JensViloehr       @gPauls-TUHH
+aixml/                       @JensViloehr       @gPauls-TUHH       @meric.taneri
+atmosphere/                  @lukas.neuerburg   @gPauls-TUHH       @ellen.seabrooke
+blackboxTest/                @maurice.zimmnau
+coordinalteSystemConversion/ @meric.taneri      @AndiGob
+engine/                      @tobi747           @ellen.seabrooke   @lukas.neuerburg
+extern/                      @meric.taneri      @JensViloehr       @maurice.zimmnau
+liftingLineInterface2/       @lukas.neuerburg   @ellen.seabrooke   @gPauls-TUHH
+moduleBasics/                @JensViloehr       @gPauls-TUHH       @meric.taneri
+pymodulepackage/             @JensViloehr       @AndiGob           @gPauls-TUHH
+runtimeInfo/                 @ellen.seabrooke   @JensViloehr       @meric.taneri
+standardFiles/               @ellen.seabrooke   @lukas.neuerburg   @meric.taneri
+svl/                         @JensViloehr       @gPauls-TUHH       @meric.taneri
+unitConversion/              @gPauls-TUHH       @lukas.neuerburg   @JensViloehr
+
+# File-specific code ownership
+.gitattributes               @Florian.Schueltke
+.gitignore                   @Florian.Schueltke
+.gitlab-ci.yml               @maurice.zimmnau
+CMakeLists.txt               @Florian.Schueltke
+CMakePresets.json            @Florian.Schueltke
+CODEOWNERS                   @Florian.Schueltke
+LICENSE                      @Florian.Schueltke
+UnicadoLibsConfig.cmake.in   @Florian.Schueltke
+UnicadoPythonPackages.cmake.in @Florian.Schueltke

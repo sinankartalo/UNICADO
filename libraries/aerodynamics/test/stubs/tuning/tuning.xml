@@ -1,0 +1,118 @@
+<polar-exchange-file version="2.0">
+	<components>
+		<component ID="main_wing">
+			<configurations>
+				<configuration ID="clean">
+					<polars>
+						<polar ID="1">
+							<machnumber description="-">
+								<value>0.600000</value>
+							</machnumber>
+							<altitude description="-">
+								<value>6000.456848</value>
+							</altitude>
+							<Cd description="-">
+								<value>0.0116606;0.0102668;0.016085;0.0250212</value>
+							</Cd>
+							<Cd0 description="-">
+								<value>0.0102665;0.0102665;0.0102665;0.0102665</value>
+							</Cd0>
+							<Cd_i description="-">
+								<value>0.00139409;3.19302e-07;0.00581852;0.0147547</value>
+							</Cd_i>
+							<Cd_f description="-">
+								<value>0.00737014;0.00737014;0.00737014;0.00737014</value>
+							</Cd_f>
+							<Cd_w description="-">
+								<value>0.00289633;0.00289633;0.00289633;0.00289633</value>
+							</Cd_w>
+							<Cl description="-">
+								<value>-0.251738;0.00373595;0.517024;0.823948</value>
+							</Cl>
+							<Cm description="-">
+								<value>0.277382;-0.00574715;-0.581065;-0.926197</value>
+							</Cm>
+							<Alpha description="-">
+								<value>-2.5;0;5;8</value>
+							</Alpha>
+						</polar>
+					</polars>
+				</configuration>
+			</configurations>
+		</component>
+	</components>
+	<types>
+		<type ID="lifting_surface">
+			<polars>
+				<polar ID="1">
+					<machnumber description="-">
+						<value>0.600000</value>
+					</machnumber>
+					<altitude description="-">
+						<value>6000.456848</value>
+					</altitude>
+					<Cd description="-">
+						<value>0.0116606;0.0102668;0.016085;0.0250212</value>
+					</Cd>
+					<Cd0 description="-">
+						<value>0.0102665;0.0102665;0.0102665;0.0102665</value>
+					</Cd0>
+					<Cd_i description="-">
+						<value>0.00139409;3.19302e-07;0.00581852;0.0147547</value>
+					</Cd_i>
+					<Cd_f description="-">
+						<value>0.00737014;0.00737014;0.00737014;0.00737014</value>
+					</Cd_f>
+					<Cd_w description="-">
+						<value>0.00289633;0.00289633;0.00289633;0.00289633</value>
+					</Cd_w>
+					<Cl description="-">
+						<value>-0.251738;0.00373595;0.517024;0.823948</value>
+					</Cl>
+					<Cm description="-">
+						<value>0.277382;-0.00574715;-0.581065;-0.926197</value>
+					</Cm>
+					<Alpha description="-">
+						<value>-2.5;0;5;8</value>
+					</Alpha>
+				</polar>
+			</polars>
+		</type>
+	</types>
+	<aircraft>
+		<polars>
+			<polar ID="1">
+				<machnumber description="-">
+					<value>0.600000</value>
+				</machnumber>
+				<altitude description="-">
+					<value>6000.456848</value>
+				</altitude>
+				<Cd description="-">
+					<value>0.0116606;0.0102668;0.016085;0.0250212</value>
+				</Cd>
+				<Cd0 description="-">
+					<value>0.0102665;0.0102665;0.0102665;0.0102665</value>
+				</Cd0>
+				<Cd_i description="-">
+					<value>0.00139409;3.19302e-07;0.00581852;0.0147547</value>
+				</Cd_i>
+				<Cd_f description="-">
+					<value>0.00737014;0.00737014;0.00737014;0.00737014</value>
+				</Cd_f>
+				<Cd_w description="-">
+					<value>0.00289633;0.00289633;0.00289633;0.00289633</value>
+				</Cd_w>
+				<Cl description="-">
+					<value>-0.251738;0.00373595;0.517024;0.823948</value>
+				</Cl>
+				<Cm description="-">
+					<value>0.277382;-0.00574715;-0.581065;-0.926197</value>
+				</Cm>
+				<Alpha description="-">
+					<value>-2.5;0;5;8</value>
+				</Alpha>
+			</polar>
+		</polars>
+	</aircraft>
+</polar-exchange-file>

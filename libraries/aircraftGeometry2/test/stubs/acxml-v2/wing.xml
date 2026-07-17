@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AcftExchangeFile>
+    <Geometry Desc="Contains the geometry description of the aircraft">
+        <LiftingSurface Desc="Wing geometry" ID="MainWing">
+            <SurfaceRefPoint Desc="position of wing to global point of reference">
+                <r_Surface Desc="Position of the wing to global point of reference in x-direction" ToolLevel="1" Unit="m">0.0</r_Surface>
+                <y_Surface Desc="Position of the wing to global point of reference in y-direction" ToolLevel="1" Unit="m">0.0</y_Surface>
+                <h_Surface Desc="Position of the wing to global point of reference in z-direction" ToolLevel="1" Unit="m">0.0</h_Surface>
+            </SurfaceRefPoint>
+            <SurfaceParameters Desc="Parametric description of lifting surface geometry">
+                <Symmetric Desc="1:= symmetric wing / 0 := asymmetric wing" ToolLevel="1" Unit="-">1</Symmetric>
+                <RelChordRefForRotation Desc="Rel. Chordtiefe: Ref.-Pkt. fuer Verwindg. u. V-Stellg." ToolLevel="1" Unit="-">0</RelChordRefForRotation>
+                <i_Surface Desc="Angle of incidence in reference to the aircrafts coordinate system" ToolLevel="1" Unit="deg">0</i_Surface>
+                <SectionPoints Desc="number of points of profile. Will be used by spline interpolation if DoInterpolate attribute is set true" DoInterpolate="0" ToolLevel="1" Unit="-">200</SectionPoints>
+                <HalfSurfaceDescription Desc="Parameters of right wing (or both wings, if symmetric)" ID="1">
+                    <HalfSurfaceSegments Desc="Number of wing segments in this half surface" ToolLevel="1" Unit="-">2</HalfSurfaceSegments>
+                    <HalfSurfaceSegment Desc="Segmentbeschreibung (verfuegbare Typen: Fuselage, Surface, Tip)" ID="1" Type="Surface">
+                        <InnerProfile_Segment Desc="Inner airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</InnerProfile_Segment>
+                        <OuterProfile_Segment Desc="Outer airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</OuterProfile_Segment>
+                        <l_i_Segment Desc="Chord length of segments inner profile" ToolLevel="1" Unit="m">0.0</l_i_Segment>
+                        <l_o_Segment Desc="Chord length of segments outer profile" ToolLevel="1" Unit="m">0.0</l_o_Segment>
+                        <s_Segment Desc="Span of wing segment" ToolLevel="1" Unit="m">0.0</s_Segment>
+                        <epsilon_Segment Desc="Angle of twist of wing segment" ToolLevel="1" Unit="deg">0</epsilon_Segment>
+                        <nu_Segment Desc="Angle of dihedral of wing segment" ToolLevel="1" Unit="deg">0.0</nu_Segment>
+                        <phi_Segment Desc="Leading edge sweep angle of wing segment" ToolLevel="1" Unit="deg">0.0</phi_Segment>
+                        <l_rel_i_FrontSpar Desc="Relative chord position of front spar from leading edge of inner section" ToolLevel="1" Unit="-">0.0</l_rel_i_FrontSpar>
+                        <l_rel_i_RearSpar Desc="Relative chord position of rear spar from leading edge of inner section" ToolLevel="1" Unit="-">0.0</l_rel_i_RearSpar>
+                        <l_rel_o_FrontSpar Desc="Relative chord position of front spar from leading edge of outer section" ToolLevel="1" Unit="-">0.0</l_rel_o_FrontSpar>
+                        <l_rel_o_RearSpar Desc="Relative chord position of rear spar from leading edge of outer section" ToolLevel="1" Unit="-">0.0</l_rel_o_RearSpar>
+                    </HalfSurfaceSegment>
+                    <HalfSurfaceSegment Desc="Segmentbeschreibung (verfuegbare Typen: Fuselage, Surface, Tip)" ID="2" Type="Surface">
+                        <InnerProfile_Segment Desc="Inner airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</InnerProfile_Segment>
+                        <OuterProfile_Segment Desc="Outer airfoil segment. Geometry is stored in seperate file (*.dat)" ToolLevel="1">../dat-files/n0012-tab.dat</OuterProfile_Segment>
+                        <l_i_Segment Desc="Chord length of segments inner profile" ToolLevel="1" Unit="m">0.0</l_i_Segment>
+                        <l_o_Segment Desc="Chord length of segments outer profile" ToolLevel="1" Unit="m">0.0</l_o_Segment>
+                        <s_Segment Desc="Span of wing segment" ToolLevel="1" Unit="m">0.0</s_Segment>
+                        <epsilon_Segment Desc="Angle of twist of wing segment" ToolLevel="1" Unit="deg">0</epsilon_Segment>
+                        <nu_Segment Desc="Angle of dihedral of wing segment" ToolLevel="1" Unit="deg">0.0</nu_Segment>
+                        <phi_Segment Desc="Leading edge sweep angle of wing segment" ToolLevel="1" Unit="deg">0.0</phi_Segment>
+                        <l_rel_i_FrontSpar Desc="Relative chord position of front spar from leading edge of inner section" ToolLevel="1" Unit="-">0.0</l_rel_i_FrontSpar>
+                        <l_rel_i_RearSpar Desc="Relative chord position of rear spar from leading edge of inner section" ToolLevel="1" Unit="-">0.0</l_rel_i_RearSpar>
+                        <l_rel_o_FrontSpar Desc="Relative chord position of front spar from leading edge of outer section" ToolLevel="1" Unit="-">0.0</l_rel_o_FrontSpar>
+                        <l_rel_o_RearSpar Desc="Relative chord position of rear spar from leading edge of outer section" ToolLevel="1" Unit="-">0.0</l_rel_o_RearSpar>
+                    </HalfSurfaceSegment>
+                    <ControlDeviceSetup Desc="Planformbeschreibung der Steuerflaechen">
+                        <TEDevices Desc="Anzahl der Hinterkantenflaechen" ToolLevel="1">0</TEDevices>
+                        <TEDevice Desc="Beschreibung eines Hinterkantenelements" ID="1">
+                            <Type Desc="Typ der Hinterkantenflaeche (Aileron, DroopAileron, Flap, SlottedFlap, Fowler, DoubleFowler, TripleFowler, Special, SpoilerGround, SpoilerAir, morphingTrailingEdge)" ToolLevel="1">Fowler</Type>
+                            <s_rel_i Desc="relative Spannweite innen" ToolLevel="1" Unit="-">0.0</s_rel_i>
+                            <l_rel_i Desc="relative Sehnentiefe innen" ToolLevel="1" Unit="-">0.0</l_rel_i>
+                            <l_rel_TE_i Desc="relative Sehnentiefe von Hinterkante Fluegel zu Hinterkante device innen" ToolLevel="1" Unit="-">0</l_rel_TE_i>
+                            <s_rel_o Desc="relative Spannweite aussen" ToolLevel="1" Unit="-">0.0</s_rel_o>
+                            <l_rel_o Desc="relative Sehnentiefe aussen" ToolLevel="1" Unit="-">0.0</l_rel_o>
+                            <l_rel_TE_o Desc="relative Sehnentiefe von Hinterkante Fluegel zu Hinterkante device aussen" ToolLevel="1" Unit="-">0</l_rel_TE_o>
+                            <DeflectionAngle Desc="Steuerflaechenausschlagwinkel">
+                                <FullPos Desc="Maximaler Ausschlagwinkel in positive Richtung (Winkeldef.)" ToolLevel="1" Unit="deg">0</FullPos>
+                                <FullNeg Desc="Maximaler Ausschlagwinkel in negative Richtung (Winkeldef.)" ToolLevel="1" Unit="deg">0</FullNeg>
+                            </DeflectionAngle>
+                        </TEDevice>
+                        <LEDevices Desc="Anzahl der Vorderkantenflaechen" ToolLevel="1">0</LEDevices>
+                        <LEDevice Desc="Beschreibung eines Vorderkantenelements" ID="1">
+                            <Type Desc="Typ der Vorderkantenflaeche (Slat, Krueger, DroopNose, morphingDroopNose, Special)" ToolLevel="1">Slat</Type>
+                            <s_rel_i Desc="relative Spannweite innen" ToolLevel="1" Unit="-">0.0</s_rel_i>
+                            <l_rel_i Desc="relative Sehnentiefe innen" ToolLevel="1" Unit="-">0.0</l_rel_i>
+                            <s_rel_o Desc="relative Spannweite aussen" ToolLevel="1" Unit="-">0.0</s_rel_o>
+                            <l_rel_o Desc="relative Sehnentiefe aussen" ToolLevel="1" Unit="-">0.0</l_rel_o>
+                            <DeflectionAngle Desc="Steuerflaechenausschlagwinkel">
+                                <FullPos Desc="Maximaler Ausschlagwinkel in positive Richtung (Winkeldef.)" ToolLevel="1" Unit="deg">0</FullPos>
+                                <FullNeg Desc="Maximaler Ausschlagwinkel in negative Richtung (Winkeldef.)" ToolLevel="1" Unit="deg">0</FullNeg>
+                            </DeflectionAngle>
+                        </LEDevice>
+                    </ControlDeviceSetup>
+                </HalfSurfaceDescription>
+            </SurfaceParameters>
+        </LiftingSurface>
+    </Geometry>
+</AcftExchangeFile>

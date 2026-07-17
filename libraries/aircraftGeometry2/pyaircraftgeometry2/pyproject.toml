@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+pyaircraftgeometry2 = ["*.so", "*.dll", "*.pyd"]
+
+[project]
+name = "pyaircraftgeometry2"
+version = "3.0.0"
+description = "Python binding of the aircraftGeometry2 C++ library of UNICADO"
+requires-python = ">=3.10"
+authors = [
+    {name = "Sebastian Oberschwendtner", email = "sebastian.oberschwendtner@tum.de"},
+]
+classifiers = [
+"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+]

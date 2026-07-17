@@ -1,0 +1,57 @@
+# Exit when the Libs are already part of the current package
+if(UnicadoLibs_FOUND)
+    return()
+endif()
+
+@PACKAGE_INIT@
+
+# Add required dependencies
+include(CMakeFindDependencyMacro)
+find_dependency(Eigen3)
+find_dependency(Boost)
+find_dependency(CGAL)
+find_dependency(Threads) # Gtest dependencies
+
+# Define a list with the UnicadoLibs targets which are included in the package
+message(STATUS "[UnicadoLibs] -> Adding libraries as package. Make sure your CMAKE_PREFIX_PATH points to the correct directory!")
+set(UNICADO_LIBS_TARGETS 
+    "
+    aerodynamics;
+    aixml;
+    airfoils;
+    blackboxTest;
+    aircraftGeometry2;
+    atmosphere;
+    coordinateSystemConversion;
+    engine;
+    energyCarriers;
+    liftingLineInterface2;
+    moduleBasics;
+    runtimeInfo;
+    standardFiles;
+    svl;
+    unitConversion;
+    "
+)
+
+# Add the python targets if the parent package provides pipenv
+if(PIPENV)
+    message(STATUS "[UnicadoLibs] -> PIPENV available. Installing python targets:")
+    foreach(target @PYTHON_TARGETS@)
+        message(STATUS "=> Installing ${target}")
+        execute_process( COMMAND ${PIPENV} run python -m pip install --force-reinstall ${target} OUTPUT_QUIET)
+    endforeach()
+else()
+    message(WARNING "[${PROJECT_NAME}] -> PIPENV not available. Python targets will not be installed.")
+endif()
+
+# Include each of the exported targets
+foreach(comp ${UNICADO_LIBS_TARGETS})
+    include("${CMAKE_PREFIX_PATH}/cmake/UnicadoLibs${comp}Targets.cmake")
+endforeach()
+
+# check required packages as per CMake documentation (https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#module:CMakePackageConfigHelpers)
+check_required_components(UnicadoLibs)
+
+# When the package is included tell the user
+message(STATUS "UnicadoLibs found: TRUE")

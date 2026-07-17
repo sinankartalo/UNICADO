@@ -1,0 +1,17 @@
+cd C:\Users\sinan\Desktop\UNICADO\constraint_analysis
+
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+cmake --build build
+
+
+
+.\build\constraint_analysis_app.exe "..\libraries\engine\test\stubs\V2527-A5"
+
+.\build\constraint_analysis_app.exe "..\libraries\engine\test\stubs\V2527-A5" "config\constraint_analysis_conf.xml"
+.\build\constraint_analysis_app.exe "..\libraries\engine\test\stubs\V2527-A5" "config\constraint_analysis_conf.xml" "SHORT_FIELD_DEMO"
+
+
+python scripts/plot_results.py

@@ -1,0 +1,43 @@
+# CMake build directories
+build/
+cmake-build-*/
+out/
+
+# Compiled files
+*.exe
+*.dll
+*.o
+*.obj
+*.a
+*.lib
+*.pdb
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+compile_commands.json
+
+# Visual Studio Code local settings
+.vscode/
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*~
+
+# Generated analysis outputs
+constraint_analysis/output/
+
+# Visual Studio generated files
+.vs/
+**/.vs/
+*.ipch
+*.suo
+*.VC.db
+*.VC.VC.opendb
