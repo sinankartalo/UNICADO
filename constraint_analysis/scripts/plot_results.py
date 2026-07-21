@@ -99,10 +99,18 @@ if envelope is None:
     raise FileNotFoundError("constraint_envelope.csv not found.")
 
 
-# Design point: minimum envelope T/W
-idx = envelope["thrust_to_weight"].idxmin()
-design_ws = float(envelope.loc[idx, "wing_loading"])
-design_tw = float(envelope.loc[idx, "thrust_to_weight"])
+# Prefer the C++ interpolated design point. Fall back to the sampled
+# envelope minimum for compatibility with older output folders.
+design_point_path = os.path.join(output_dir, "design_point.csv")
+
+if os.path.exists(design_point_path):
+    design_point_df = pd.read_csv(design_point_path)
+    design_ws = float(design_point_df.loc[0, "wing_loading"])
+    design_tw = float(design_point_df.loc[0, "thrust_to_weight"])
+else:
+    idx = envelope["thrust_to_weight"].idxmin()
+    design_ws = float(envelope.loc[idx, "wing_loading"])
+    design_tw = float(envelope.loc[idx, "thrust_to_weight"])
 
 
 def read_vertical_limit(filename):

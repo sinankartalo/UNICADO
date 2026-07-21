@@ -18,7 +18,19 @@ namespace constraint_analysis
     class design_point_finder
     {
     public:
+        // Finds the minimum only among the sampled envelope points.
         static design_point find_minimum_point(const constraint_curve& envelope);
+
+        // Treats every constraint segment between two neighbouring grid points
+        // as a straight line and also checks all curve intersections.
+        // This removes the design-point error caused by a coarse W/S grid.
+        static design_point find_interpolated_minimum_point(
+            const constraint_output& output);
+
+        // Same interpolation method, but restricted by vertical W/S limits.
+        static design_point find_interpolated_feasible_minimum_point(
+            const constraint_output& output,
+            const std::vector<vertical_constraint>& vertical_constraints);
     };
 }
 
@@ -45,32 +57,6 @@ namespace constraint_analysis
         static design_point find_feasible_minimum_point(
             const constraint_curve& envelope,
             const std::vector<vertical_constraint>& vertical_constraints);
-    };
-}
-
-// ============================================================
-// merged from: robust_design_point_selector.h
-// ============================================================
-#include <string>
-
-namespace constraint_analysis
-{
-    struct robust_design_point
-    {
-        double wing_loading = 0.0;
-        double thrust_to_weight = 0.0;
-        double score = 0.0;
-        bool feasible = false;
-        std::string reason;
-    };
-
-    class robust_design_point_selector
-    {
-    public:
-        static robust_design_point select(
-            const constraint_curve& envelope,
-            const constraint_output& output,
-            double landing_margin_ratio);
     };
 }
 

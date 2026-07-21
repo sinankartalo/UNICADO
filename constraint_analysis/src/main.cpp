@@ -19,24 +19,46 @@ int main(int argc, char* argv[])
     {
         std::filesystem::create_directories("output");
 
-        std::string config_path = "config/constraint_analysis_conf.xml";
-        if (argc >= 3)
+        // Command-line arguments are optional.
+        // Supported forms:
+        //   app.exe
+        //   app.exe CASE_ID
+        //   app.exe "config\\another_config.xml"
+        //   app.exe "config\\another_config.xml" CASE_ID
+        //
+        // The engine directory is always read from engine/engine_directory_path
+        // in the selected XML constraint case.
+        std::filesystem::path config_path = "config/constraint_analysis_conf.xml";
+        std::string case_override_id;
+
+        if (argc > 3)
         {
-            config_path = argv[2];
+            throw std::runtime_error(
+                "Too many command-line arguments. Use: app.exe [config.xml] [case_ID] "
+                "or app.exe [case_ID].");
         }
 
-        if (argc < 2)
+        if (argc >= 2)
         {
-            std::cerr
-                << "error: UNICADO engine directory path is required.\n"
-                << "usage: .\\build\\constraint_analysis_app.exe "
-                << "\"C:\\path\\to\\engine_folder\" "
-                << "\"config\\constraint_analysis_conf.xml\" "
-                << "[constraint_case_ID]\n";
-            return 1;
-        }
+            const std::filesystem::path first_argument = argv[1];
 
-        const std::string case_override_id = (argc >= 4) ? argv[3] : "";
+            if (first_argument.extension() == ".xml")
+            {
+                config_path = first_argument;
+                case_override_id = (argc == 3) ? argv[2] : "";
+            }
+            else
+            {
+                case_override_id = argv[1];
+
+                if (argc == 3)
+                {
+                    throw std::runtime_error(
+                        "When the first argument is a case ID, no second argument is allowed. "
+                        "To use another XML file, provide the XML path first and the case ID second.");
+                }
+            }
+        }
 
         const auto config = read_xml_config(config_path, case_override_id);
 
@@ -44,7 +66,15 @@ int main(int argc, char* argv[])
         std::cout << "Using constraint case ID: "
                   << xml_string(config, "active_constraint_case_id") << '\n';
 
-        const std::filesystem::path engine_directory = argv[1];
+        const std::filesystem::path engine_directory =
+            xml_string(config, "engine_directory_path");
+
+        if (engine_directory.empty())
+        {
+            throw std::runtime_error(
+                "Engine directory is empty. Set engine/engine_directory_path "
+                "in the selected XML constraint case.");
+        }
 
         std::unique_ptr<Engine> unicado_engine =
             std::make_unique<Engine>(engine_directory);
@@ -71,19 +101,16 @@ int main(int argc, char* argv[])
         const constraint_curve envelope =
             constraint_envelope_analyzer::build_envelope(output);
 
-        const design_point best_point =
+        const design_point sampled_best_point =
             design_point_finder::find_minimum_point(envelope);
 
-        const design_point feasible_best_point =
-            feasible_design_point_finder::find_feasible_minimum_point(
-                envelope,
-                output.vertical_constraints);
+        const design_point best_point =
+            design_point_finder::find_interpolated_minimum_point(output);
 
-        const robust_design_point robust_point =
-            robust_design_point_selector::select(
-                envelope,
+        const design_point feasible_best_point =
+            design_point_finder::find_interpolated_feasible_minimum_point(
                 output,
-                0.90);
+                output.vertical_constraints);
 
         const auto active_constraints =
             active_constraint_analyzer::analyze(output);
@@ -96,6 +123,16 @@ int main(int argc, char* argv[])
         constraint_output envelope_output;
         envelope_output.curves.push_back(envelope);
         constraint_output_writer::write_all_curves_to_csv(envelope_output, "output");
+
+        // The plotting script reads this file so the marker is placed at the
+        // interpolated curve intersection instead of the nearest grid point.
+        {
+            std::ofstream file("output/design_point.csv");
+            file << "wing_loading,thrust_to_weight,method\n";
+            file << feasible_best_point.wing_loading << ","
+                 << feasible_best_point.thrust_to_weight
+                 << ",piecewise_linear_interpolation\n";
+        }
 
         for (const auto& vc : output.vertical_constraints)
         {
@@ -203,7 +240,13 @@ int main(int argc, char* argv[])
                 << '\n';
         }
 
-        std::cout << "\n=== best_design_point ===\n";
+        std::cout << "\n=== sampled_best_design_point ===\n";
+        std::cout
+            << "wing_loading = " << sampled_best_point.wing_loading
+            << "  thrust_to_weight = " << sampled_best_point.thrust_to_weight
+            << '\n';
+
+        std::cout << "\n=== interpolated_best_design_point ===\n";
         std::cout
             << "wing_loading = " << best_point.wing_loading
             << "  thrust_to_weight = " << best_point.thrust_to_weight
@@ -213,15 +256,6 @@ int main(int argc, char* argv[])
         std::cout
             << "wing_loading = " << feasible_best_point.wing_loading
             << "  thrust_to_weight = " << feasible_best_point.thrust_to_weight
-            << '\n';
-
-        std::cout << "\n=== robust_design_point ===\n";
-        std::cout
-            << "wing_loading = " << robust_point.wing_loading
-            << "  thrust_to_weight = " << robust_point.thrust_to_weight
-            << "  score = " << robust_point.score
-            << "  feasible = " << (robust_point.feasible ? "yes" : "no")
-            << "  reason = " << robust_point.reason
             << '\n';
 
         std::cout << "\n=== active_constraints ===\n";
