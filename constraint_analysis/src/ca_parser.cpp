@@ -189,96 +189,130 @@ namespace constraint_analysis
             "wing_loading_step",
             "design_space/wing_loading_step");
 
-        const std::string standard_set = "constraints/standard_set/";
+        // A case may either contain its own <standard_set> (legacy format)
+        // or reference a shared set through <constraint_set_ref>.
+        // Shared sets keep repeated constraint definitions out of every case.
+        node* standard_set_node = selected_case->find("constraints/standard_set");
 
-        xml_map_value(config, *selected_case,
+        if (standard_set_node == nullptr)
+        {
+            node* set_ref_node = selected_case->find("constraints/constraint_set_ref");
+            if (set_ref_node == nullptr)
+            {
+                throw std::runtime_error(
+                    "Selected case must define constraints/standard_set or "
+                    "constraints/constraint_set_ref.");
+            }
+
+            const std::string set_id = xml_node_text(*set_ref_node);
+
+            // First locate the shared <constraint_sets> container, then search
+            // inside it for the requested <standard_set>. Searching the whole
+            // document with a combined path is not handled reliably by aixml.
+            node* constraint_sets_node = document->find("constraint_sets");
+            if (constraint_sets_node != nullptr)
+            {
+                standard_set_node = constraint_sets_node->find(
+                    "standard_set@ID=" + set_id, 1);
+            }
+
+            if (standard_set_node == nullptr)
+            {
+                throw std::runtime_error(
+                    "Could not find shared standard_set with ID: " + set_id);
+            }
+        }
+
+        const std::string standard_set = "";
+
+        xml_map_value(config, *standard_set_node,
             "takeoff_altitude_m",
             standard_set + "takeoff_ground_roll/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
             standard_set + "takeoff_ground_roll/takeoff_field_length");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "takeoff_speed_factor",
             standard_set + "takeoff_ground_roll/k_TO");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "takeoff_mu_ro",
             standard_set + "takeoff_ground_roll/friction_coefficient");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "takeoff_cd_ground",
             standard_set + "takeoff_ground_roll/ground_drag_coefficient");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "landing_altitude_m",
             standard_set + "landing_field_length/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "landing_runway_m",
             standard_set + "landing_field_length/landing_field_length");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "landing_speed_factor",
             standard_set + "landing_field_length/k_TD");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "landing_mu_brake",
             standard_set + "landing_field_length/friction_coefficient");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "landing_cd_brake",
             standard_set + "landing_field_length/braking_drag_coefficient");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "stall_speed_limit_ms",
             standard_set + "stall_speed/stall_speed_limit");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "max_mach_altitude_m",
             standard_set + "max_mach/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "max_mach",
             standard_set + "max_mach/Mach");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "supercruise_altitude_m",
             standard_set + "supercruise/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "supercruise_mach",
             standard_set + "supercruise/Mach");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "acceleration_altitude_m",
             standard_set + "horizontal_acceleration/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "acceleration_speed_ms",
             standard_set + "horizontal_acceleration/speed");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "acceleration_ms2",
             standard_set + "horizontal_acceleration/acceleration");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "cruise_altitude_m",
             standard_set + "cruise/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "cruise_speed_ms",
             standard_set + "cruise/speed");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "climb_altitude_m",
             standard_set + "climb/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "climb_speed_ms",
             standard_set + "climb/speed");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "climb_roc_ms",
             standard_set + "climb/climb_rate");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "turn_altitude_m",
             standard_set + "constant_speed_turn/altitude");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "turn_speed_ms",
             standard_set + "constant_speed_turn/speed");
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "turn_load_factor",
             standard_set + "constant_speed_turn/load_factor");
 
-        xml_map_value(config, *selected_case,
+        xml_map_value(config, *standard_set_node,
             "range_available_fuel_fraction",
             standard_set + "range_fuel_fraction/available_fuel_fraction");
 

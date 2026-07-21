@@ -1,549 +1,272 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <module_configuration_file name="constraint_analysis.xml">
-  <control_settings description="General control settings for constraint analysis">
-    <active_constraint_case_ID description="Default constraint case selected when no command-line case override is given">
-      <value>UNICADO_TEST_ENGINE</value>
-    </active_constraint_case_ID>
+
+  <!-- ====================================================== -->
+  <!-- Default selection                                      -->
+  <!-- ====================================================== -->
+  <control_settings>
+    <active_constraint_case_ID><value>UNICADO_TEST_ENGINE</value></active_constraint_case_ID>
   </control_settings>
-  <program_settings description="Constraint analysis settings">
-    <constraint_cases active_case_ID="UNICADO_TEST_ENGINE" description="ID-based case definitions">
-      <constraint_case ID="UNICADO_TEST_ENGINE" description="UNICADO-SMR-01 analysis using the V2527-A5 test engine deck">
-        <aircraft description="Aircraft and aerodynamic data sources">
-          <aerodynamics>
-            <polar_format description="Aerodynamic XML structure: component_polar or trimmed_aircraft_polar">
-              <value>component_polar</value>
-            </polar_format>
-            <polar_xml_path description="UNICADO aerodynamics polar XML">
-              <value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value>
-            </polar_xml_path>
-            <reference_wing_ID description="Reference wing ID in the aerodynamic XML">
-              <value>main_wing</value>
-            </reference_wing_ID>
-          </aerodynamics>
-        </aircraft>
-        <mission description="Mission data source">
-          <mission_csv_path description="Mission CSV used for beta, range, weighted altitude and TAS">
-            <value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value>
-          </mission_csv_path>
-        </mission>
-        <engine description="Test engine deck used as the reference and regression case">
-          <engine_directory_path>
-            <value>../libraries/engine/test/stubs/V2527-A5</value>
-          </engine_directory_path>
-        </engine>
-        <design_space description="Wing loading grid in N/m^2">
-          <wing_loading_min>
-            <value>1000.0</value>
-          </wing_loading_min>
-          <wing_loading_max>
-            <value>7000.0</value>
-          </wing_loading_max>
-          <wing_loading_step>
-            <value>500.0</value>
-          </wing_loading_step>
-        </design_space>
-        <constraints description="Active standard constraint set">
-          <standard_set ID="BASELINE_STANDARD_SET">
-            <takeoff_ground_roll ID="TO_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>0.0</value>
-              </altitude>
-              <takeoff_field_length>
-                <value>500.0</value>
-              </takeoff_field_length>
-              <k_TO>
-                <value>1.2</value>
-              </k_TO>
-              <friction_coefficient>
-                <value>0.02</value>
-              </friction_coefficient>
-              <ground_drag_coefficient>
-                <value>0.04</value>
-              </ground_drag_coefficient>
-            </takeoff_ground_roll>
-            <landing_field_length ID="LDG_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>0.0</value>
-              </altitude>
-              <landing_field_length>
-                <value>600.0</value>
-              </landing_field_length>
-              <k_TD>
-                <value>1.15</value>
-              </k_TD>
-              <friction_coefficient>
-                <value>0.40</value>
-              </friction_coefficient>
-              <braking_drag_coefficient>
-                <value>0.10</value>
-              </braking_drag_coefficient>
-            </landing_field_length>
-            <stall_speed ID="STALL_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <stall_speed_limit>
-                <value>65.0</value>
-              </stall_speed_limit>
-            </stall_speed>
-            <gust ID="GUST_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <automatic_values>
-                <value>true</value>
-              </automatic_values>
-            </gust>
-            <max_mach ID="MMO_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>9000.0</value>
-              </altitude>
-              <Mach>
-                <value>0.78</value>
-              </Mach>
-            </max_mach>
-            <supercruise ID="SC_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>11000.0</value>
-              </altitude>
-              <Mach>
-                <value>0.78</value>
-              </Mach>
-            </supercruise>
-            <horizontal_acceleration ID="ACC_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>8000.0</value>
-              </altitude>
-              <speed>
-                <value>180.0</value>
-              </speed>
-              <acceleration>
-                <value>1.5</value>
-              </acceleration>
-            </horizontal_acceleration>
-            <cruise ID="CR_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>6000.0</value>
-              </altitude>
-              <speed>
-                <value>180.0</value>
-              </speed>
-            </cruise>
-            <climb ID="CL_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>3000.0</value>
-              </altitude>
-              <speed>
-                <value>120.0</value>
-              </speed>
-              <climb_rate>
-                <value>5.0</value>
-              </climb_rate>
-            </climb>
-            <constant_speed_turn ID="TURN_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>3000.0</value>
-              </altitude>
-              <speed>
-                <value>120.0</value>
-              </speed>
-              <load_factor>
-                <value>2.5</value>
-              </load_factor>
-            </constant_speed_turn>
-            <range_fuel_fraction ID="RANGE_BASELINE">
-              <active>
-                <value>true</value>
-              </active>
-              <available_fuel_fraction>
-                <value>0.25</value>
-              </available_fuel_fraction>
-            </range_fuel_fraction>
-          </standard_set>
-        </constraints>
-      </constraint_case>
-      <constraint_case ID="UNICADO_REAL_ENGINE" description="UNICADO-SMR-01 analysis using the mission PW1127G-JM engine deck">
-        <aircraft description="Aircraft and aerodynamic data sources">
-          <aerodynamics>
-            <polar_format description="Aerodynamic XML structure: component_polar or trimmed_aircraft_polar">
-              <value>trimmed_aircraft_polar</value>
-            </polar_format>
-            <polar_xml_path description="UNICADO aerodynamics polar XML">
-              <value>data/SMR-01_design_trimmed_polar.xml</value>
-            </polar_xml_path>
-            <reference_wing_ID description="Reference wing ID in the aerodynamic XML">
-              <value>main_wing</value>
-            </reference_wing_ID>
-          </aerodynamics>
-        </aircraft>
-        <mission description="Mission data source">
-          <mission_csv_path description="Mission CSV used for beta, range, weighted altitude and TAS">
-            <value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value>
-          </mission_csv_path>
-        </mission>
-        <engine description="Real mission engine deck from the UNICADO-SMR-01 dataset">
-          <engine_directory_path>
-            <value>../UNICADO-SMR-01/clean_sheet_design/engine_data/PW1127G-JM</value>
-          </engine_directory_path>
-        </engine>
-        <design_space description="Wing loading grid in N/m^2">
-          <wing_loading_min>
-            <value>1000.0</value>
-          </wing_loading_min>
-          <wing_loading_max>
-            <value>9000.0</value>
-          </wing_loading_max>
-          <wing_loading_step>
-            <value>500.0</value>
-          </wing_loading_step>
-        </design_space>
-        <constraints description="Active standard constraint set">
-          <standard_set ID="REAL_STANDARD_SET">
-            <takeoff_ground_roll ID="TO_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>0.0</value>
-              </altitude>
-              <takeoff_field_length>
-                <value>500.0</value>
-              </takeoff_field_length>
-              <k_TO>
-                <value>1.2</value>
-              </k_TO>
-              <friction_coefficient>
-                <value>0.02</value>
-              </friction_coefficient>
-              <ground_drag_coefficient>
-                <value>0.04</value>
-              </ground_drag_coefficient>
-            </takeoff_ground_roll>
-            <landing_field_length ID="LDG_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>0.0</value>
-              </altitude>
-              <landing_field_length>
-                <value>600.0</value>
-              </landing_field_length>
-              <k_TD>
-                <value>1.15</value>
-              </k_TD>
-              <friction_coefficient>
-                <value>0.40</value>
-              </friction_coefficient>
-              <braking_drag_coefficient>
-                <value>0.10</value>
-              </braking_drag_coefficient>
-            </landing_field_length>
-            <stall_speed ID="STALL_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <stall_speed_limit>
-                <value>65.0</value>
-              </stall_speed_limit>
-            </stall_speed>
-            <gust ID="GUST_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <automatic_values>
-                <value>true</value>
-              </automatic_values>
-            </gust>
-            <max_mach ID="MMO_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>9000.0</value>
-              </altitude>
-              <Mach>
-                <value>0.78</value>
-              </Mach>
-            </max_mach>
-            <supercruise ID="SC_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>11000.0</value>
-              </altitude>
-              <Mach>
-                <value>0.78</value>
-              </Mach>
-            </supercruise>
-            <horizontal_acceleration ID="ACC_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>8000.0</value>
-              </altitude>
-              <speed>
-                <value>180.0</value>
-              </speed>
-              <acceleration>
-                <value>1.5</value>
-              </acceleration>
-            </horizontal_acceleration>
-            <cruise ID="CR_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>6000.0</value>
-              </altitude>
-              <speed>
-                <value>180.0</value>
-              </speed>
-            </cruise>
-            <climb ID="CL_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>3000.0</value>
-              </altitude>
-              <speed>
-                <value>120.0</value>
-              </speed>
-              <climb_rate>
-                <value>5.0</value>
-              </climb_rate>
-            </climb>
-            <constant_speed_turn ID="TURN_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>3000.0</value>
-              </altitude>
-              <speed>
-                <value>120.0</value>
-              </speed>
-              <load_factor>
-                <value>2.5</value>
-              </load_factor>
-            </constant_speed_turn>
-            <range_fuel_fraction ID="RANGE_REAL">
-              <active>
-                <value>true</value>
-              </active>
-              <available_fuel_fraction>
-                <value>0.25</value>
-              </available_fuel_fraction>
-            </range_fuel_fraction>
-          </standard_set>
-        </constraints>
-      </constraint_case>
-      <constraint_case ID="SHORT_FIELD_DEMO" description="Example case with shorter runway requirements">
+
+  <program_settings>
+
+    <!-- ==================================================== -->
+    <!-- Reusable constraint sets                             -->
+    <!-- ==================================================== -->
+    <constraint_sets>
+
+      <!-- Used by both UNICADO_TEST_ENGINE and UNICADO_REAL_ENGINE -->
+      <standard_set ID="BASELINE_STANDARD_SET">
+
+        <!-- Ground performance -->
+        <takeoff_ground_roll ID="TO_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>0.0</value></altitude>
+          <takeoff_field_length><value>500.0</value></takeoff_field_length>
+          <k_TO><value>1.2</value></k_TO>
+          <friction_coefficient><value>0.02</value></friction_coefficient>
+          <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
+        </takeoff_ground_roll>
+
+        <landing_field_length ID="LDG_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>0.0</value></altitude>
+          <landing_field_length><value>600.0</value></landing_field_length>
+          <k_TD><value>1.15</value></k_TD>
+          <friction_coefficient><value>0.40</value></friction_coefficient>
+          <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
+        </landing_field_length>
+
+        <stall_speed ID="STALL_BASELINE">
+          <active><value>true</value></active>
+          <stall_speed_limit><value>65.0</value></stall_speed_limit>
+        </stall_speed>
+
+        <!-- Atmospheric / structural limit -->
+        <gust ID="GUST_BASELINE">
+          <active><value>true</value></active>
+          <automatic_values><value>true</value></automatic_values>
+        </gust>
+
+        <!-- High-speed flight -->
+        <max_mach ID="MMO_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>9000.0</value></altitude>
+          <Mach><value>0.78</value></Mach>
+        </max_mach>
+
+        <supercruise ID="SC_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>11000.0</value></altitude>
+          <Mach><value>0.78</value></Mach>
+        </supercruise>
+
+        <!-- Point-performance constraints -->
+        <horizontal_acceleration ID="ACC_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>8000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <acceleration><value>1.5</value></acceleration>
+        </horizontal_acceleration>
+
+        <cruise ID="CR_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+        </cruise>
+
+        <climb ID="CL_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <climb_rate><value>5.0</value></climb_rate>
+        </climb>
+
+        <constant_speed_turn ID="TURN_BASELINE">
+          <active><value>true</value></active>
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <load_factor><value>2.5</value></load_factor>
+        </constant_speed_turn>
+
+        <!-- Mission requirement -->
+        <range_fuel_fraction ID="RANGE_BASELINE">
+          <active><value>true</value></active>
+          <available_fuel_fraction><value>0.25</value></available_fuel_fraction>
+        </range_fuel_fraction>
+
+      </standard_set>
+
+      <!-- Only runway requirements differ from the baseline case. -->
+      <standard_set ID="SHORT_FIELD_STANDARD_SET">
+
+        <takeoff_ground_roll ID="TO_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>0.0</value></altitude>
+          <takeoff_field_length><value>450.0</value></takeoff_field_length>
+          <k_TO><value>1.2</value></k_TO>
+          <friction_coefficient><value>0.02</value></friction_coefficient>
+          <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
+        </takeoff_ground_roll>
+
+        <landing_field_length ID="LDG_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>0.0</value></altitude>
+          <landing_field_length><value>550.0</value></landing_field_length>
+          <k_TD><value>1.15</value></k_TD>
+          <friction_coefficient><value>0.40</value></friction_coefficient>
+          <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
+        </landing_field_length>
+
+        <stall_speed ID="STALL_SHORT">
+          <active><value>true</value></active>
+          <stall_speed_limit><value>65.0</value></stall_speed_limit>
+        </stall_speed>
+
+        <gust ID="GUST_SHORT">
+          <active><value>true</value></active>
+          <automatic_values><value>true</value></automatic_values>
+        </gust>
+
+        <max_mach ID="MMO_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>9000.0</value></altitude>
+          <Mach><value>0.78</value></Mach>
+        </max_mach>
+
+        <supercruise ID="SC_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>11000.0</value></altitude>
+          <Mach><value>0.78</value></Mach>
+        </supercruise>
+
+        <horizontal_acceleration ID="ACC_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>8000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <acceleration><value>1.5</value></acceleration>
+        </horizontal_acceleration>
+
+        <cruise ID="CR_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+        </cruise>
+
+        <climb ID="CL_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <climb_rate><value>5.0</value></climb_rate>
+        </climb>
+
+        <constant_speed_turn ID="TURN_SHORT">
+          <active><value>true</value></active>
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <load_factor><value>2.5</value></load_factor>
+        </constant_speed_turn>
+
+        <range_fuel_fraction ID="RANGE_SHORT">
+          <active><value>true</value></active>
+          <available_fuel_fraction><value>0.25</value></available_fuel_fraction>
+        </range_fuel_fraction>
+
+      </standard_set>
+    </constraint_sets>
+
+    <!-- ==================================================== -->
+    <!-- Analysis cases                                       -->
+    <!-- ==================================================== -->
+    <constraint_cases active_case_ID="UNICADO_TEST_ENGINE">
+
+      <constraint_case ID="UNICADO_TEST_ENGINE"
+                       description="SMR-01 analysis with the V2527-A5 test engine deck">
         <aircraft>
           <aerodynamics>
-            <polar_format description="Aerodynamic XML structure: component_polar or trimmed_aircraft_polar">
-              <value>component_polar</value>
-            </polar_format>
-            <polar_xml_path>
-              <value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value>
-            </polar_xml_path>
-            <reference_wing_ID>
-              <value>main_wing</value>
-            </reference_wing_ID>
+            <polar_format><value>component_polar</value></polar_format>
+            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value></polar_xml_path>
+            <reference_wing_ID><value>main_wing</value></reference_wing_ID>
           </aerodynamics>
         </aircraft>
+
         <mission>
-          <mission_csv_path>
-            <value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value>
-          </mission_csv_path>
+          <mission_csv_path><value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value></mission_csv_path>
         </mission>
+
         <engine>
-          <engine_directory_path>
-            <value>../libraries/engine/test/stubs/V2527-A5</value>
-          </engine_directory_path>
+          <engine_directory_path><value>../libraries/engine/test/stubs/V2527-A5</value></engine_directory_path>
         </engine>
+
         <design_space>
-          <wing_loading_min>
-            <value>1000.0</value>
-          </wing_loading_min>
-          <wing_loading_max>
-            <value>7000.0</value>
-          </wing_loading_max>
-          <wing_loading_step>
-            <value>500.0</value>
-          </wing_loading_step>
+          <wing_loading_min><value>1000.0</value></wing_loading_min>
+          <wing_loading_max><value>7000.0</value></wing_loading_max>
+          <wing_loading_step><value>500.0</value></wing_loading_step>
         </design_space>
+
         <constraints>
-          <standard_set ID="SHORT_FIELD_STANDARD_SET">
-            <takeoff_ground_roll ID="TO_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>0.0</value>
-              </altitude>
-              <takeoff_field_length>
-                <value>450.0</value>
-              </takeoff_field_length>
-              <k_TO>
-                <value>1.2</value>
-              </k_TO>
-              <friction_coefficient>
-                <value>0.02</value>
-              </friction_coefficient>
-              <ground_drag_coefficient>
-                <value>0.04</value>
-              </ground_drag_coefficient>
-            </takeoff_ground_roll>
-            <landing_field_length ID="LDG_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>0.0</value>
-              </altitude>
-              <landing_field_length>
-                <value>550.0</value>
-              </landing_field_length>
-              <k_TD>
-                <value>1.15</value>
-              </k_TD>
-              <friction_coefficient>
-                <value>0.40</value>
-              </friction_coefficient>
-              <braking_drag_coefficient>
-                <value>0.10</value>
-              </braking_drag_coefficient>
-            </landing_field_length>
-            <stall_speed ID="STALL_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <stall_speed_limit>
-                <value>65.0</value>
-              </stall_speed_limit>
-            </stall_speed>
-            <gust ID="GUST_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <automatic_values>
-                <value>true</value>
-              </automatic_values>
-            </gust>
-            <max_mach ID="MMO_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>9000.0</value>
-              </altitude>
-              <Mach>
-                <value>0.78</value>
-              </Mach>
-            </max_mach>
-            <supercruise ID="SC_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>11000.0</value>
-              </altitude>
-              <Mach>
-                <value>0.78</value>
-              </Mach>
-            </supercruise>
-            <horizontal_acceleration ID="ACC_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>8000.0</value>
-              </altitude>
-              <speed>
-                <value>180.0</value>
-              </speed>
-              <acceleration>
-                <value>1.5</value>
-              </acceleration>
-            </horizontal_acceleration>
-            <cruise ID="CR_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>6000.0</value>
-              </altitude>
-              <speed>
-                <value>180.0</value>
-              </speed>
-            </cruise>
-            <climb ID="CL_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>3000.0</value>
-              </altitude>
-              <speed>
-                <value>120.0</value>
-              </speed>
-              <climb_rate>
-                <value>5.0</value>
-              </climb_rate>
-            </climb>
-            <constant_speed_turn ID="TURN_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <altitude>
-                <value>3000.0</value>
-              </altitude>
-              <speed>
-                <value>120.0</value>
-              </speed>
-              <load_factor>
-                <value>2.5</value>
-              </load_factor>
-            </constant_speed_turn>
-            <range_fuel_fraction ID="RANGE_SHORT">
-              <active>
-                <value>true</value>
-              </active>
-              <available_fuel_fraction>
-                <value>0.25</value>
-              </available_fuel_fraction>
-            </range_fuel_fraction>
-          </standard_set>
+          <constraint_set_ref><value>BASELINE_STANDARD_SET</value></constraint_set_ref>
         </constraints>
       </constraint_case>
+
+      <constraint_case ID="UNICADO_REAL_ENGINE"
+                       description="SMR-01 analysis with the PW1127G-JM mission engine deck">
+        <aircraft>
+          <aerodynamics>
+            <polar_format><value>trimmed_aircraft_polar</value></polar_format>
+            <polar_xml_path><value>data/SMR-01_design_trimmed_polar.xml</value></polar_xml_path>
+            <reference_wing_ID><value>main_wing</value></reference_wing_ID>
+          </aerodynamics>
+        </aircraft>
+
+        <mission>
+          <mission_csv_path><value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value></mission_csv_path>
+        </mission>
+
+        <engine>
+          <engine_directory_path><value>../UNICADO-SMR-01/clean_sheet_design/engine_data/PW1127G-JM</value></engine_directory_path>
+        </engine>
+
+        <design_space>
+          <wing_loading_min><value>1000.0</value></wing_loading_min>
+          <wing_loading_max><value>9000.0</value></wing_loading_max>
+          <wing_loading_step><value>500.0</value></wing_loading_step>
+        </design_space>
+
+        <constraints>
+          <constraint_set_ref><value>BASELINE_STANDARD_SET</value></constraint_set_ref>
+        </constraints>
+      </constraint_case>
+
+      <constraint_case ID="SHORT_FIELD_DEMO"
+                       description="Example case with shorter runway requirements">
+        <aircraft>
+          <aerodynamics>
+            <polar_format><value>component_polar</value></polar_format>
+            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value></polar_xml_path>
+            <reference_wing_ID><value>main_wing</value></reference_wing_ID>
+          </aerodynamics>
+        </aircraft>
+
+        <mission>
+          <mission_csv_path><value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value></mission_csv_path>
+        </mission>
+
+        <engine>
+          <engine_directory_path><value>../libraries/engine/test/stubs/V2527-A5</value></engine_directory_path>
+        </engine>
+
+        <design_space>
+          <wing_loading_min><value>1000.0</value></wing_loading_min>
+          <wing_loading_max><value>7000.0</value></wing_loading_max>
+          <wing_loading_step><value>500.0</value></wing_loading_step>
+        </design_space>
+
+        <constraints>
+          <constraint_set_ref><value>SHORT_FIELD_STANDARD_SET</value></constraint_set_ref>
+        </constraints>
+      </constraint_case>
+
     </constraint_cases>
   </program_settings>
 </module_configuration_file>
