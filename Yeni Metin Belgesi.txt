@@ -8,10 +8,17 @@ cmake --build build
 
 
 
-.\build\constraint_analysis_app.exe "..\libraries\engine\test\stubs\V2527-A5"
+.\build\constraint_analysis_app.exe 
+.\build\constraint_analysis_app.exe UNICADO_TEST_ENGINE
+.\build\constraint_analysis_app.exe UNICADO_REAL_ENGINE
+.\build\constraint_analysis_app.exe "SHORT_FIELD_DEMO"
 
-.\build\constraint_analysis_app.exe "..\libraries\engine\test\stubs\V2527-A5" "config\constraint_analysis_conf.xml"
-.\build\constraint_analysis_app.exe "..\libraries\engine\test\stubs\V2527-A5" "config\constraint_analysis_conf.xml" "SHORT_FIELD_DEMO"
+
+.\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml"
+.\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml" "SHORT_FIELD_DEMO"
 
 
 python scripts/plot_results.py
+
+
+Copy-Item .\output .\output_test_engine -Recurse -Force

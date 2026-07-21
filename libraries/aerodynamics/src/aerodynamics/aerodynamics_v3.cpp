@@ -280,33 +280,71 @@ namespace aerodynamics
 		return this->get_CL(conditions, weight)/this->get_CD(conditions, weight);
 	};
 
-	auto Propeller::get_T(const Flight_Condition& condition, const double& RPM, const double& pitch) -> double
+	auto Propeller::get_T(
+		const Flight_Condition& condition,
+		const double& RPM,
+		const double& pitch
+	) -> double
 	{
-		auto rho = condition.density;
-		auto v = condition.u;
+		const double rho = condition.density;
+		const double v = condition.u;
+		const double n = RPM / 60.0;
+		const double J = v / (n * this->diameter);
 
-		std::cout << "J = " << v / ((RPM / 60.) * this->diameter) << "\n";
+		std::cout << "J = " << J << "\n";
+
 		types::PropertyType conditions;
 		conditions["inclination"] = pitch;
-		conditions["j"] = v / ((RPM / 60.) * this->diameter);
-		const types::key dum = "CT";
-		auto Ct = this->interpolator->operator()(dum, conditions);
-		std::cout << "CT = " << Ct << " T = " << Ct * rho * std::pow((RPM / 60.), 2.) * std::pow(this->diameter, 4.) << "\n";
-		return Ct * rho * std::pow((RPM / 60.), 2.);
+		conditions["j"] = J;
+
+		const types::key property = "CT";
+		const double Ct =
+			this->interpolator->operator()(property, conditions);
+
+		const double thrust =
+			Ct
+			* rho
+			* std::pow(n, 2.0)
+			* std::pow(this->diameter, 4.0);
+
+		std::cout << "CT = " << Ct
+				<< " T = " << thrust
+				<< "\n";
+
+		return thrust;
 	};
 
-	auto Propeller::get_P(const Flight_Condition& condition, const double& RPM, const double& pitch) -> double
+	auto Propeller::get_P(
+		const Flight_Condition& condition,
+		const double& RPM,
+		const double& pitch
+	) -> double
 	{
-		auto rho = condition.density;
-		auto v = condition.u;
+		const double rho = condition.density;
+		const double v = condition.u;
+		const double n = RPM / 60.0;
+		const double J = v / (n * this->diameter);
 
-		std::cout << "J = " << v / ((RPM / 60.) * this->diameter) << "\n";
+		std::cout << "J = " << J << "\n";
+
 		types::PropertyType conditions;
 		conditions["inclination"] = pitch;
-		conditions["j"] = v / ((RPM / 60.) * this->diameter);
-		const types::key dum = "CP";
-		auto Cp = this->interpolator->operator()(dum, conditions);
-		std::cout << "CP = " << Cp << " T = " << Cp * rho * std::pow((RPM / 60.), 3.) * std::pow(this->diameter, 5.) << "\n";
-		return Cp * rho * std::pow((RPM / 60.), 3.) * std::pow(this->diameter, 5.);
-	};
+		conditions["j"] = J;
+
+		const types::key property = "CP";
+		const double Cp =
+			this->interpolator->operator()(property, conditions);
+
+		const double power =
+			Cp
+			* rho
+			* std::pow(n, 3.0)
+			* std::pow(this->diameter, 5.0);
+
+		std::cout << "CP = " << Cp
+				<< " P = " << power
+				<< "\n";
+
+		return power;
+	}
 }
