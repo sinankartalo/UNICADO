@@ -573,9 +573,10 @@ namespace constraint_analysis
             input.aircraft.polar.k);
         const double a = automatic_lift_curve_slope_per_rad(effective_aspect_ratio);
         const double n_limit = automatic_transport_gust_load_factor_limit();
-        const double mean_chord = automatic_mean_aerodynamic_chord_m(
-            input.aircraft.wing_area_m2,
-            effective_aspect_ratio);
+        if (input.aircraft.takeoff_weight_N <= 0.0)
+        {
+            throw std::runtime_error("Gust limit error: takeoff weight must be positive.");
+        }
 
         if (rho <= 0.0 || u_de <= 0.0 || a <= 0.0 || n_limit <= 1.0)
         {
@@ -595,6 +596,16 @@ namespace constraint_analysis
         const auto delta_n = [&](double takeoff_wing_loading) -> double
         {
             const double actual_wing_loading = beta * takeoff_wing_loading;
+
+            // For every candidate W/S, calculate its corresponding clean-sheet wing area:
+            //     S = W_TO / (W_TO/S)
+            // This keeps wing area an output of sizing rather than a polar-file input.
+            const double candidate_wing_area_m2 =
+                input.aircraft.takeoff_weight_N / takeoff_wing_loading;
+            const double mean_chord = automatic_mean_aerodynamic_chord_m(
+                candidate_wing_area_m2,
+                effective_aspect_ratio);
+
             const double k_g = automatic_gust_alleviation_factor(
                 actual_wing_loading,
                 rho,

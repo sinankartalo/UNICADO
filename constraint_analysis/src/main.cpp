@@ -125,13 +125,17 @@ int main(int argc, char* argv[])
         constraint_output_writer::write_all_curves_to_csv(envelope_output, "output");
 
         // The plotting script reads this file so the marker is placed at the
-        // interpolated curve intersection instead of the nearest grid point.
+        // quadratically interpolated envelope minimum instead of the nearest grid point.
         {
             std::ofstream file("output/design_point.csv");
-            file << "wing_loading,thrust_to_weight,method\n";
+            const double design_wing_area_m2 =
+                input.aircraft.takeoff_weight_N / feasible_best_point.wing_loading;
+
+            file << "wing_loading,thrust_to_weight,wing_area_m2,method\n";
             file << feasible_best_point.wing_loading << ","
-                 << feasible_best_point.thrust_to_weight
-                 << ",piecewise_linear_interpolation\n";
+                 << feasible_best_point.thrust_to_weight << ","
+                 << design_wing_area_m2
+                 << ",local_quadratic_interpolation\n";
         }
 
         for (const auto& vc : output.vertical_constraints)
@@ -253,9 +257,12 @@ int main(int argc, char* argv[])
             << '\n';
 
         std::cout << "\n=== feasible_best_design_point ===\n";
+        const double design_wing_area_m2 =
+            input.aircraft.takeoff_weight_N / feasible_best_point.wing_loading;
         std::cout
             << "wing_loading = " << feasible_best_point.wing_loading
             << "  thrust_to_weight = " << feasible_best_point.thrust_to_weight
+            << "  wing_area = " << design_wing_area_m2 << " m^2"
             << '\n';
 
         std::cout << "\n=== active_constraints ===\n";

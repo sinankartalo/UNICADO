@@ -21,6 +21,7 @@ namespace constraint_analysis
     struct aircraft_data
     {
         double wing_area_m2 = 0.0;
+        double takeoff_weight_N = 0.0;
         double aspect_ratio = 0.0;
         double cl_max_takeoff = 0.0;
         double cl_max_landing = 0.0;

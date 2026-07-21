@@ -170,6 +170,9 @@ namespace constraint_analysis
             "reference_wing_id",
             "aircraft/aerodynamics/reference_wing_ID");
         xml_map_value(config, *selected_case,
+            "aerodynamic_polar_format",
+            "aircraft/aerodynamics/polar_format");
+        xml_map_value(config, *selected_case,
             "mission_csv_path",
             "mission/mission_csv_path");
         xml_map_value(config, *selected_case,
@@ -295,10 +298,14 @@ namespace constraint_analysis
         const std::string reference_wing_id =
             xml_string(config, "reference_wing_id");
 
+        const std::string aerodynamic_polar_format =
+            xml_string(config, "aerodynamic_polar_format");
+
         const aerodynamic_aircraft_values aero_values =
             read_aerodynamic_aircraft_values(
                 aerodynamic_polar_xml_path,
-                reference_wing_id
+                reference_wing_id,
+                aerodynamic_polar_format
             );
 
         const std::filesystem::path mission_csv_path =
@@ -307,11 +314,12 @@ namespace constraint_analysis
         readMission mission_data(mission_csv_path);
 
         input.aircraft.wing_area_m2 = aero_values.wing_area_m2;
+        input.aircraft.takeoff_weight_N = mission_data.total_mass.front() * 9.80665;
         input.aircraft.aspect_ratio = aero_values.aspect_ratio;
         input.aircraft.polar.cd_0 = aero_values.cd0;
         input.aircraft.polar.k = aero_values.k;
-        input.aircraft.cl_max_takeoff = aero_values.cl_max;
-        input.aircraft.cl_max_landing = aero_values.cl_max;
+        input.aircraft.cl_max_takeoff = aero_values.cl_max_takeoff;
+        input.aircraft.cl_max_landing = aero_values.cl_max_landing;
 
         input.engine = engine;
 
@@ -383,16 +391,25 @@ namespace constraint_analysis
         std::cout << "Using UNICADO aerodynamics library.\n";
         std::cout << "Aerodynamic polar XML: "
                 << aerodynamic_polar_xml_path.string() << '\n';
-        std::cout << "Reference wing ID = "
-                << reference_wing_id << '\n';
-        std::cout << "Wing reference area from aerodynamics = "
-                << input.aircraft.wing_area_m2 << " m^2\n";
+        std::cout << "Aerodynamic polar format = "
+                << aerodynamic_polar_format << '\n';
+        if (aerodynamic_polar_format == "component_polar")
+        {
+            std::cout << "Reference wing ID = " << reference_wing_id << '\n';
+        }
+        else
+        {
+            std::cout << "Wing area is not imported from the trimmed polar; "
+                      << "it will be calculated from takeoff weight and selected W/S.\n";
+        }
         std::cout << "CD0 from aerodynamics = "
                 << input.aircraft.polar.cd_0 << '\n';
         std::cout << "Induced drag factor k from aerodynamics = "
                 << input.aircraft.polar.k << '\n';
-        std::cout << "CLmax from aerodynamics = "
-                << aero_values.cl_max << '\n';
+        std::cout << "Takeoff CLmax from aerodynamics = "
+                << aero_values.cl_max_takeoff << '\n';
+        std::cout << "Landing CLmax from aerodynamics = "
+                << aero_values.cl_max_landing << '\n';
         std::cout << "Using mission CSV: "
                 << mission_csv_path.string() << '\n';
         std::cout << "Mission beta takeoff = "

@@ -10,6 +10,9 @@
       <constraint_case ID="UNICADO_TEST_ENGINE" description="UNICADO-SMR-01 analysis using the V2527-A5 test engine deck">
         <aircraft description="Aircraft and aerodynamic data sources">
           <aerodynamics>
+            <polar_format description="Aerodynamic XML structure: component_polar or trimmed_aircraft_polar">
+              <value>component_polar</value>
+            </polar_format>
             <polar_xml_path description="UNICADO aerodynamics polar XML">
               <value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value>
             </polar_xml_path>
@@ -186,8 +189,11 @@
       <constraint_case ID="UNICADO_REAL_ENGINE" description="UNICADO-SMR-01 analysis using the mission PW1127G-JM engine deck">
         <aircraft description="Aircraft and aerodynamic data sources">
           <aerodynamics>
+            <polar_format description="Aerodynamic XML structure: component_polar or trimmed_aircraft_polar">
+              <value>trimmed_aircraft_polar</value>
+            </polar_format>
             <polar_xml_path description="UNICADO aerodynamics polar XML">
-              <value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value>
+              <value>data/SMR-01_design_trimmed_polar.xml</value>
             </polar_xml_path>
             <reference_wing_ID description="Reference wing ID in the aerodynamic XML">
               <value>main_wing</value>
@@ -209,7 +215,7 @@
             <value>1000.0</value>
           </wing_loading_min>
           <wing_loading_max>
-            <value>7000.0</value>
+            <value>9000.0</value>
           </wing_loading_max>
           <wing_loading_step>
             <value>500.0</value>
@@ -362,6 +368,9 @@
       <constraint_case ID="SHORT_FIELD_DEMO" description="Example case with shorter runway requirements">
         <aircraft>
           <aerodynamics>
+            <polar_format description="Aerodynamic XML structure: component_polar or trimmed_aircraft_polar">
+              <value>component_polar</value>
+            </polar_format>
             <polar_xml_path>
               <value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value>
             </polar_xml_path>

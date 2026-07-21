@@ -86,19 +86,79 @@ namespace constraint_analysis
 
     namespace
     {
-        double interpolate_y(
+        double linear_interpolate(
             const curve_point& left,
             const curve_point& right,
             double x)
         {
             const double dx = right.x - left.x;
-            if (dx == 0.0)
+            if (std::abs(dx) < 1.0e-12)
             {
                 return left.y;
             }
 
             const double ratio = (x - left.x) / dx;
             return left.y + ratio * (right.y - left.y);
+        }
+
+        double quadratic_interpolate(
+            const curve_point& p0,
+            const curve_point& p1,
+            const curve_point& p2,
+            double x)
+        {
+            const double d0 = (p0.x - p1.x) * (p0.x - p2.x);
+            const double d1 = (p1.x - p0.x) * (p1.x - p2.x);
+            const double d2 = (p2.x - p0.x) * (p2.x - p1.x);
+
+            if (std::abs(d0) < 1.0e-12 ||
+                std::abs(d1) < 1.0e-12 ||
+                std::abs(d2) < 1.0e-12)
+            {
+                return linear_interpolate(p1, p2, x);
+            }
+
+            const double l0 = ((x - p1.x) * (x - p2.x)) / d0;
+            const double l1 = ((x - p0.x) * (x - p2.x)) / d1;
+            const double l2 = ((x - p0.x) * (x - p1.x)) / d2;
+
+            return p0.y * l0 + p1.y * l1 + p2.y * l2;
+        }
+
+        double interpolated_curve_y(
+            const constraint_curve& curve,
+            std::size_t interval_index,
+            double x)
+        {
+            const std::size_t point_count = curve.points.size();
+
+            // With only two available points, quadratic interpolation is not
+            // possible, so ordinary linear interpolation is used.
+            if (point_count < 3)
+            {
+                return linear_interpolate(
+                    curve.points[interval_index],
+                    curve.points[interval_index + 1],
+                    x);
+            }
+
+            // Select three neighbouring samples around the current interval.
+            // At the left edge use points 0,1,2; elsewhere use i-1,i,i+1.
+            std::size_t first_index = 0;
+            if (interval_index > 0)
+            {
+                first_index = interval_index - 1;
+            }
+            if (first_index + 2 >= point_count)
+            {
+                first_index = point_count - 3;
+            }
+
+            return quadratic_interpolate(
+                curve.points[first_index],
+                curve.points[first_index + 1],
+                curve.points[first_index + 2],
+                x);
         }
 
         double interpolated_envelope_y(
@@ -110,15 +170,8 @@ namespace constraint_analysis
 
             for (const auto& curve : output.curves)
             {
-                const double y = interpolate_y(
-                    curve.points[interval_index],
-                    curve.points[interval_index + 1],
-                    x);
-
-                if (y > envelope_y)
-                {
-                    envelope_y = y;
-                }
+                const double y = interpolated_curve_y(curve, interval_index, x);
+                envelope_y = std::max(envelope_y, y);
             }
 
             return envelope_y;
@@ -155,28 +208,17 @@ namespace constraint_analysis
             double best_y = std::numeric_limits<double>::infinity();
             bool found = false;
 
-            const auto evaluate_candidate = [&](std::size_t interval_index, double x)
-            {
-                if (x < min_allowed_ws || x > max_allowed_ws)
-                {
-                    return;
-                }
-
-                const double y = interpolated_envelope_y(output, interval_index, x);
-                if (!found || y < best_y)
-                {
-                    best.wing_loading = x;
-                    best.thrust_to_weight = y;
-                    best_y = y;
-                    found = true;
-                }
-            };
+            // Each original W/S interval is scanned finely. The individual
+            // constraints are reconstructed with local quadratic interpolation,
+            // then their maximum is taken to form the envelope. This captures a
+            // smooth minimum between grid points, which piecewise-linear
+            // interpolation cannot detect when one active curve is U-shaped.
+            constexpr std::size_t subdivisions_per_interval = 1000;
 
             for (std::size_t i = 0; i + 1 < point_count; ++i)
             {
                 const double interval_left = output.curves.front().points[i].x;
                 const double interval_right = output.curves.front().points[i + 1].x;
-
                 const double clipped_left = std::max(interval_left, min_allowed_ws);
                 const double clipped_right = std::min(interval_right, max_allowed_ws);
 
@@ -185,46 +227,21 @@ namespace constraint_analysis
                     continue;
                 }
 
-                // Interval boundaries are candidates too. This is important when
-                // a vertical constraint clips the feasible design space.
-                evaluate_candidate(i, clipped_left);
-                evaluate_candidate(i, clipped_right);
-
-                // The piecewise-linear envelope can reach a minimum where the
-                // active constraint changes. Such points are pairwise curve
-                // intersections inside the current W/S interval.
-                for (std::size_t a = 0; a < output.curves.size(); ++a)
+                for (std::size_t step = 0; step <= subdivisions_per_interval; ++step)
                 {
-                    for (std::size_t b = a + 1; b < output.curves.size(); ++b)
+                    const double ratio =
+                        static_cast<double>(step) /
+                        static_cast<double>(subdivisions_per_interval);
+                    const double x =
+                        clipped_left + ratio * (clipped_right - clipped_left);
+                    const double y = interpolated_envelope_y(output, i, x);
+
+                    if (!found || y < best_y)
                     {
-                        const auto& a_left = output.curves[a].points[i];
-                        const auto& a_right = output.curves[a].points[i + 1];
-                        const auto& b_left = output.curves[b].points[i];
-                        const auto& b_right = output.curves[b].points[i + 1];
-
-                        const double difference_left = a_left.y - b_left.y;
-                        const double difference_right = a_right.y - b_right.y;
-                        const double denominator = difference_left - difference_right;
-
-                        if (std::abs(denominator) < 1.0e-12)
-                        {
-                            continue;
-                        }
-
-                        const double ratio = difference_left / denominator;
-                        if (ratio < 0.0 || ratio > 1.0)
-                        {
-                            continue;
-                        }
-
-                        const double intersection_x =
-                            interval_left + ratio * (interval_right - interval_left);
-
-                        if (intersection_x >= clipped_left &&
-                            intersection_x <= clipped_right)
-                        {
-                            evaluate_candidate(i, intersection_x);
-                        }
+                        best.wing_loading = x;
+                        best.thrust_to_weight = y;
+                        best_y = y;
+                        found = true;
                     }
                 }
             }

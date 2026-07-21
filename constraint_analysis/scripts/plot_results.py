@@ -139,7 +139,17 @@ gust_ws_limit = read_vertical_limit("jet_gust_limit.csv")
 
 # Axis limits
 x_min = envelope["wing_loading"].min()
-x_max = envelope["wing_loading"].max()
+
+# The landing and stall limits can lie outside the sampled W/S range.
+# Expand the plotting range so those vertical constraint lines remain visible.
+vertical_limits = [
+    value for value in (landing_ws_limit, stall_ws_limit, gust_ws_limit)
+    if value is not None
+]
+
+x_data_max = envelope["wing_loading"].max()
+x_limit_max = max(vertical_limits, default=x_data_max)
+x_max = max(x_data_max, x_limit_max) * 1.05
 
 y_min = 0.0
 y_max = max(
