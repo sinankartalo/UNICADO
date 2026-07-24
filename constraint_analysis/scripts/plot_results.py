@@ -161,7 +161,7 @@ y_max = max(
 # ============================================================
 # Plot 1: Professional constraint envelope
 # ============================================================
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
 color_map = {
     "Acceleration": "#1f77b4",
@@ -183,15 +183,34 @@ for name, df in constraints.items():
         df["thrust_to_weight"],
         label=name,
         color=color_map.get(name, None),
-        alpha=0.78,
-        linewidth=1.7,
+        alpha=0.68,
+        linewidth=1.5,
+        zorder=2,
+    )
+
+# Lightly mark the wing-loading interval allowed by all vertical limits.
+# The thrust constraints still determine the required T/W inside this band.
+upper_ws_limits = [
+    value for value in (landing_ws_limit, stall_ws_limit)
+    if value is not None
+]
+feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
+feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
+
+if feasible_ws_min < feasible_ws_max:
+    ax.axvspan(
+        feasible_ws_min,
+        feasible_ws_max,
+        color="#2ca02c",
+        alpha=0.055,
+        zorder=0,
     )
 
 ax.plot(
     envelope["wing_loading"],
     envelope["thrust_to_weight"],
     color="black",
-    linewidth=3.4,
+    linewidth=3.2,
     label="Envelope",
     zorder=5,
 )
@@ -200,27 +219,44 @@ ax.scatter(
     design_ws,
     design_tw,
     s=85,
-    color="black",
+    color="#d62728",
     edgecolor="white",
-    linewidth=1.2,
+    linewidth=1.4,
     zorder=6,
+    label="Selected design point",
 )
 
 ax.annotate(
-    f"Design point\nW/S = {design_ws:.0f} N/m²\nT/W = {design_tw:.3f}",
+    f"W/S = {design_ws:.0f} N/m²\nT/W = {design_tw:.3f}",
     xy=(design_ws, design_tw),
-    xytext=(design_ws + 450, design_tw + 0.12),
-    arrowprops=dict(arrowstyle="->", linewidth=1.2),
-    bbox=dict(boxstyle="round,pad=0.35", facecolor="white", edgecolor="gray", alpha=0.95),
+    xytext=(18, 28),
+    textcoords="offset points",
+    fontsize=10,
+    arrowprops=dict(
+        arrowstyle="-",
+        color="#4d4d4d",
+        linewidth=1.0,
+        shrinkA=4,
+        shrinkB=5,
+    ),
+    bbox=dict(
+        boxstyle="round,pad=0.35",
+        facecolor="white",
+        edgecolor="#b3b3b3",
+        alpha=0.96,
+    ),
+    zorder=7,
 )
 
 if landing_ws_limit is not None:
     ax.axvline(
         landing_ws_limit,
-        color="purple",
+        color="#7b3294",
         linestyle="--",
-        linewidth=2.0,
-        label=f"Landing W/S limit = {landing_ws_limit:.0f}",
+        linewidth=1.7,
+        alpha=0.9,
+        label=f"Landing max ({landing_ws_limit:.0f})",
+        zorder=3,
     )
 
 if stall_ws_limit is not None:
@@ -228,8 +264,10 @@ if stall_ws_limit is not None:
         stall_ws_limit,
         color=color_map["Stall speed"],
         linestyle=":",
-        linewidth=2.4,
-        label=f"Stall speed W/S limit = {stall_ws_limit:.0f}",
+        linewidth=2.0,
+        alpha=0.9,
+        label=f"Stall max ({stall_ws_limit:.0f})",
+        zorder=3,
     )
 
 if gust_ws_limit is not None:
@@ -237,18 +275,34 @@ if gust_ws_limit is not None:
         gust_ws_limit,
         color=color_map["Gust"],
         linestyle="-.",
-        linewidth=2.0,
-        label=f"Gust W/S min = {gust_ws_limit:.0f}",
+        linewidth=1.7,
+        alpha=0.9,
+        label=f"Gust min ({gust_ws_limit:.0f})",
+        zorder=3,
     )
 
-ax.set_title("Constraint Analysis Matching Chart")
+ax.set_title("Constraint Analysis Matching Chart", pad=12, fontweight="semibold")
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
 
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
 
-ax.legend(loc="upper left", frameon=True, ncol=2)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.grid(axis="x", alpha=0.18)
+ax.grid(axis="y", alpha=0.25)
+
+ax.legend(
+    loc="upper left",
+    bbox_to_anchor=(1.015, 1.0),
+    borderaxespad=0.0,
+    frameon=False,
+    handlelength=2.4,
+    labelspacing=0.7,
+)
+
+fig.subplots_adjust(right=0.79)
 save_plot("01_matching_chart_professional")
 
 
