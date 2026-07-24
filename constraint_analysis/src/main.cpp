@@ -2,16 +2,91 @@
 #include "constraint_analysis/ca_parser.h"
 #include "atmosphere/atmosphere.h"
 
+#include <algorithm>
+#include <cmath>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
 
 using namespace constraint_analysis;
+
+namespace
+{
+    double interpolate_envelope_thrust_to_weight(
+        const constraint_curve& envelope,
+        double wing_loading)
+    {
+        if (envelope.points.empty())
+        {
+            throw std::runtime_error(
+                "Cannot evaluate the aircraft point because the constraint envelope is empty.");
+        }
+
+        if (wing_loading < envelope.points.front().x ||
+            wing_loading > envelope.points.back().x)
+        {
+            throw std::runtime_error(
+                "Aircraft wing loading from the aerodynamic reference area lies "
+                "outside the configured wing-loading design space.");
+        }
+
+        const auto right = std::lower_bound(
+            envelope.points.begin(),
+            envelope.points.end(),
+            wing_loading,
+            [](const curve_point& point, double value)
+            {
+                return point.x < value;
+            });
+
+        if (right == envelope.points.begin())
+        {
+            return right->y;
+        }
+
+        if (right == envelope.points.end())
+        {
+            return envelope.points.back().y;
+        }
+
+        if (std::abs(right->x - wing_loading) < 1.0e-12)
+        {
+            return right->y;
+        }
+
+        const auto left = std::prev(right);
+        const double ratio =
+            (wing_loading - left->x) / (right->x - left->x);
+
+        return left->y + ratio * (right->y - left->y);
+    }
+
+    bool satisfies_vertical_constraints(
+        double wing_loading,
+        const std::vector<vertical_constraint>& constraints)
+    {
+        for (const auto& constraint : constraints)
+        {
+            if (constraint.is_upper_limit && wing_loading > constraint.x_limit)
+            {
+                return false;
+            }
+
+            if (!constraint.is_upper_limit && wing_loading < constraint.x_limit)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -112,6 +187,27 @@ int main(int argc, char* argv[])
                 output,
                 output.vertical_constraints);
 
+        if (input.aircraft.wing_area_m2 <= 0.0)
+        {
+            throw std::runtime_error(
+                "Aerodynamic reference wing area must be positive.");
+        }
+
+        // The aircraft wing area is an authoritative input from the UNICADO
+        // aerodynamics model. The matching chart therefore evaluates the
+        // existing aircraft at W_TO / S_ref instead of sizing a new wing area
+        // from the envelope optimum.
+        const double aircraft_wing_loading =
+            input.aircraft.takeoff_weight_N / input.aircraft.wing_area_m2;
+        const double aircraft_required_thrust_to_weight =
+            interpolate_envelope_thrust_to_weight(
+                envelope,
+                aircraft_wing_loading);
+        const bool aircraft_wing_loading_feasible =
+            satisfies_vertical_constraints(
+                aircraft_wing_loading,
+                output.vertical_constraints);
+
         const auto active_constraints =
             active_constraint_analyzer::analyze(output);
 
@@ -124,18 +220,24 @@ int main(int argc, char* argv[])
         envelope_output.curves.push_back(envelope);
         constraint_output_writer::write_all_curves_to_csv(envelope_output, "output");
 
-        // The plotting script reads this file so the marker is placed at the
-        // quadratically interpolated envelope minimum instead of the nearest grid point.
+        // Keep both engineering interpretations in one traceable plotting
+        // interface: the existing aircraft from aerodynamic Sref and the
+        // minimum feasible point proposed by the constraint analysis.
         {
             std::ofstream file("output/design_point.csv");
-            const double design_wing_area_m2 =
-                input.aircraft.takeoff_weight_N / feasible_best_point.wing_loading;
-
-            file << "wing_loading,thrust_to_weight,wing_area_m2,method\n";
+            file << "wing_loading,thrust_to_weight,wing_area_m2,"
+                    "vertical_constraints_feasible,method\n";
+            file << aircraft_wing_loading << ","
+                 << aircraft_required_thrust_to_weight << ","
+                 << input.aircraft.wing_area_m2 << ","
+                 << aircraft_wing_loading_feasible << ","
+                 << "aerodynamics_reference_area\n";
             file << feasible_best_point.wing_loading << ","
                  << feasible_best_point.thrust_to_weight << ","
-                 << design_wing_area_m2
-                 << ",local_quadratic_interpolation\n";
+                 << input.aircraft.takeoff_weight_N /
+                        feasible_best_point.wing_loading << ","
+                 << true << ","
+                 << "best_design_point\n";
         }
 
         for (const auto& vc : output.vertical_constraints)
@@ -256,13 +358,20 @@ int main(int argc, char* argv[])
             << "  thrust_to_weight = " << best_point.thrust_to_weight
             << '\n';
 
-        std::cout << "\n=== feasible_best_design_point ===\n";
-        const double design_wing_area_m2 =
-            input.aircraft.takeoff_weight_N / feasible_best_point.wing_loading;
+        std::cout << "\n=== minimum_feasible_envelope_point_reference ===\n";
         std::cout
             << "wing_loading = " << feasible_best_point.wing_loading
             << "  thrust_to_weight = " << feasible_best_point.thrust_to_weight
-            << "  wing_area = " << design_wing_area_m2 << " m^2"
+            << '\n';
+
+        std::cout << "\n=== aircraft_point_from_aerodynamics_area ===\n";
+        std::cout
+            << "wing_area = " << input.aircraft.wing_area_m2 << " m^2"
+            << "  wing_loading = " << aircraft_wing_loading
+            << "  required_thrust_to_weight = "
+            << aircraft_required_thrust_to_weight
+            << "  vertical_constraints_feasible = "
+            << (aircraft_wing_loading_feasible ? "yes" : "no")
             << '\n';
 
         std::cout << "\n=== active_constraints ===\n";

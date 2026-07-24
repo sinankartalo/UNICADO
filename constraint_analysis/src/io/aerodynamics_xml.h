@@ -17,6 +17,5 @@ namespace constraint_analysis
 
     aerodynamic_aircraft_values read_aerodynamic_aircraft_values(
         const std::filesystem::path& polar_xml_path,
-        const std::string& reference_wing_id,
-        const std::string& polar_format);
+        const std::string& reference_wing_id);
 }

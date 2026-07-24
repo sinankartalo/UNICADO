@@ -99,18 +99,43 @@ if envelope is None:
     raise FileNotFoundError("constraint_envelope.csv not found.")
 
 
-# Prefer the C++ interpolated design point. Fall back to the sampled
-# envelope minimum for compatibility with older output folders.
+# Read both the existing aircraft point and the minimum feasible design point.
+# Older output folders with a single row remain supported.
 design_point_path = os.path.join(output_dir, "design_point.csv")
 
 if os.path.exists(design_point_path):
     design_point_df = pd.read_csv(design_point_path)
-    design_ws = float(design_point_df.loc[0, "wing_loading"])
-    design_tw = float(design_point_df.loc[0, "thrust_to_weight"])
+
+    if "method" in design_point_df.columns:
+        aircraft_rows = design_point_df[
+            design_point_df["method"] == "aerodynamics_reference_area"
+        ]
+        best_rows = design_point_df[
+            design_point_df["method"] == "best_design_point"
+        ]
+    else:
+        aircraft_rows = design_point_df.iloc[[0]]
+        best_rows = pd.DataFrame()
+
+    if aircraft_rows.empty:
+        aircraft_rows = design_point_df.iloc[[0]]
+
+    aircraft_ws = float(aircraft_rows.iloc[0]["wing_loading"])
+    aircraft_tw = float(aircraft_rows.iloc[0]["thrust_to_weight"])
+
+    if not best_rows.empty:
+        best_ws = float(best_rows.iloc[0]["wing_loading"])
+        best_tw = float(best_rows.iloc[0]["thrust_to_weight"])
+    else:
+        idx = envelope["thrust_to_weight"].idxmin()
+        best_ws = float(envelope.loc[idx, "wing_loading"])
+        best_tw = float(envelope.loc[idx, "thrust_to_weight"])
 else:
     idx = envelope["thrust_to_weight"].idxmin()
-    design_ws = float(envelope.loc[idx, "wing_loading"])
-    design_tw = float(envelope.loc[idx, "thrust_to_weight"])
+    best_ws = float(envelope.loc[idx, "wing_loading"])
+    best_tw = float(envelope.loc[idx, "thrust_to_weight"])
+    aircraft_ws = best_ws
+    aircraft_tw = best_tw
 
 
 def read_vertical_limit(filename):
@@ -161,7 +186,7 @@ y_max = max(
 # ============================================================
 # Plot 1: Professional constraint envelope
 # ============================================================
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
 color_map = {
     "Acceleration": "#1f77b4",
@@ -183,44 +208,115 @@ for name, df in constraints.items():
         df["thrust_to_weight"],
         label=name,
         color=color_map.get(name, None),
-        alpha=0.78,
-        linewidth=1.7,
+        alpha=0.68,
+        linewidth=1.5,
+        zorder=2,
+    )
+
+# Lightly mark the wing-loading interval allowed by all vertical limits.
+# The thrust constraints still determine the required T/W inside this band.
+upper_ws_limits = [
+    value for value in (landing_ws_limit, stall_ws_limit)
+    if value is not None
+]
+feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
+feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
+
+if feasible_ws_min < feasible_ws_max:
+    ax.axvspan(
+        feasible_ws_min,
+        feasible_ws_max,
+        color="#2ca02c",
+        alpha=0.055,
+        zorder=0,
     )
 
 ax.plot(
     envelope["wing_loading"],
     envelope["thrust_to_weight"],
     color="black",
-    linewidth=3.4,
+    linewidth=3.2,
     label="Envelope",
     zorder=5,
 )
 
 ax.scatter(
-    design_ws,
-    design_tw,
+    aircraft_ws,
+    aircraft_tw,
     s=85,
-    color="black",
+    color="#d62728",
     edgecolor="white",
-    linewidth=1.2,
+    linewidth=1.4,
     zorder=6,
+    label="Aircraft point from aero Sref",
 )
 
 ax.annotate(
-    f"Design point\nW/S = {design_ws:.0f} N/m²\nT/W = {design_tw:.3f}",
-    xy=(design_ws, design_tw),
-    xytext=(design_ws + 450, design_tw + 0.12),
-    arrowprops=dict(arrowstyle="->", linewidth=1.2),
-    bbox=dict(boxstyle="round,pad=0.35", facecolor="white", edgecolor="gray", alpha=0.95),
+    f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\nT/W = {aircraft_tw:.3f}",
+    xy=(aircraft_ws, aircraft_tw),
+    xytext=(18, 28),
+    textcoords="offset points",
+    fontsize=10,
+    arrowprops=dict(
+        arrowstyle="-",
+        color="#4d4d4d",
+        linewidth=1.0,
+        shrinkA=4,
+        shrinkB=5,
+    ),
+    bbox=dict(
+        boxstyle="round,pad=0.35",
+        facecolor="white",
+        edgecolor="#b3b3b3",
+        alpha=0.96,
+    ),
+    zorder=7,
+)
+
+ax.scatter(
+    best_ws,
+    best_tw,
+    s=115,
+    marker="*",
+    color="#2ca02c",
+    edgecolor="white",
+    linewidth=1.2,
+    zorder=7,
+    label="Best design point",
+)
+
+ax.annotate(
+    f"Best design point\nW/S = {best_ws:.0f} N/m²\nT/W = {best_tw:.3f}",
+    xy=(best_ws, best_tw),
+    xytext=(-20, -48),
+    textcoords="offset points",
+    ha="right",
+    fontsize=10,
+    arrowprops=dict(
+        arrowstyle="-",
+        color="#4d4d4d",
+        linewidth=1.0,
+        shrinkA=4,
+        shrinkB=5,
+    ),
+    bbox=dict(
+        boxstyle="round,pad=0.35",
+        facecolor="white",
+        edgecolor="#b3b3b3",
+        alpha=0.96,
+    ),
+    zorder=8,
 )
 
 if landing_ws_limit is not None:
     ax.axvline(
         landing_ws_limit,
-        color="purple",
+        color="#7b3294",
         linestyle="--",
-        linewidth=2.0,
-        label=f"Landing W/S limit = {landing_ws_limit:.0f}",
+        linewidth=1.7,
+        alpha=0.9,
+        label=f"Landing max ({landing_ws_limit:.0f})",
+        zorder=3,
     )
 
 if stall_ws_limit is not None:
@@ -228,8 +324,10 @@ if stall_ws_limit is not None:
         stall_ws_limit,
         color=color_map["Stall speed"],
         linestyle=":",
-        linewidth=2.4,
-        label=f"Stall speed W/S limit = {stall_ws_limit:.0f}",
+        linewidth=2.0,
+        alpha=0.9,
+        label=f"Stall max ({stall_ws_limit:.0f})",
+        zorder=3,
     )
 
 if gust_ws_limit is not None:
@@ -237,18 +335,34 @@ if gust_ws_limit is not None:
         gust_ws_limit,
         color=color_map["Gust"],
         linestyle="-.",
-        linewidth=2.0,
-        label=f"Gust W/S min = {gust_ws_limit:.0f}",
+        linewidth=1.7,
+        alpha=0.9,
+        label=f"Gust min ({gust_ws_limit:.0f})",
+        zorder=3,
     )
 
-ax.set_title("Constraint Analysis Matching Chart")
+ax.set_title("Constraint Analysis Matching Chart", pad=12, fontweight="semibold")
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
 
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
 
-ax.legend(loc="upper left", frameon=True, ncol=2)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.grid(axis="x", alpha=0.18)
+ax.grid(axis="y", alpha=0.25)
+
+ax.legend(
+    loc="upper left",
+    bbox_to_anchor=(1.015, 1.0),
+    borderaxespad=0.0,
+    frameon=False,
+    handlelength=2.4,
+    labelspacing=0.7,
+)
+
+fig.subplots_adjust(right=0.79)
 save_plot("01_matching_chart_professional")
 
 
@@ -328,13 +442,26 @@ for i in range(1, len(x_env) + 1):
         start = i
 
 ax.scatter(
-    design_ws,
-    design_tw,
+    aircraft_ws,
+    aircraft_tw,
     s=85,
-    color="black",
+    color="#d62728",
     edgecolor="white",
     linewidth=1.2,
     zorder=6,
+    label="Aircraft point from aero Sref",
+)
+
+ax.scatter(
+    best_ws,
+    best_tw,
+    s=115,
+    marker="*",
+    color="#2ca02c",
+    edgecolor="white",
+    linewidth=1.2,
+    zorder=7,
+    label="Best design point",
 )
 
 if landing_ws_limit is not None:
@@ -622,5 +749,6 @@ if os.path.exists(carpet_path) and os.path.exists(study_path):
 
 print()
 print("Plot generation completed.")
-print(f"Design point: W/S = {design_ws:.0f} N/m², T/W = {design_tw:.4f}")
+print(f"Aircraft point: W/S = {aircraft_ws:.0f} N/m², T/W = {aircraft_tw:.4f}")
+print(f"Best design point: W/S = {best_ws:.0f} N/m², T/W = {best_tw:.4f}")
 print(f"Plots saved to: {save_dir}")

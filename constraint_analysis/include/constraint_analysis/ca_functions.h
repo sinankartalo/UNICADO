@@ -319,6 +319,13 @@ namespace constraint_analysis
      * mu         = braking friction coefficient
      * CLmax      = landing maximum lift coefficient
      *
+     * The implementation follows Mattingly Eq. 2.33:
+     *
+     *      S_B = beta (W_TO/S) / (rho g xi_L)
+     *            ln(1 + xi_L / (mu CLmax / k_TD^2))
+     *
+     * where xi_L = CD + CDR - mu CL.
+     *
      * A lower landing weight fraction increases the allowable W_TO/S.
      */
     struct mattingly_landing_braking_roll_input
@@ -338,7 +345,7 @@ namespace constraint_analysis
 
     struct mattingly_landing_braking_roll_result
     {
-        double xi_landing = 0.0;
+        double xi_landing = 0.0;        // CD + CDR - mu*CL [-]
         double wing_loading_limit = 0.0;
     };
 

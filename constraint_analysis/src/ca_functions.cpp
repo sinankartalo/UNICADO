@@ -189,56 +189,75 @@ namespace constraint_analysis
         mattingly_landing_braking_roll_result result;
 
         /*
-         * Effective landing/braking deceleration coefficient:
+         * Mattingly Eq. 2.33 landing/braking-roll relation:
          *
-         * xi_L =
-         *     mu
-         *   - mu * (CL / CLmax)
-         *   + (CD + CDR) / CLmax
+         *              beta (W_TO/S)       /        xi_L        \
+         *      S_B = ------------------- ln|1 + ----------------|
+         *                rho g xi_L        \    mu CLmax/k_TD^2 /
          *
-         * Interpretation:
-         * - braking friction provides the main stopping force
-         * - residual lift reduces normal force and therefore braking friction
-         * - aerodynamic drag contributes additional deceleration
+         *      xi_L = CD + CDR - mu CL
+         *
+         * Solving for takeoff wing loading gives the vertical
+         * matching-chart constraint used below.
          */
         result.xi_landing =
-            input.mu
-            - input.mu * (input.cl / input.cl_max)
-            + (input.cd + input.cdr) / input.cl_max;
+            input.cd + input.cdr - input.mu * input.cl;
 
-        if (result.xi_landing <= 0.0)
+        const double braking_lift_term =
+            input.mu * input.cl_max
+            /
+            (input.k_landing * input.k_landing);
+
+        if (braking_lift_term <= 0.0)
         {
-            throw std::runtime_error("Landing braking-roll error: xi_landing must be positive.");
+            throw std::runtime_error(
+                "Landing braking-roll error: mu*CLmax/k_landing^2 must be positive.");
         }
 
-        /*
-         * Rearranged landing/braking ground-roll relation:
-         *
-         *      S_L =
-         *      beta^2 k_L^2 (W_TO/S)
-         *      /
-         *      (rho g CLmax xi_L)
-         *
-         * Therefore:
-         *
-         *      W_TO/S =
-         *      S_L rho g CLmax xi_L
-         *      /
-         *      (beta^2 k_L^2)
-         *
-         * The result is a vertical constraint in the W/S - T/W diagram.
-         */
+        const double logarithm_argument =
+            1.0 + result.xi_landing / braking_lift_term;
+
+        if (logarithm_argument <= 0.0)
+        {
+            throw std::runtime_error(
+                "Landing braking-roll error: logarithm argument must be positive.");
+        }
+
+        double xi_over_log = 0.0;
+        constexpr double xi_tolerance = 1.0e-10;
+
+        if (std::abs(result.xi_landing) < xi_tolerance)
+        {
+            // lim[xi -> 0] xi / ln(1 + xi/A) = A
+            xi_over_log = braking_lift_term;
+        }
+        else
+        {
+            const double logarithm = std::log(logarithm_argument);
+
+            if (std::abs(logarithm) < xi_tolerance)
+            {
+                throw std::runtime_error(
+                    "Landing braking-roll error: logarithm is too close to zero.");
+            }
+
+            xi_over_log = result.xi_landing / logarithm;
+        }
+
         result.wing_loading_limit =
-            (input.ground_roll_m
-             * input.density
-             * g
-             * input.cl_max
-             * result.xi_landing)
+            input.ground_roll_m
+            * input.density
+            * g
+            * xi_over_log
             /
-            (input.beta
-             * input.beta
-             * input.k_landing
-             * input.k_landing);
+            input.beta;
+
+        if (!std::isfinite(result.wing_loading_limit)
+            || result.wing_loading_limit <= 0.0)
+        {
+            throw std::runtime_error(
+                "Landing braking-roll error: wing-loading limit must be finite and positive.");
+        }
 
         return result;
     }

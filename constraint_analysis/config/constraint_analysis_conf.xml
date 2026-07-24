@@ -184,8 +184,7 @@
                        description="SMR-01 analysis with the V2527-A5 test engine deck">
         <aircraft>
           <aerodynamics>
-            <polar_format><value>component_polar</value></polar_format>
-            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value></polar_xml_path>
+            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
             <reference_wing_ID><value>main_wing</value></reference_wing_ID>
           </aerodynamics>
         </aircraft>
@@ -213,8 +212,7 @@
                        description="SMR-01 analysis with the PW1127G-JM mission engine deck">
         <aircraft>
           <aerodynamics>
-            <polar_format><value>trimmed_aircraft_polar</value></polar_format>
-            <polar_xml_path><value>data/SMR-01_design_trimmed_polar.xml</value></polar_xml_path>
+            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
             <reference_wing_ID><value>main_wing</value></reference_wing_ID>
           </aerodynamics>
         </aircraft>
@@ -242,8 +240,7 @@
                        description="Example case with shorter runway requirements">
         <aircraft>
           <aerodynamics>
-            <polar_format><value>component_polar</value></polar_format>
-            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar.xml</value></polar_xml_path>
+            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
             <reference_wing_ID><value>main_wing</value></reference_wing_ID>
           </aerodynamics>
         </aircraft>
