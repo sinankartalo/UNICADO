@@ -138,22 +138,21 @@ gust_ws_limit = read_vertical_limit("jet_gust_limit.csv")
 
 
 # Axis limits
-x_min = envelope["wing_loading"].min()
-
+x_data_min = envelope["wing_loading"].min()
 x_data_max = envelope["wing_loading"].max()
 
 # Once landing or stall imposes an upper W/S limit, values farther to the
 # right are physically infeasible and only add empty space to the chart.
-# Keep both upper-limit lines visible with a small margin. If neither limit
-# exists, retain the full sampled design-space range.
+# Use the meaningful engineering range, then add the same absolute padding
+# to both sides so neither edge looks clipped or disproportionately empty.
 upper_physical_limits = [
     value for value in (landing_ws_limit, stall_ws_limit)
     if value is not None
 ]
-if upper_physical_limits:
-    x_max = max(upper_physical_limits) * 1.03
-else:
-    x_max = x_data_max * 1.05
+x_core_max = max(upper_physical_limits) if upper_physical_limits else x_data_max
+x_padding = 0.03 * (x_core_max - x_data_min)
+x_min = max(0.0, x_data_min - x_padding)
+x_max = x_core_max + x_padding
 
 y_min = 0.0
 y_max = max(
