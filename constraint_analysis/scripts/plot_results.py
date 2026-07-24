@@ -141,18 +141,22 @@ gust_ws_limit = read_vertical_limit("jet_gust_limit.csv")
 x_data_min = envelope["wing_loading"].min()
 x_data_max = envelope["wing_loading"].max()
 
-# Frame the meaningful wing-loading interval between the gust minimum and
-# the rightmost upper limit. Add the same absolute padding beyond both
-# vertical boundary lines so their distances to the plot edges are equal.
+# Keep the full calculated curves visible from their first wing-loading
+# sample. Mirror the distance from that left edge to the gust minimum on
+# the right side of the rightmost upper physical limit.
 upper_physical_limits = [
     value for value in (landing_ws_limit, stall_ws_limit)
     if value is not None
 ]
-x_core_min = gust_ws_limit if gust_ws_limit is not None else x_data_min
-x_core_max = max(upper_physical_limits) if upper_physical_limits else x_data_max
-x_padding = 0.03 * (x_core_max - x_core_min)
-x_min = max(0.0, x_core_min - x_padding)
-x_max = x_core_max + x_padding
+x_min = x_data_min
+x_right_limit = max(upper_physical_limits) if upper_physical_limits else x_data_max
+
+if gust_ws_limit is not None:
+    x_limit_margin = max(0.0, gust_ws_limit - x_min)
+else:
+    x_limit_margin = 0.03 * (x_right_limit - x_min)
+
+x_max = x_right_limit + x_limit_margin
 
 y_min = 0.0
 y_max = max(
