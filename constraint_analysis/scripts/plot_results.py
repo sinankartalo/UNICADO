@@ -120,12 +120,22 @@ else:
     design_value_column = "thrust_to_weight"
 
 constraints = {}
+missing_constraint_files = []
 
 for name, filename in constraint_files.items():
     df = load_xy_csv(filename)
     if df is not None:
         constraints[name] = df
+    else:
+        missing_constraint_files.append(filename)
 
+if missing_constraint_files:
+    missing_list = ", ".join(missing_constraint_files)
+    raise RuntimeError(
+        "The current analysis did not produce its constraint CSV files. "
+        "Do not plot stale results; inspect the C++ application exit code. "
+        f"Missing: {missing_list}"
+    )
 
 envelope = load_xy_csv("constraint_envelope.csv")
 
@@ -139,6 +149,12 @@ design_point_path = os.path.join(output_dir, "design_point.csv")
 
 if os.path.exists(design_point_path):
     design_point_df = pd.read_csv(design_point_path)
+    if design_value_column not in design_point_df.columns:
+        raise RuntimeError(
+            f"{design_point_path} belongs to a different propulsion mode: "
+            f"missing column '{design_value_column}'. Clean output and rerun "
+            "the C++ application before plotting."
+        )
 
     if "method" in design_point_df.columns:
         aircraft_rows = design_point_df[
