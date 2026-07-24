@@ -148,8 +148,19 @@ vertical_limits = [
 ]
 
 x_data_max = envelope["wing_loading"].max()
-x_limit_max = max(vertical_limits, default=x_data_max)
-x_max = max(x_data_max, x_limit_max) * 1.05
+
+# Once landing or stall imposes an upper W/S limit, values farther to the
+# right are physically infeasible and only add empty space to the chart.
+# Keep both upper-limit lines visible with a small margin. If neither limit
+# exists, retain the full sampled design-space range.
+upper_physical_limits = [
+    value for value in (landing_ws_limit, stall_ws_limit)
+    if value is not None
+]
+if upper_physical_limits:
+    x_max = max(upper_physical_limits) * 1.03
+else:
+    x_max = x_data_max * 1.05
 
 y_min = 0.0
 y_max = max(
