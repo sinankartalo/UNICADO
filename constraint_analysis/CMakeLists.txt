@@ -37,12 +37,12 @@ file(GLOB MODULEBASICS_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/../libraries/moduleBasics/src/*.cpp"
 )
 
-file(GLOB_RECURSE AERODYNAMICS_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../libraries/aerodynamics/src/*.cpp"
+set(AERODYNAMICS_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../libraries/aerodynamics/src/aerodynamics/aerodynamics_v3.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../libraries/aerodynamics/src/interpolation/interpolation_v2.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../libraries/aerodynamics/src/solver/solver_v2.cpp"
 )
 
-list(FILTER AERODYNAMICS_SOURCES EXCLUDE REGEX ".*py.*\\.cpp$")
-list(FILTER AERODYNAMICS_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 list(FILTER UNITCONVERSION_SOURCES EXCLUDE REGEX ".*py_unit_conversion\.cpp$")
 list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*py.*\.cpp$")
 list(FILTER AIXML_SOURCES EXCLUDE REGEX ".*py.*\.cpp$")
