@@ -61,9 +61,9 @@ namespace constraint_analysis
         {
             for (const auto& polar : configuration.polars)
             {
-                if (!polar.CL.empty())
+                if (polar.CL.size() > 0)
                 {
-                    cl_max = std::max(cl_max, *std::max_element(polar.CL.begin(), polar.CL.end()));
+                    cl_max = std::max(cl_max, polar.CL.maxCoeff());
                 }
             }
         }
