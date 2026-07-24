@@ -99,18 +99,43 @@ if envelope is None:
     raise FileNotFoundError("constraint_envelope.csv not found.")
 
 
-# Prefer the C++ aircraft point calculated from the aerodynamic reference
-# area. Fall back to the sampled envelope minimum for older output folders.
+# Read both the existing aircraft point and the minimum feasible design point.
+# Older output folders with a single row remain supported.
 design_point_path = os.path.join(output_dir, "design_point.csv")
 
 if os.path.exists(design_point_path):
     design_point_df = pd.read_csv(design_point_path)
-    design_ws = float(design_point_df.loc[0, "wing_loading"])
-    design_tw = float(design_point_df.loc[0, "thrust_to_weight"])
+
+    if "method" in design_point_df.columns:
+        aircraft_rows = design_point_df[
+            design_point_df["method"] == "aerodynamics_reference_area"
+        ]
+        best_rows = design_point_df[
+            design_point_df["method"] == "best_design_point"
+        ]
+    else:
+        aircraft_rows = design_point_df.iloc[[0]]
+        best_rows = pd.DataFrame()
+
+    if aircraft_rows.empty:
+        aircraft_rows = design_point_df.iloc[[0]]
+
+    aircraft_ws = float(aircraft_rows.iloc[0]["wing_loading"])
+    aircraft_tw = float(aircraft_rows.iloc[0]["thrust_to_weight"])
+
+    if not best_rows.empty:
+        best_ws = float(best_rows.iloc[0]["wing_loading"])
+        best_tw = float(best_rows.iloc[0]["thrust_to_weight"])
+    else:
+        idx = envelope["thrust_to_weight"].idxmin()
+        best_ws = float(envelope.loc[idx, "wing_loading"])
+        best_tw = float(envelope.loc[idx, "thrust_to_weight"])
 else:
     idx = envelope["thrust_to_weight"].idxmin()
-    design_ws = float(envelope.loc[idx, "wing_loading"])
-    design_tw = float(envelope.loc[idx, "thrust_to_weight"])
+    best_ws = float(envelope.loc[idx, "wing_loading"])
+    best_tw = float(envelope.loc[idx, "thrust_to_weight"])
+    aircraft_ws = best_ws
+    aircraft_tw = best_tw
 
 
 def read_vertical_limit(filename):
@@ -216,8 +241,8 @@ ax.plot(
 )
 
 ax.scatter(
-    design_ws,
-    design_tw,
+    aircraft_ws,
+    aircraft_tw,
     s=85,
     color="#d62728",
     edgecolor="white",
@@ -227,8 +252,8 @@ ax.scatter(
 )
 
 ax.annotate(
-    f"W/S = {design_ws:.0f} N/m²\nT/W = {design_tw:.3f}",
-    xy=(design_ws, design_tw),
+    f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\nT/W = {aircraft_tw:.3f}",
+    xy=(aircraft_ws, aircraft_tw),
     xytext=(18, 28),
     textcoords="offset points",
     fontsize=10,
@@ -246,6 +271,41 @@ ax.annotate(
         alpha=0.96,
     ),
     zorder=7,
+)
+
+ax.scatter(
+    best_ws,
+    best_tw,
+    s=115,
+    marker="*",
+    color="#2ca02c",
+    edgecolor="white",
+    linewidth=1.2,
+    zorder=7,
+    label="Best design point",
+)
+
+ax.annotate(
+    f"Best design point\nW/S = {best_ws:.0f} N/m²\nT/W = {best_tw:.3f}",
+    xy=(best_ws, best_tw),
+    xytext=(-20, -48),
+    textcoords="offset points",
+    ha="right",
+    fontsize=10,
+    arrowprops=dict(
+        arrowstyle="-",
+        color="#4d4d4d",
+        linewidth=1.0,
+        shrinkA=4,
+        shrinkB=5,
+    ),
+    bbox=dict(
+        boxstyle="round,pad=0.35",
+        facecolor="white",
+        edgecolor="#b3b3b3",
+        alpha=0.96,
+    ),
+    zorder=8,
 )
 
 if landing_ws_limit is not None:
@@ -382,13 +442,26 @@ for i in range(1, len(x_env) + 1):
         start = i
 
 ax.scatter(
-    design_ws,
-    design_tw,
+    aircraft_ws,
+    aircraft_tw,
     s=85,
-    color="black",
+    color="#d62728",
     edgecolor="white",
     linewidth=1.2,
     zorder=6,
+    label="Aircraft point from aero Sref",
+)
+
+ax.scatter(
+    best_ws,
+    best_tw,
+    s=115,
+    marker="*",
+    color="#2ca02c",
+    edgecolor="white",
+    linewidth=1.2,
+    zorder=7,
+    label="Best design point",
 )
 
 if landing_ws_limit is not None:
