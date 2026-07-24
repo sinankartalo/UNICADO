@@ -749,5 +749,6 @@ if os.path.exists(carpet_path) and os.path.exists(study_path):
 
 print()
 print("Plot generation completed.")
-print(f"Design point: W/S = {design_ws:.0f} N/m², T/W = {design_tw:.4f}")
+print(f"Aircraft point: W/S = {aircraft_ws:.0f} N/m², T/W = {aircraft_tw:.4f}")
+print(f"Best design point: W/S = {best_ws:.0f} N/m², T/W = {best_tw:.4f}")
 print(f"Plots saved to: {save_dir}")
