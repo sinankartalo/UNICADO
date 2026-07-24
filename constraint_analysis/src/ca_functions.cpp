@@ -1,6 +1,8 @@
 #include "constraint_analysis/ca_functions.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 // ============================================================
@@ -152,50 +154,161 @@ namespace constraint_analysis
         constraint_curve curve;
         curve.name = "propeller_takeoff_constraint";
 
-        const double rho = atmosphere_.getDensity(input.takeoff.altitude_m);
-
         for (double ws = input.wing_loading_min;
              ws <= input.wing_loading_max;
              ws += input.wing_loading_step)
         {
-            mattingly_takeoff_ground_roll_input takeoff;
-            takeoff.wing_loading = ws;
-            takeoff.ground_roll_m = input.takeoff.runway_m;
-            takeoff.density = rho;
-            takeoff.alpha = 1.0;
-            takeoff.beta = input.takeoff.beta_to;
-            takeoff.cl_max = input.aircraft.cl_max_takeoff;
-            takeoff.k_to = input.takeoff.speed_factor;
-            takeoff.cd = input.takeoff.cd_ground;
-            takeoff.cdr = 0.0;
-            takeoff.cl = 0.8 * input.aircraft.cl_max_takeoff;
-            takeoff.mu = input.takeoff.mu_ro;
-
-            const auto thrust_result =
-                mattingly_takeoff_ground_roll::compute(takeoff);
-
-            const double stall_speed_ms = std::sqrt(
-                2.0 * input.takeoff.beta_to * ws /
-                (rho * input.aircraft.cl_max_takeoff));
-            const double takeoff_speed_ms =
-                input.takeoff.speed_factor * stall_speed_ms;
-            const double representative_speed_ms = 0.7 * takeoff_speed_ms;
-
-            const auto operating_point = evaluate(
-                input,
-                input.takeoff.altitude_m,
-                representative_speed_ms,
-                input.propeller.takeoff);
-
             curve.points.push_back({
                 ws,
-                power_loading_from_thrust_loading(
-                    thrust_result.thrust_to_weight_sl,
-                    operating_point)
+                solve_takeoff_ground_roll(input, ws).required_shaft_power_to_weight_W_N
             });
         }
 
         return curve;
+    }
+
+    propeller_takeoff_result propeller_constraint_analysis::solve_takeoff_ground_roll(
+        const constraint_input& input,
+        double wing_loading_N_m2,
+        bool retain_steps) const
+    {
+        if (wing_loading_N_m2 <= 0.0 || input.takeoff.runway_m <= 0.0 ||
+            input.aircraft.takeoff_weight_N <= 0.0)
+        {
+            throw std::runtime_error("Integrated propeller takeoff received invalid input.");
+        }
+
+        constexpr int integration_steps = 240;
+        constexpr int bisection_iterations = 70;
+        const double g = 9.80665;
+        const double rho = atmosphere_.getDensity(input.takeoff.altitude_m);
+        const double beta = input.takeoff.beta_to;
+        const double weight_N = input.aircraft.takeoff_weight_N;
+        const double cl_ground = 0.8 * input.aircraft.cl_max_takeoff;
+        const double stall_speed_ms = std::sqrt(
+            2.0 * beta * wing_loading_N_m2 /
+            (rho * input.aircraft.cl_max_takeoff));
+        const double takeoff_speed_ms =
+            input.takeoff.speed_factor * stall_speed_ms;
+        const double dv = takeoff_speed_ms / integration_steps;
+
+        auto integrate = [&](double power_to_weight_W_N,
+                             bool keep_steps) -> propeller_takeoff_result
+        {
+            propeller_takeoff_result result;
+            result.wing_loading_N_m2 = wing_loading_N_m2;
+            result.takeoff_speed_ms = takeoff_speed_ms;
+            result.required_shaft_power_to_weight_W_N = power_to_weight_W_N;
+            double distance_m = 0.0;
+
+            if (keep_steps)
+                result.steps.reserve(integration_steps);
+
+            for (int index = 0; index < integration_steps; ++index)
+            {
+                const double speed_ms = (index + 0.5) * dv;
+                const double advance_ratio =
+                    speed_ms /
+                    ((input.propeller.takeoff.rpm / 60.0) *
+                     input.propeller.diameter_m);
+                std::vector<double> valid_pitches;
+                if (advance_ratio <= 1.05)
+                    valid_pitches.push_back(15.0);
+                if (advance_ratio >= 0.5 && advance_ratio <= 1.5)
+                    valid_pitches.push_back(30.0);
+                if (advance_ratio >= 0.75 && advance_ratio <= 2.8)
+                    valid_pitches.push_back(45.0);
+                if (valid_pitches.empty())
+                    throw std::runtime_error(
+                        "No valid test-deck pitch slice for integrated takeoff.");
+
+                propeller_operating_point deck_point;
+                double best_power_per_thrust =
+                    std::numeric_limits<double>::infinity();
+                for (double pitch_deg : valid_pitches)
+                {
+                    propeller_setting candidate = input.propeller.takeoff;
+                    candidate.pitch_deg = pitch_deg;
+                    const auto candidate_point = evaluate(
+                        input, input.takeoff.altitude_m, speed_ms, candidate);
+                    const double candidate_power_per_thrust =
+                        candidate_point.shaft_power_W /
+                        candidate_point.thrust_N;
+                    if (candidate_power_per_thrust < best_power_per_thrust)
+                    {
+                        best_power_per_thrust = candidate_power_per_thrust;
+                        deck_point = candidate_point;
+                    }
+                }
+                const double power_per_thrust_ms =
+                    deck_point.shaft_power_W / deck_point.thrust_N;
+                const double thrust_to_weight =
+                    power_to_weight_W_N / power_per_thrust_ms;
+                const double q = 0.5 * rho * speed_ms * speed_ms;
+                const double lift_to_weight =
+                    q * cl_ground / wing_loading_N_m2;
+                const double drag_to_weight =
+                    q * input.takeoff.cd_ground / wing_loading_N_m2;
+                const double rolling_to_weight =
+                    input.takeoff.mu_ro *
+                    std::max(0.0, beta - lift_to_weight);
+                const double acceleration_ms2 =
+                    g / beta *
+                    (thrust_to_weight - drag_to_weight - rolling_to_weight);
+
+                if (!std::isfinite(acceleration_ms2) ||
+                    acceleration_ms2 <= 0.0)
+                {
+                    result.integrated_ground_roll_m =
+                        std::numeric_limits<double>::infinity();
+                    result.steps.clear();
+                    return result;
+                }
+
+                distance_m += speed_ms * dv / acceleration_ms2;
+
+                if (keep_steps)
+                {
+                    propeller_takeoff_step step;
+                    step.speed_ms = speed_ms;
+                    step.distance_m = distance_m;
+                    step.acceleration_ms2 = acceleration_ms2;
+                    step.lift_N = lift_to_weight * weight_N;
+                    step.drag_N = drag_to_weight * weight_N;
+                    step.rolling_resistance_N = rolling_to_weight * weight_N;
+                    step.required_thrust_N = thrust_to_weight * weight_N;
+                    step.required_total_shaft_power_W =
+                        power_to_weight_W_N * weight_N;
+                    step.deck_point = deck_point;
+                    result.steps.push_back(step);
+                }
+            }
+
+            result.integrated_ground_roll_m = distance_m;
+            return result;
+        };
+
+        double lower_W_N = 0.0;
+        double upper_W_N = 1.0;
+        while (integrate(upper_W_N, false).integrated_ground_roll_m >
+               input.takeoff.runway_m)
+        {
+            upper_W_N *= 2.0;
+            if (upper_W_N > 1.0e5)
+                throw std::runtime_error("Integrated propeller takeoff could not be bracketed.");
+        }
+
+        for (int iteration = 0; iteration < bisection_iterations; ++iteration)
+        {
+            const double trial_W_N = 0.5 * (lower_W_N + upper_W_N);
+            if (integrate(trial_W_N, false).integrated_ground_roll_m >
+                input.takeoff.runway_m)
+                lower_W_N = trial_W_N;
+            else
+                upper_W_N = trial_W_N;
+        }
+
+        return integrate(upper_W_N, retain_steps);
     }
 
     constraint_curve propeller_constraint_analysis::compute_airborne_constraint(

@@ -86,6 +86,18 @@ namespace
 
         return true;
     }
+
+    const constraint_curve& find_curve(
+        const constraint_output& output,
+        const std::string& name)
+    {
+        const auto found = std::find_if(
+            output.curves.begin(), output.curves.end(),
+            [&](const constraint_curve& curve) { return curve.name == name; });
+        if (found == output.curves.end())
+            throw std::runtime_error("Missing constraint curve: " + name);
+        return *found;
+    }
 }
 
 int main(int argc, char* argv[])
@@ -188,6 +200,17 @@ int main(int argc, char* argv[])
         {
             std::cout << "Matching-chart y-axis: required shaft P/W [W/N].\n";
             std::cout << "Propeller deck status: test data, not a selected production propeller.\n";
+
+            // Do not let files from an earlier jet run masquerade as propeller
+            // evidence when the plotting script is run in the same directory.
+            for (const char* stale_file : {
+                     "carpet_plot_study.csv", "carpet_plot_full.csv",
+                     "true_carpet_constraints.csv",
+                     "jet_range_fuel_fraction_constraint.csv"})
+            {
+                std::filesystem::remove(
+                    std::filesystem::path("output") / stale_file);
+            }
         }
         else
         {
@@ -361,6 +384,181 @@ int main(int argc, char* argv[])
                      << point.power_coefficient << "," << point.efficiency << ","
                      << point.thrust_N << "," << point.shaft_power_W << "\n";
             }
+
+            const auto takeoff_result =
+                propeller_analysis.solve_takeoff_ground_roll(
+                    input, feasible_best_point.wing_loading, true);
+            {
+                std::ofstream profile("output/propeller_takeoff_profile.csv");
+                profile << "wing_loading_N_m2,speed_ms,distance_m,"
+                           "acceleration_ms2,lift_N,drag_N,"
+                           "rolling_resistance_N,required_thrust_N,"
+                           "required_total_shaft_power_W,advance_ratio,CT,CP,"
+                           "eta,deck_single_thrust_N,deck_single_shaft_power_W,"
+                           "deck_total_thrust_N,deck_total_shaft_power_W\n";
+                for (const auto& step : takeoff_result.steps)
+                {
+                    profile << takeoff_result.wing_loading_N_m2 << ","
+                            << step.speed_ms << "," << step.distance_m << ","
+                            << step.acceleration_ms2 << "," << step.lift_N << ","
+                            << step.drag_N << ","
+                            << step.rolling_resistance_N << ","
+                            << step.required_thrust_N << ","
+                            << step.required_total_shaft_power_W << ","
+                            << step.deck_point.advance_ratio << ","
+                            << step.deck_point.thrust_coefficient << ","
+                            << step.deck_point.power_coefficient << ","
+                            << step.deck_point.efficiency << ","
+                            << step.deck_point.thrust_N << ","
+                            << step.deck_point.shaft_power_W << ","
+                            << input.propeller.count * step.deck_point.thrust_N << ","
+                            << input.propeller.count * step.deck_point.shaft_power_W
+                            << "\n";
+                }
+            }
+
+            struct capacity_case
+            {
+                const char* name;
+                const char* curve;
+                double altitude_m;
+                double speed_ms;
+                propeller_setting setting;
+            };
+            const std::vector<capacity_case> capacity_cases = {
+                {"acceleration", "propeller_acceleration_constraint",
+                 input.acceleration.altitude_m, input.acceleration.speed_ms,
+                 input.propeller.continuous},
+                {"cruise", "propeller_cruise_constraint",
+                 input.cruise.altitude_m, input.cruise.speed_ms,
+                 input.propeller.continuous},
+                {"climb", "propeller_climb_constraint",
+                 input.climb.altitude_m, input.climb.speed_ms,
+                 input.propeller.continuous},
+                {"turn", "propeller_turn_constraint",
+                 input.turn.altitude_m, input.turn.speed_ms,
+                 input.propeller.continuous},
+            };
+
+            std::ofstream capacity("output/propeller_capacity_check.csv");
+            capacity << "case,wing_loading_N_m2,altitude_m,speed_ms,rpm,"
+                        "pitch_deg,advance_ratio,required_power_to_weight_W_N,"
+                        "required_total_shaft_power_W,required_total_thrust_N,"
+                        "deck_total_shaft_power_W,deck_total_thrust_N,"
+                        "configured_max_total_shaft_power_W,"
+                        "deck_power_margin_W,deck_thrust_margin_N,"
+                        "configured_power_margin_W,raw_deck_capacity_feasible,"
+                        "configured_power_feasible,data_status\n";
+
+            const auto limiting_takeoff_step = std::max_element(
+                takeoff_result.steps.begin(), takeoff_result.steps.end(),
+                [&](const propeller_takeoff_step& left,
+                    const propeller_takeoff_step& right)
+                {
+                    const double left_ratio = std::max(
+                        left.required_total_shaft_power_W /
+                            (input.propeller.count *
+                             left.deck_point.shaft_power_W),
+                        left.required_thrust_N /
+                            (input.propeller.count *
+                             left.deck_point.thrust_N));
+                    const double right_ratio = std::max(
+                        right.required_total_shaft_power_W /
+                            (input.propeller.count *
+                             right.deck_point.shaft_power_W),
+                        right.required_thrust_N /
+                            (input.propeller.count *
+                             right.deck_point.thrust_N));
+                    return left_ratio < right_ratio;
+                });
+            if (limiting_takeoff_step == takeoff_result.steps.end())
+                throw std::runtime_error("Integrated takeoff profile is empty.");
+            {
+                const auto& step = *limiting_takeoff_step;
+                const double deck_power_W =
+                    input.propeller.count * step.deck_point.shaft_power_W;
+                const double deck_thrust_N =
+                    input.propeller.count * step.deck_point.thrust_N;
+                const bool raw_deck_feasible = std::all_of(
+                    takeoff_result.steps.begin(), takeoff_result.steps.end(),
+                    [&](const propeller_takeoff_step& candidate)
+                    {
+                        return input.propeller.count *
+                                   candidate.deck_point.shaft_power_W >=
+                                   candidate.required_total_shaft_power_W &&
+                               input.propeller.count *
+                                   candidate.deck_point.thrust_N >=
+                                   candidate.required_thrust_N;
+                    });
+                capacity << "takeoff,"
+                         << feasible_best_point.wing_loading << ","
+                         << input.takeoff.altitude_m << "," << step.speed_ms << ","
+                         << step.deck_point.rpm << ","
+                         << step.deck_point.pitch_deg << ","
+                         << step.deck_point.advance_ratio << ","
+                         << takeoff_result.required_shaft_power_to_weight_W_N << ","
+                         << step.required_total_shaft_power_W << ","
+                         << step.required_thrust_N << ","
+                         << deck_power_W << "," << deck_thrust_N << ","
+                         << input.propeller.maximum_total_shaft_power_W << ","
+                         << deck_power_W - step.required_total_shaft_power_W << ","
+                         << deck_thrust_N - step.required_thrust_N << ","
+                         << input.propeller.maximum_total_shaft_power_W -
+                                step.required_total_shaft_power_W << ","
+                         << raw_deck_feasible << ","
+                         << (input.propeller.maximum_total_shaft_power_W >=
+                             step.required_total_shaft_power_W) << ","
+                         << "limiting_integrated_test_deck_point\n";
+            }
+
+            for (const auto& item : capacity_cases)
+            {
+                const auto point = propeller_analysis.evaluate(
+                    input, item.altitude_m, item.speed_ms, item.setting);
+                const double required_W_N =
+                    interpolate_envelope_thrust_to_weight(
+                        find_curve(output, item.curve),
+                        feasible_best_point.wing_loading);
+                const double required_power_W =
+                    required_W_N * input.aircraft.takeoff_weight_N;
+                const double required_thrust_N =
+                    required_power_W * point.thrust_N / point.shaft_power_W;
+                const double deck_power_W =
+                    input.propeller.count * point.shaft_power_W;
+                const double deck_thrust_N =
+                    input.propeller.count * point.thrust_N;
+                capacity << item.name << ","
+                         << feasible_best_point.wing_loading << ","
+                         << item.altitude_m << "," << item.speed_ms << ","
+                         << point.rpm << "," << point.pitch_deg << ","
+                         << point.advance_ratio << "," << required_W_N << ","
+                         << required_power_W << "," << required_thrust_N << ","
+                         << deck_power_W << "," << deck_thrust_N << ","
+                         << input.propeller.maximum_total_shaft_power_W << ","
+                         << deck_power_W - required_power_W << ","
+                         << deck_thrust_N - required_thrust_N << ","
+                         << input.propeller.maximum_total_shaft_power_W -
+                                required_power_W << ","
+                         << (deck_power_W >= required_power_W &&
+                             deck_thrust_N >= required_thrust_N) << ","
+                         << (input.propeller.maximum_total_shaft_power_W >=
+                             required_power_W) << ","
+                         << "test_deck_not_installed_system\n";
+            }
+
+            std::ofstream limitations("output/propeller_model_limitations.csv");
+            limitations << "item,status,required_future_input\n"
+                           "propeller_aerodynamic_map,available_test_data,"
+                           "production_propeller_map\n"
+                           "takeoff_ground_roll,integrated_verified_model,"
+                           "production_RPM_and_pitch_schedule; current schedule "
+                           "selects minimum P/T valid test-deck slice\n"
+                           "absolute_propeller_capacity,screening_only,"
+                           "diameter_count_RPM_limits_and_scaling_law\n"
+                           "installed_shaft_power,temporary_config_value,"
+                           "engine_power_lapse_and_gearbox_efficiency\n"
+                           "range_and_fuel_burn,blocked,"
+                           "engine_BSFC_map_vs_power_RPM_altitude\n";
         }
 
         // ============================================================

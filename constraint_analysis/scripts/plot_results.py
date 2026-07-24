@@ -95,6 +95,16 @@ if propeller_mode:
     y_axis_label = "Required Shaft Power Loading, P/W [W/N]"
     y_symbol = "P/W"
     design_value_column = "shaft_power_to_weight"
+    for stale_name in (
+        "03_cd0_carpet_plot.png",
+        "04_optimum_tw_vs_cd0.png",
+        "05_optimum_ws_vs_cd0.png",
+        "06_range_fuel_fraction_and_ld.png",
+        "07_constraint_envelope_carpet_plot.png",
+    ):
+        stale_path = os.path.join(save_dir, stale_name)
+        if os.path.exists(stale_path):
+            os.remove(stale_path)
 else:
     constraint_files = {
         "Acceleration": "jet_acceleration_constraint.csv",
@@ -526,6 +536,81 @@ ax.legend(unique.values(), unique.keys(), loc="upper left", frameon=True)
 
 save_plot("02_active_constraint_regions")
 
+if propeller_mode:
+    # ============================================================
+    # Plot 3: Integrated takeoff history
+    # ============================================================
+    takeoff_profile_path = os.path.join(
+        output_dir, "propeller_takeoff_profile.csv"
+    )
+    if os.path.exists(takeoff_profile_path):
+        takeoff = pd.read_csv(takeoff_profile_path)
+        fig, ax1 = plt.subplots(figsize=(10.5, 6.0))
+        ax1.plot(
+            takeoff["speed_ms"],
+            takeoff["distance_m"],
+            color="#1f77b4",
+            linewidth=2.4,
+            label="Integrated ground roll",
+        )
+        ax1.set_xlabel("Ground Speed, V [m/s]")
+        ax1.set_ylabel("Ground-Roll Distance [m]", color="#1f77b4")
+        ax1.tick_params(axis="y", labelcolor="#1f77b4")
+        ax2 = ax1.twinx()
+        ax2.plot(
+            takeoff["speed_ms"],
+            takeoff["acceleration_ms2"],
+            color="#d62728",
+            linewidth=2.0,
+            linestyle="--",
+            label="Acceleration",
+        )
+        ax2.set_ylabel("Acceleration [m/s²]", color="#d62728")
+        ax2.tick_params(axis="y", labelcolor="#d62728")
+        ax1.set_title("Integrated Propeller Takeoff Ground Roll")
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+        save_plot("03_propeller_takeoff_profile")
+
+    # ============================================================
+    # Plot 4: Required power versus both availability definitions
+    # ============================================================
+    capacity_path = os.path.join(
+        output_dir, "propeller_capacity_check.csv"
+    )
+    if os.path.exists(capacity_path):
+        capacity = pd.read_csv(capacity_path)
+        x = np.arange(len(capacity))
+        width = 0.25
+        fig, ax = plt.subplots(figsize=(11.0, 6.0))
+        ax.bar(
+            x - width,
+            capacity["required_total_shaft_power_W"] / 1.0e6,
+            width,
+            label="Required",
+            color="#d62728",
+        )
+        ax.bar(
+            x,
+            capacity["deck_total_shaft_power_W"] / 1.0e6,
+            width,
+            label="Raw test-deck output",
+            color="#1f77b4",
+        )
+        ax.bar(
+            x + width,
+            capacity["configured_max_total_shaft_power_W"] / 1.0e6,
+            width,
+            label="Configured maximum",
+            color="#2ca02c",
+        )
+        ax.set_xticks(x, capacity["case"].str.title())
+        ax.set_ylabel("Total Shaft Power [MW]")
+        ax.set_title("Propeller Power Demand and Availability Screening")
+        ax.legend(frameon=False)
+        save_plot("04_propeller_capacity_check")
+
 
 # ============================================================
 # Plot 3: CD0 carpet plot
@@ -533,7 +618,8 @@ save_plot("02_active_constraint_regions")
 carpet_path = os.path.join(output_dir, "carpet_plot_full.csv")
 study_path = os.path.join(output_dir, "carpet_plot_study.csv")
 
-if os.path.exists(carpet_path) and os.path.exists(study_path):
+if (not propeller_mode and os.path.exists(carpet_path)
+        and os.path.exists(study_path)):
 
     carpet = pd.read_csv(carpet_path)
     study = pd.read_csv(study_path)

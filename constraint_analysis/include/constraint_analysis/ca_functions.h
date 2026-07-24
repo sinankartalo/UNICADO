@@ -2,6 +2,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <engine/engine.h>
 #include <atmosphere/atmosphere.h>
@@ -194,6 +195,28 @@ namespace constraint_analysis
         double efficiency = 0.0;
         double thrust_N = 0.0;
         double shaft_power_W = 0.0;
+    };
+
+    struct propeller_takeoff_step
+    {
+        double speed_ms = 0.0;
+        double distance_m = 0.0;
+        double acceleration_ms2 = 0.0;
+        double lift_N = 0.0;
+        double drag_N = 0.0;
+        double rolling_resistance_N = 0.0;
+        double required_thrust_N = 0.0;
+        double required_total_shaft_power_W = 0.0;
+        propeller_operating_point deck_point;
+    };
+
+    struct propeller_takeoff_result
+    {
+        double wing_loading_N_m2 = 0.0;
+        double takeoff_speed_ms = 0.0;
+        double required_shaft_power_to_weight_W_N = 0.0;
+        double integrated_ground_roll_m = 0.0;
+        std::vector<propeller_takeoff_step> steps;
     };
 }
 
@@ -437,6 +460,11 @@ namespace constraint_analysis
             double altitude_m,
             double speed_ms,
             const propeller_setting& setting) const;
+
+        propeller_takeoff_result solve_takeoff_ground_roll(
+            const constraint_input& input,
+            double wing_loading_N_m2,
+            bool retain_steps = false) const;
 
         constraint_curve compute_takeoff_constraint(const constraint_input& input) const;
         constraint_curve compute_acceleration_constraint(const constraint_input& input) const;

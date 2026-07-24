@@ -49,6 +49,22 @@ def prop_row(pitch_deg: float, advance_ratio: float) -> tuple[float, float, floa
     raise ValueError(f"J={advance_ratio} lies outside pitch={pitch_deg} deck data")
 
 
+def best_takeoff_prop_row(
+    advance_ratio: float,
+) -> tuple[float, float, float]:
+    candidates = []
+    for pitch, low, high in ((15.0, 0.0, 1.05),
+                             (30.0, 0.5, 1.5),
+                             (45.0, 0.75, 2.8)):
+        if low <= advance_ratio <= high:
+            ct, cp, eta = prop_row(pitch, advance_ratio)
+            candidates.append((cp / ct, ct, cp, eta))
+    if not candidates:
+        raise ValueError(f"No takeoff pitch slice covers J={advance_ratio}")
+    _, ct, cp, eta = min(candidates)
+    return ct, cp, eta
+
+
 def mission_betas() -> dict[str, float]:
     with MISSION_CSV.open(encoding="utf-8-sig") as stream:
         rows = list(csv.reader(stream, delimiter=";"))
@@ -105,25 +121,51 @@ def airborne_power_loading(
     return thrust_to_weight * power_to_thrust, advance_ratio, eta, cl
 
 
-def takeoff_power_loading(beta: float) -> tuple[float, float, float]:
+def takeoff_distance(power_loading: float, beta: float) -> float:
     rho = isa_density(0.0)
-    xi = 0.04 - 0.02 * (0.8 * CLMAX_TO)
-    exponent = 500.0 * rho * G0 * xi / (beta * WS)
-    thrust_to_weight = 0.02 * beta + (
-        xi * 1.2**2 * beta / CLMAX_TO
-    ) * math.exp(exponent) / math.expm1(exponent)
     stall_speed = math.sqrt(2.0 * beta * WS / (rho * CLMAX_TO))
-    representative_speed = 0.7 * 1.2 * stall_speed
+    takeoff_speed = 1.2 * stall_speed
+    steps = 240
+    dv = takeoff_speed / steps
     n = RPM / 60.0
-    advance_ratio = representative_speed / (n * DIAMETER_M)
-    ct, cp, _ = prop_row(15.0, advance_ratio)
-    return thrust_to_weight * (cp / ct) * n * DIAMETER_M, advance_ratio, thrust_to_weight
+    distance = 0.0
+    for index in range(steps):
+        speed = (index + 0.5) * dv
+        advance_ratio = speed / (n * DIAMETER_M)
+        ct, cp, _ = best_takeoff_prop_row(advance_ratio)
+        thrust_to_weight = power_loading / ((cp / ct) * n * DIAMETER_M)
+        q = 0.5 * rho * speed**2
+        lift_to_weight = q * (0.8 * CLMAX_TO) / WS
+        drag_to_weight = q * 0.04 / WS
+        rolling_to_weight = 0.02 * max(0.0, beta - lift_to_weight)
+        acceleration = (
+            G0 / beta
+            * (thrust_to_weight - drag_to_weight - rolling_to_weight)
+        )
+        if acceleration <= 0.0:
+            return math.inf
+        distance += speed * dv / acceleration
+    return distance
+
+
+def takeoff_power_loading(beta: float) -> float:
+    lower = 0.0
+    upper = 1.0
+    while takeoff_distance(upper, beta) > 500.0:
+        upper *= 2.0
+    for _ in range(70):
+        trial = 0.5 * (lower + upper)
+        if takeoff_distance(trial, beta) > 500.0:
+            lower = trial
+        else:
+            upper = trial
+    return upper
 
 
 def main() -> None:
     beta = mission_betas()
     checks = {
-        "propeller_takeoff_constraint": takeoff_power_loading(beta["takeoff"])[0],
+        "propeller_takeoff_constraint": takeoff_power_loading(beta["takeoff"]),
         "propeller_acceleration_constraint": airborne_power_loading(
             8000.0, 180.0, beta["cruise_end"], acceleration_ms2=1.5
         )[0],
