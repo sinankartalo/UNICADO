@@ -1,6 +1,7 @@
 #include "io/aerodynamics_xml.h"
 
-#include <aerodynamics/aerodynamics_v2.h>
+#include <aerodynamics/aerodynamics_v3.h>
+#include <interpolation/data_types.h>
 
 #include <algorithm>
 #include <cmath>
@@ -22,7 +23,9 @@ namespace constraint_analysis
                 "Could not find aerodynamic polar XML file: " + polar_xml_path.string());
         }
 
-        aerodynamics::Aircraft aircraft(polar_xml_path.string());
+        aerodynamics::Aircraft::trim_settings settings;
+        settings.method = "linearized";
+        aerodynamics::Aircraft aircraft(polar_xml_path.string(), settings);
         const auto component_it = aircraft.components.find(reference_wing_id);
 
         if (component_it == aircraft.components.end())
@@ -38,10 +41,9 @@ namespace constraint_analysis
         }
 
         const auto& first_polar = component.configurations.front().polars.front();
-        std::vector<double> conditions = {
-            first_polar.conditions.freestream_M,
-            first_polar.conditions.altitude
-        };
+        types::PropertyType conditions;
+        conditions["Mach"] = first_polar.conditions.freestream_M;
+        conditions["h"] = first_polar.conditions.altitude;
 
         aerodynamic_aircraft_values values;
         values.wing_area_m2 = component.area;
