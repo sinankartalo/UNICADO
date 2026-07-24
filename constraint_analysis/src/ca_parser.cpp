@@ -170,9 +170,6 @@ namespace constraint_analysis
             "reference_wing_id",
             "aircraft/aerodynamics/reference_wing_ID");
         xml_map_value(config, *selected_case,
-            "aerodynamic_polar_format",
-            "aircraft/aerodynamics/polar_format");
-        xml_map_value(config, *selected_case,
             "mission_csv_path",
             "mission/mission_csv_path");
         xml_map_value(config, *selected_case,
@@ -332,14 +329,10 @@ namespace constraint_analysis
         const std::string reference_wing_id =
             xml_string(config, "reference_wing_id");
 
-        const std::string aerodynamic_polar_format =
-            xml_string(config, "aerodynamic_polar_format");
-
         const aerodynamic_aircraft_values aero_values =
             read_aerodynamic_aircraft_values(
                 aerodynamic_polar_xml_path,
-                reference_wing_id,
-                aerodynamic_polar_format
+                reference_wing_id
             );
 
         const std::filesystem::path mission_csv_path =
@@ -425,17 +418,9 @@ namespace constraint_analysis
         std::cout << "Using UNICADO aerodynamics library.\n";
         std::cout << "Aerodynamic polar XML: "
                 << aerodynamic_polar_xml_path.string() << '\n';
-        std::cout << "Aerodynamic polar format = "
-                << aerodynamic_polar_format << '\n';
-        if (aerodynamic_polar_format == "component_polar")
-        {
-            std::cout << "Reference wing ID = " << reference_wing_id << '\n';
-        }
-        else
-        {
-            std::cout << "Wing area is not imported from the trimmed polar; "
-                      << "it will be calculated from takeoff weight and selected W/S.\n";
-        }
+        std::cout << "Reference wing ID = " << reference_wing_id << '\n';
+        std::cout << "Wing reference area from aerodynamics = "
+                  << aero_values.wing_area_m2 << " m^2\n";
         std::cout << "CD0 from aerodynamics = "
                 << input.aircraft.polar.cd_0 << '\n';
         std::cout << "Induced drag factor k from aerodynamics = "
