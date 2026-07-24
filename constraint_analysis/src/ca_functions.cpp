@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 // ============================================================
 // merged from: src/constraint_utilities.cpp
@@ -33,6 +36,119 @@ namespace constraint_analysis
 {
     namespace
     {
+        struct propeller_deck_row
+        {
+            double pitch_deg = 0.0;
+            double advance_ratio = 0.0;
+            double thrust_coefficient = 0.0;
+            double power_coefficient = 0.0;
+            double efficiency = 0.0;
+        };
+
+        const std::vector<propeller_deck_row>& read_propeller_deck(
+            const std::string& deck_path)
+        {
+            // The UNICADO Propeller class uses a general two-dimensional
+            // Delaunay interpolator.  This deck, however, consists of three
+            // independent constant-pitch curves.  Cache the raw rows so the
+            // constraint analysis can interpolate on the selected 1-D curve
+            // without repeatedly reading the CSV or querying a hull boundary.
+            static std::unordered_map<
+                std::string, std::vector<propeller_deck_row>> cache;
+
+            const auto cached = cache.find(deck_path);
+            if (cached != cache.end())
+                return cached->second;
+
+            std::ifstream file(deck_path);
+            if (!file)
+                throw std::runtime_error(
+                    "Cannot open propeller deck: " + deck_path);
+
+            std::vector<propeller_deck_row> rows;
+            std::string line;
+            while (std::getline(file, line))
+            {
+                if (line.empty())
+                    continue;
+
+                // prop.csv is UTF-8 with a BOM. Remove it before parsing the
+                // first pitch value so the J=0 row is not silently discarded.
+                if (line.size() >= 3 &&
+                    static_cast<unsigned char>(line[0]) == 0xEF &&
+                    static_cast<unsigned char>(line[1]) == 0xBB &&
+                    static_cast<unsigned char>(line[2]) == 0xBF)
+                {
+                    line.erase(0, 3);
+                }
+
+                std::stringstream stream(line);
+                std::string token;
+                std::vector<double> values;
+                while (std::getline(stream, token, ','))
+                    values.push_back(std::stod(token));
+
+                if (values.size() < 5)
+                    throw std::runtime_error(
+                        "Invalid row in propeller deck: " + line);
+
+                rows.push_back({
+                    values[0], values[1], values[2], values[3], values[4]});
+            }
+
+            if (rows.empty())
+                throw std::runtime_error(
+                    "Propeller deck contains no numeric rows: " + deck_path);
+
+            return cache.emplace(deck_path, std::move(rows)).first->second;
+        }
+
+        propeller_deck_row interpolate_propeller_pitch_slice(
+            const std::string& deck_path,
+            double pitch_deg,
+            double advance_ratio)
+        {
+            const auto& rows = read_propeller_deck(deck_path);
+            const propeller_deck_row* previous = nullptr;
+
+            for (const auto& row : rows)
+            {
+                if (std::abs(row.pitch_deg - pitch_deg) > 1.0e-9)
+                    continue;
+
+                if (std::abs(row.advance_ratio - advance_ratio) < 1.0e-12)
+                    return row;
+
+                if (previous != nullptr &&
+                    previous->advance_ratio <= advance_ratio &&
+                    advance_ratio <= row.advance_ratio)
+                {
+                    const double fraction =
+                        (advance_ratio - previous->advance_ratio) /
+                        (row.advance_ratio - previous->advance_ratio);
+                    return {
+                        pitch_deg,
+                        advance_ratio,
+                        previous->thrust_coefficient +
+                            fraction * (row.thrust_coefficient -
+                                        previous->thrust_coefficient),
+                        previous->power_coefficient +
+                            fraction * (row.power_coefficient -
+                                        previous->power_coefficient),
+                        previous->efficiency +
+                            fraction * (row.efficiency -
+                                        previous->efficiency)};
+                }
+
+                previous = &row;
+            }
+
+            throw std::runtime_error(
+                "Propeller operating point is outside the selected pitch "
+                "slice in deck: pitch=" + std::to_string(pitch_deg) +
+                " deg, J=" + std::to_string(advance_ratio));
+        }
+
         double power_loading_from_thrust_loading(
             double thrust_to_weight,
             const propeller_operating_point& operating_point)
@@ -118,16 +234,13 @@ namespace constraint_analysis
                 "Propeller operating point is outside the selected pitch slice.");
         }
 
-        types::PropertyType conditions;
-        conditions["inclination"] = setting.pitch_deg;
-        conditions["j"] = point.advance_ratio;
-
-        point.thrust_coefficient =
-            input.propeller.model->interpolator->operator()("CT", conditions);
-        point.power_coefficient =
-            input.propeller.model->interpolator->operator()("CP", conditions);
-        point.efficiency =
-            input.propeller.model->interpolator->operator()("eta", conditions);
+        const auto deck_row = interpolate_propeller_pitch_slice(
+            input.propeller.deck_path,
+            setting.pitch_deg,
+            point.advance_ratio);
+        point.thrust_coefficient = deck_row.thrust_coefficient;
+        point.power_coefficient = deck_row.power_coefficient;
+        point.efficiency = deck_row.efficiency;
 
         const double diameter = input.propeller.diameter_m;
         point.thrust_N =
