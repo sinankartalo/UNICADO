@@ -162,6 +162,11 @@ namespace constraint_analysis
 
         text_config config;
         config.values["active_constraint_case_id"] = active_case_id;
+        node* propulsion_type_node = selected_case->find("engine/propulsion_type");
+        config.values["propulsion_type"] =
+            propulsion_type_node == nullptr
+                ? "jet"
+                : xml_node_text(*propulsion_type_node);
 
         xml_map_value(config, *selected_case,
             "aerodynamic_polar_xml_path",
@@ -172,9 +177,39 @@ namespace constraint_analysis
         xml_map_value(config, *selected_case,
             "mission_csv_path",
             "mission/mission_csv_path");
-        xml_map_value(config, *selected_case,
-            "engine_directory_path",
-            "engine/engine_directory_path");
+        if (config.values["propulsion_type"] == "propeller")
+        {
+            xml_map_value(config, *selected_case,
+                "propeller_deck_path",
+                "engine/propeller/deck_path");
+            xml_map_value(config, *selected_case,
+                "propeller_diameter_m",
+                "engine/propeller/diameter");
+            xml_map_value(config, *selected_case,
+                "propeller_count",
+                "engine/propeller/count");
+            xml_map_value(config, *selected_case,
+                "propeller_maximum_total_shaft_power_W",
+                "engine/propeller/maximum_total_shaft_power");
+            xml_map_value(config, *selected_case,
+                "propeller_takeoff_rpm",
+                "engine/propeller/takeoff/RPM");
+            xml_map_value(config, *selected_case,
+                "propeller_takeoff_pitch_deg",
+                "engine/propeller/takeoff/pitch");
+            xml_map_value(config, *selected_case,
+                "propeller_continuous_rpm",
+                "engine/propeller/continuous/RPM");
+            xml_map_value(config, *selected_case,
+                "propeller_continuous_pitch_deg",
+                "engine/propeller/continuous/pitch");
+        }
+        else
+        {
+            xml_map_value(config, *selected_case,
+                "engine_directory_path",
+                "engine/engine_directory_path");
+        }
 
         xml_map_value(config, *selected_case,
             "wing_loading_min",
@@ -349,6 +384,34 @@ namespace constraint_analysis
         input.aircraft.cl_max_landing = aero_values.cl_max_landing;
 
         input.engine = engine;
+        const std::string propulsion = xml_string(config, "propulsion_type");
+        if (propulsion == "propeller")
+        {
+            input.propulsion = propulsion_type::propeller;
+            input.propeller.deck_path = xml_string(config, "propeller_deck_path");
+            input.propeller.diameter_m = xml_double(config, "propeller_diameter_m");
+            input.propeller.count = static_cast<int>(
+                xml_double(config, "propeller_count"));
+            input.propeller.maximum_total_shaft_power_W =
+                xml_double(config, "propeller_maximum_total_shaft_power_W");
+            input.propeller.takeoff.rpm =
+                xml_double(config, "propeller_takeoff_rpm");
+            input.propeller.takeoff.pitch_deg =
+                xml_double(config, "propeller_takeoff_pitch_deg");
+            input.propeller.continuous.rpm =
+                xml_double(config, "propeller_continuous_rpm");
+            input.propeller.continuous.pitch_deg =
+                xml_double(config, "propeller_continuous_pitch_deg");
+        }
+        else if (propulsion == "jet")
+        {
+            input.propulsion = propulsion_type::jet;
+        }
+        else
+        {
+            throw std::runtime_error(
+                "Unsupported propulsion_type: " + propulsion);
+        }
 
         input.wing_loading_min = xml_double(config, "wing_loading_min");
         input.wing_loading_max = xml_double(config, "wing_loading_max");

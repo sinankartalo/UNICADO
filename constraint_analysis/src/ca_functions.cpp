@@ -1,5 +1,7 @@
 #include "constraint_analysis/ca_functions.h"
 
+#include <cmath>
+#include <stdexcept>
 
 // ============================================================
 // merged from: src/constraint_utilities.cpp
@@ -19,6 +21,267 @@ namespace constraint_analysis
     double constraint_utilities::compute_drag_coefficient(double cd_0, double k, double cl)
     {
         return cd_0 + k * cl * cl;
+    }
+}
+
+// ============================================================
+// Propeller power-loading constraint analysis
+// ============================================================
+namespace constraint_analysis
+{
+    namespace
+    {
+        double power_loading_from_thrust_loading(
+            double thrust_to_weight,
+            const propeller_operating_point& operating_point)
+        {
+            if (operating_point.thrust_N <= 0.0 ||
+                operating_point.shaft_power_W <= 0.0)
+            {
+                throw std::runtime_error(
+                    "Propeller deck returned non-positive thrust or power.");
+            }
+
+            // P/W = (T/W)*(P/T).  P/T is taken from the same CT/CP
+            // interpolation used by aerodynamics::Propeller.
+            return thrust_to_weight *
+                operating_point.shaft_power_W / operating_point.thrust_N;
+        }
+    }
+
+    propeller_constraint_analysis::propeller_constraint_analysis(
+        const atmosphere& atmosphere)
+        : atmosphere_(atmosphere)
+    {
+    }
+
+    propeller_operating_point propeller_constraint_analysis::evaluate(
+        const constraint_input& input,
+        double altitude_m,
+        double speed_ms,
+        const propeller_setting& setting) const
+    {
+        if (input.propeller.model == nullptr)
+        {
+            throw std::runtime_error("Propeller operating point has no model.");
+        }
+        if (input.propeller.diameter_m <= 0.0 || setting.rpm <= 0.0 ||
+            speed_ms < 0.0)
+        {
+            throw std::runtime_error(
+                "Propeller diameter/RPM must be positive and speed non-negative.");
+        }
+
+        propeller_operating_point point;
+        point.altitude_m = altitude_m;
+        point.speed_ms = speed_ms;
+        point.density_kg_m3 = atmosphere_.getDensity(altitude_m);
+        point.rpm = setting.rpm;
+        point.pitch_deg = setting.pitch_deg;
+
+        const double rotations_per_second = setting.rpm / 60.0;
+        point.advance_ratio =
+            speed_ms / (rotations_per_second * input.propeller.diameter_m);
+
+        // The three pitch slices in the supplied deck do not share the same
+        // J range.  Keep test operation on an actual slice and inside that
+        // slice instead of silently extrapolating.
+        double minimum_j = 0.0;
+        double maximum_j = 0.0;
+        if (std::abs(setting.pitch_deg - 15.0) < 1.0e-9)
+        {
+            minimum_j = 0.0;
+            maximum_j = 1.05;
+        }
+        else if (std::abs(setting.pitch_deg - 30.0) < 1.0e-9)
+        {
+            minimum_j = 0.5;
+            maximum_j = 1.5;
+        }
+        else if (std::abs(setting.pitch_deg - 45.0) < 1.0e-9)
+        {
+            minimum_j = 0.75;
+            maximum_j = 2.8;
+        }
+        else
+        {
+            throw std::runtime_error(
+                "Test propeller deck supports pitch 15, 30, or 45 deg.");
+        }
+
+        if (point.advance_ratio < minimum_j ||
+            point.advance_ratio > maximum_j)
+        {
+            throw std::runtime_error(
+                "Propeller operating point is outside the selected pitch slice.");
+        }
+
+        types::PropertyType conditions;
+        conditions["inclination"] = setting.pitch_deg;
+        conditions["j"] = point.advance_ratio;
+
+        point.thrust_coefficient =
+            input.propeller.model->interpolator->operator()("CT", conditions);
+        point.power_coefficient =
+            input.propeller.model->interpolator->operator()("CP", conditions);
+        point.efficiency =
+            input.propeller.model->interpolator->operator()("eta", conditions);
+
+        const double diameter = input.propeller.diameter_m;
+        point.thrust_N =
+            point.thrust_coefficient * point.density_kg_m3 *
+            std::pow(rotations_per_second, 2.0) * std::pow(diameter, 4.0);
+        point.shaft_power_W =
+            point.power_coefficient * point.density_kg_m3 *
+            std::pow(rotations_per_second, 3.0) * std::pow(diameter, 5.0);
+
+        if (!std::isfinite(point.thrust_N) ||
+            !std::isfinite(point.shaft_power_W) ||
+            point.thrust_N <= 0.0 || point.shaft_power_W <= 0.0)
+        {
+            throw std::runtime_error(
+                "Propeller deck produced an invalid operating point.");
+        }
+
+        return point;
+    }
+
+    constraint_curve propeller_constraint_analysis::compute_takeoff_constraint(
+        const constraint_input& input) const
+    {
+        constraint_curve curve;
+        curve.name = "propeller_takeoff_constraint";
+
+        const double rho = atmosphere_.getDensity(input.takeoff.altitude_m);
+
+        for (double ws = input.wing_loading_min;
+             ws <= input.wing_loading_max;
+             ws += input.wing_loading_step)
+        {
+            mattingly_takeoff_ground_roll_input takeoff;
+            takeoff.wing_loading = ws;
+            takeoff.ground_roll_m = input.takeoff.runway_m;
+            takeoff.density = rho;
+            takeoff.alpha = 1.0;
+            takeoff.beta = input.takeoff.beta_to;
+            takeoff.cl_max = input.aircraft.cl_max_takeoff;
+            takeoff.k_to = input.takeoff.speed_factor;
+            takeoff.cd = input.takeoff.cd_ground;
+            takeoff.cdr = 0.0;
+            takeoff.cl = 0.8 * input.aircraft.cl_max_takeoff;
+            takeoff.mu = input.takeoff.mu_ro;
+
+            const auto thrust_result =
+                mattingly_takeoff_ground_roll::compute(takeoff);
+
+            const double stall_speed_ms = std::sqrt(
+                2.0 * input.takeoff.beta_to * ws /
+                (rho * input.aircraft.cl_max_takeoff));
+            const double takeoff_speed_ms =
+                input.takeoff.speed_factor * stall_speed_ms;
+            const double representative_speed_ms = 0.7 * takeoff_speed_ms;
+
+            const auto operating_point = evaluate(
+                input,
+                input.takeoff.altitude_m,
+                representative_speed_ms,
+                input.propeller.takeoff);
+
+            curve.points.push_back({
+                ws,
+                power_loading_from_thrust_loading(
+                    thrust_result.thrust_to_weight_sl,
+                    operating_point)
+            });
+        }
+
+        return curve;
+    }
+
+    constraint_curve propeller_constraint_analysis::compute_airborne_constraint(
+        const constraint_input& input,
+        const std::string& name,
+        double altitude_m,
+        double speed_ms,
+        double beta,
+        double load_factor,
+        double climb_rate_ms,
+        double acceleration_ms2) const
+    {
+        constraint_curve curve;
+        curve.name = name;
+
+        const double rho = atmosphere_.getDensity(altitude_m);
+        const double q =
+            constraint_utilities::compute_dynamic_pressure(rho, speed_ms);
+        const auto operating_point = evaluate(
+            input, altitude_m, speed_ms, input.propeller.continuous);
+
+        for (double ws = input.wing_loading_min;
+             ws <= input.wing_loading_max;
+             ws += input.wing_loading_step)
+        {
+            mattingly_airborne_case_input airborne;
+            airborne.wing_loading = ws;
+            airborne.dynamic_pressure = q;
+            airborne.alpha = 1.0;
+            airborne.beta = beta;
+            airborne.k1 = input.aircraft.polar.k;
+            airborne.k2 = 0.0;
+            airborne.cd0 = input.aircraft.polar.cd_0;
+            airborne.cdr = 0.0;
+            airborne.load_factor = load_factor;
+            airborne.climb_rate = climb_rate_ms;
+            airborne.velocity = speed_ms;
+            airborne.acceleration = acceleration_ms2;
+
+            const auto thrust_result = mattingly_airborne_case::compute(airborne);
+            curve.points.push_back({
+                ws,
+                power_loading_from_thrust_loading(
+                    thrust_result.thrust_to_weight_sl,
+                    operating_point)
+            });
+        }
+
+        return curve;
+    }
+
+    constraint_curve propeller_constraint_analysis::compute_acceleration_constraint(
+        const constraint_input& input) const
+    {
+        return compute_airborne_constraint(
+            input, "propeller_acceleration_constraint",
+            input.acceleration.altitude_m, input.acceleration.speed_ms,
+            input.acceleration.beta_acceleration, 1.0, 0.0,
+            input.acceleration.acceleration_ms2);
+    }
+
+    constraint_curve propeller_constraint_analysis::compute_cruise_constraint(
+        const constraint_input& input) const
+    {
+        return compute_airborne_constraint(
+            input, "propeller_cruise_constraint",
+            input.cruise.altitude_m, input.cruise.speed_ms,
+            input.cruise.beta_cruise, 1.0, 0.0, 0.0);
+    }
+
+    constraint_curve propeller_constraint_analysis::compute_climb_constraint(
+        const constraint_input& input) const
+    {
+        return compute_airborne_constraint(
+            input, "propeller_climb_constraint",
+            input.climb.altitude_m, input.climb.speed_ms,
+            input.climb.beta_climb, 1.0, input.climb.roc_ms, 0.0);
+    }
+
+    constraint_curve propeller_constraint_analysis::compute_turn_constraint(
+        const constraint_input& input) const
+    {
+        return compute_airborne_constraint(
+            input, "propeller_turn_constraint",
+            input.turn.altitude_m, input.turn.speed_ms,
+            input.turn.beta_turn, input.turn.load_factor, 0.0, 0.0);
     }
 }
 

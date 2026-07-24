@@ -75,15 +75,39 @@ def save_plot(name):
 # ============================================================
 # Load constraint data
 # ============================================================
-constraint_files = {
-    "Acceleration": "jet_acceleration_constraint.csv",
-    "Climb": "jet_climb_constraint.csv",
-    "Cruise": "jet_cruise_constraint.csv",
-    "Max Mach": "jet_max_mach_constraint.csv",
-    "Supercruise": "jet_supercruise_constraint.csv",
-    "Takeoff": "jet_takeoff_constraint.csv",
-    "Turn": "jet_turn_constraint.csv",
-}
+metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
+if os.path.exists(metadata_path):
+    metadata = pd.read_csv(metadata_path)
+    propeller_mode = metadata.iloc[0]["propulsion_type"] == "propeller"
+else:
+    propeller_mode = os.path.exists(
+        os.path.join(output_dir, "propeller_takeoff_constraint.csv")
+    )
+
+if propeller_mode:
+    constraint_files = {
+        "Acceleration": "propeller_acceleration_constraint.csv",
+        "Climb": "propeller_climb_constraint.csv",
+        "Cruise": "propeller_cruise_constraint.csv",
+        "Takeoff": "propeller_takeoff_constraint.csv",
+        "Turn": "propeller_turn_constraint.csv",
+    }
+    y_axis_label = "Required Shaft Power Loading, P/W [W/N]"
+    y_symbol = "P/W"
+    design_value_column = "shaft_power_to_weight"
+else:
+    constraint_files = {
+        "Acceleration": "jet_acceleration_constraint.csv",
+        "Climb": "jet_climb_constraint.csv",
+        "Cruise": "jet_cruise_constraint.csv",
+        "Max Mach": "jet_max_mach_constraint.csv",
+        "Supercruise": "jet_supercruise_constraint.csv",
+        "Takeoff": "jet_takeoff_constraint.csv",
+        "Turn": "jet_turn_constraint.csv",
+    }
+    y_axis_label = "Required Thrust-to-Weight Ratio, T/W [-]"
+    y_symbol = "T/W"
+    design_value_column = "thrust_to_weight"
 
 constraints = {}
 
@@ -121,11 +145,11 @@ if os.path.exists(design_point_path):
         aircraft_rows = design_point_df.iloc[[0]]
 
     aircraft_ws = float(aircraft_rows.iloc[0]["wing_loading"])
-    aircraft_tw = float(aircraft_rows.iloc[0]["thrust_to_weight"])
+    aircraft_tw = float(aircraft_rows.iloc[0][design_value_column])
 
     if not best_rows.empty:
         best_ws = float(best_rows.iloc[0]["wing_loading"])
-        best_tw = float(best_rows.iloc[0]["thrust_to_weight"])
+        best_tw = float(best_rows.iloc[0][design_value_column])
     else:
         idx = envelope["thrust_to_weight"].idxmin()
         best_ws = float(envelope.loc[idx, "wing_loading"])
@@ -157,9 +181,10 @@ def read_vertical_limit(filename):
 
 
 # Vertical limits
-landing_ws_limit = read_vertical_limit("jet_landing_limit.csv")
-stall_ws_limit = read_vertical_limit("jet_stall_speed_limit.csv")
-gust_ws_limit = read_vertical_limit("jet_gust_limit.csv")
+vertical_prefix = "propeller" if propeller_mode else "jet"
+landing_ws_limit = read_vertical_limit(f"{vertical_prefix}_landing_limit.csv")
+stall_ws_limit = read_vertical_limit(f"{vertical_prefix}_stall_speed_limit.csv")
+gust_ws_limit = read_vertical_limit(f"{vertical_prefix}_gust_limit.csv")
 
 
 # Axis limits
@@ -252,7 +277,7 @@ ax.scatter(
 )
 
 ax.annotate(
-    f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\nT/W = {aircraft_tw:.3f}",
+    f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\n{y_symbol} = {aircraft_tw:.3f}",
     xy=(aircraft_ws, aircraft_tw),
     xytext=(18, 28),
     textcoords="offset points",
@@ -286,7 +311,7 @@ ax.scatter(
 )
 
 ax.annotate(
-    f"Best design point\nW/S = {best_ws:.0f} N/m²\nT/W = {best_tw:.3f}",
+    f"Best design point\nW/S = {best_ws:.0f} N/m²\n{y_symbol} = {best_tw:.3f}",
     xy=(best_ws, best_tw),
     xytext=(-20, -48),
     textcoords="offset points",
@@ -343,7 +368,7 @@ if gust_ws_limit is not None:
 
 ax.set_title("Constraint Analysis Matching Chart", pad=12, fontweight="semibold")
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
-ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
+ax.set_ylabel(y_axis_label)
 
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
@@ -490,7 +515,7 @@ if gust_ws_limit is not None:
 
 ax.set_title("Active Constraint Regions")
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
-ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
+ax.set_ylabel(y_axis_label)
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
 
@@ -749,6 +774,12 @@ if os.path.exists(carpet_path) and os.path.exists(study_path):
 
 print()
 print("Plot generation completed.")
-print(f"Aircraft point: W/S = {aircraft_ws:.0f} N/m², T/W = {aircraft_tw:.4f}")
-print(f"Best design point: W/S = {best_ws:.0f} N/m², T/W = {best_tw:.4f}")
+print(
+    f"Aircraft point: W/S = {aircraft_ws:.0f} N/m², "
+    f"{y_symbol} = {aircraft_tw:.4f}"
+)
+print(
+    f"Best design point: W/S = {best_ws:.0f} N/m², "
+    f"{y_symbol} = {best_tw:.4f}"
+)
 print(f"Plots saved to: {save_dir}")

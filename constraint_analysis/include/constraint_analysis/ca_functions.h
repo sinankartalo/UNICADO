@@ -1,8 +1,11 @@
 // This file merges the declarations that were previously split over multiple small headers.
 #pragma once
 
+#include <string>
+
 #include <engine/engine.h>
 #include <atmosphere/atmosphere.h>
+#include <aerodynamics/aerodynamics_v3.h>
 
 #include "energy_based/energy_based.h"
 
@@ -11,6 +14,29 @@
 // ============================================================
 namespace constraint_analysis
 {
+    enum class propulsion_type
+    {
+        jet,
+        propeller
+    };
+
+    struct propeller_setting
+    {
+        double rpm = 0.0;
+        double pitch_deg = 0.0;
+    };
+
+    struct propeller_data
+    {
+        aerodynamics::Propeller* model = nullptr;
+        std::string deck_path;
+        double diameter_m = 0.0;
+        double maximum_total_shaft_power_W = 0.0;
+        int count = 1;
+        propeller_setting takeoff;
+        propeller_setting continuous;
+    };
+
 
     struct drag_polar
     {
@@ -129,12 +155,14 @@ namespace constraint_analysis
 
     struct constraint_input
     {
+        propulsion_type propulsion = propulsion_type::jet;
         aircraft_data aircraft;
 
         // Real UNICADO engine-library object.
         // This must point to a valid Engine object. The solver reads
         // thrust lapse and TSFC directly from the UNICADO engine library.
         Engine* engine = nullptr;
+        propeller_data propeller;
 
         takeoff_constraint takeoff;
         max_mach_constraint max_mach;
@@ -151,6 +179,21 @@ namespace constraint_analysis
         double wing_loading_min = 0.0;
         double wing_loading_max = 0.0;
         double wing_loading_step = 0.0;
+    };
+
+    struct propeller_operating_point
+    {
+        double altitude_m = 0.0;
+        double speed_ms = 0.0;
+        double density_kg_m3 = 0.0;
+        double rpm = 0.0;
+        double pitch_deg = 0.0;
+        double advance_ratio = 0.0;
+        double thrust_coefficient = 0.0;
+        double power_coefficient = 0.0;
+        double efficiency = 0.0;
+        double thrust_N = 0.0;
+        double shaft_power_W = 0.0;
     };
 }
 
@@ -381,6 +424,37 @@ namespace constraint_analysis
         constraint_curve compute_turn_constraint(const constraint_input& input) const;
 
     private:
+        const atmosphere& atmosphere_;
+    };
+
+    class propeller_constraint_analysis
+    {
+    public:
+        explicit propeller_constraint_analysis(const atmosphere& atmosphere);
+
+        propeller_operating_point evaluate(
+            const constraint_input& input,
+            double altitude_m,
+            double speed_ms,
+            const propeller_setting& setting) const;
+
+        constraint_curve compute_takeoff_constraint(const constraint_input& input) const;
+        constraint_curve compute_acceleration_constraint(const constraint_input& input) const;
+        constraint_curve compute_cruise_constraint(const constraint_input& input) const;
+        constraint_curve compute_climb_constraint(const constraint_input& input) const;
+        constraint_curve compute_turn_constraint(const constraint_input& input) const;
+
+    private:
+        constraint_curve compute_airborne_constraint(
+            const constraint_input& input,
+            const std::string& name,
+            double altitude_m,
+            double speed_ms,
+            double beta,
+            double load_factor,
+            double climb_rate_ms,
+            double acceleration_ms2) const;
+
         const atmosphere& atmosphere_;
     };
 }

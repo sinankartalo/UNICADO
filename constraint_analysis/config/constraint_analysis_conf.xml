@@ -264,6 +264,49 @@
         </constraints>
       </constraint_case>
 
+      <constraint_case ID="UNICADO_PROPELLER_DEMO"
+                       description="Power-loading analysis with the aerodynamics test propeller deck">
+        <aircraft>
+          <aerodynamics>
+            <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
+            <reference_wing_ID><value>main_wing</value></reference_wing_ID>
+          </aerodynamics>
+        </aircraft>
+
+        <mission>
+          <mission_csv_path><value>../UNICADO-SMR-01/clean_sheet_design/mission_data/UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv</value></mission_csv_path>
+        </mission>
+
+        <engine>
+          <propulsion_type><value>propeller</value></propulsion_type>
+          <propeller>
+            <!-- Test-deck assumptions; replace for a selected propeller/engine. -->
+            <deck_path><value>../libraries/aerodynamics/test/stubs/engine/propeller/prop.csv</value></deck_path>
+            <diameter><value>3.96</value></diameter>
+            <count><value>2</value></count>
+            <maximum_total_shaft_power><value>20000000.0</value></maximum_total_shaft_power>
+            <takeoff>
+              <RPM><value>1200.0</value></RPM>
+              <pitch><value>15.0</value></pitch>
+            </takeoff>
+            <continuous>
+              <RPM><value>1200.0</value></RPM>
+              <pitch><value>45.0</value></pitch>
+            </continuous>
+          </propeller>
+        </engine>
+
+        <design_space>
+          <wing_loading_min><value>1000.0</value></wing_loading_min>
+          <wing_loading_max><value>7000.0</value></wing_loading_max>
+          <wing_loading_step><value>500.0</value></wing_loading_step>
+        </design_space>
+
+        <constraints>
+          <constraint_set_ref><value>BASELINE_STANDARD_SET</value></constraint_set_ref>
+        </constraints>
+      </constraint_case>
+
     </constraint_cases>
   </program_settings>
 </module_configuration_file>

@@ -141,26 +141,58 @@ int main(int argc, char* argv[])
         std::cout << "Using constraint case ID: "
                   << xml_string(config, "active_constraint_case_id") << '\n';
 
-        const std::filesystem::path engine_directory =
-            xml_string(config, "engine_directory_path");
+        const bool is_propeller =
+            xml_string(config, "propulsion_type") == "propeller";
 
-        if (engine_directory.empty())
+        std::unique_ptr<Engine> unicado_engine;
+        std::unique_ptr<aerodynamics::Propeller> propeller_model;
+
+        if (!is_propeller)
         {
-            throw std::runtime_error(
-                "Engine directory is empty. Set engine/engine_directory_path "
-                "in the selected XML constraint case.");
+            const std::filesystem::path engine_directory =
+                xml_string(config, "engine_directory_path");
+            if (engine_directory.empty())
+            {
+                throw std::runtime_error("Engine directory is empty.");
+            }
+            unicado_engine = std::make_unique<Engine>(engine_directory);
+            std::cout << "Using UNICADO engine library: "
+                      << engine_directory.string() << '\n';
         }
-
-        std::unique_ptr<Engine> unicado_engine =
-            std::make_unique<Engine>(engine_directory);
+        else
+        {
+            const std::string propeller_deck =
+                xml_string(config, "propeller_deck_path");
+            const double diameter_m =
+                xml_double(config, "propeller_diameter_m");
+            propeller_model = std::make_unique<aerodynamics::Propeller>(
+                propeller_deck, diameter_m);
+            std::cout << "Using UNICADO aerodynamics Propeller deck: "
+                      << propeller_deck << '\n';
+        }
 
         constraint_input input =
             build_constraint_input_from_config(config, unicado_engine.get());
 
-        std::cout << "Using UNICADO engine library: "
-                  << engine_directory.string() << '\n';
+        input.propeller.model = propeller_model.get();
+        {
+            std::ofstream metadata("output/analysis_metadata.csv");
+            metadata << "case_id,propulsion_type,y_axis,y_unit\n";
+            metadata << xml_string(config, "active_constraint_case_id") << ","
+                     << (is_propeller ? "propeller" : "jet") << ","
+                     << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
+                     << "," << (is_propeller ? "W/N" : "-") << "\n";
+        }
         std::cout << "Using UNICADO atmosphere library.\n";
-        std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
+        if (is_propeller)
+        {
+            std::cout << "Matching-chart y-axis: required shaft P/W [W/N].\n";
+            std::cout << "Propeller deck status: test data, not a selected production propeller.\n";
+        }
+        else
+        {
+            std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
+        }
 
         // ============================================================
         // 1. RUN CONSTRAINT ANALYSIS
@@ -225,7 +257,9 @@ int main(int argc, char* argv[])
         // minimum feasible point proposed by the constraint analysis.
         {
             std::ofstream file("output/design_point.csv");
-            file << "wing_loading,thrust_to_weight,wing_area_m2,"
+            file << "wing_loading,"
+                    << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
+                    << ",wing_area_m2,"
                     "vertical_constraints_feasible,method\n";
             file << aircraft_wing_loading << ","
                  << aircraft_required_thrust_to_weight << ","
@@ -265,8 +299,6 @@ int main(int argc, char* argv[])
         // ============================================================
         // 4. CARPET PLOT PARAMETER STUDY
         // ============================================================
-        carpet_plot_study study{atm};
-
         const std::vector<double> cd0_values = {
             0.020,
             0.025,
@@ -274,36 +306,62 @@ int main(int argc, char* argv[])
             0.035
         };
 
-        const auto carpet_points =
-            study.run(input, cd0_values);
+        std::vector<carpet_study_point> carpet_points;
+        std::vector<carpet_full_point> full_carpet_points;
+        std::vector<true_carpet_constraint_point> true_carpet_points;
 
-        carpet_plot_study::write_to_csv(
-            carpet_points,
-            "output/carpet_plot_study.csv");
+        if (!is_propeller)
+        {
+            carpet_plot_study study{atm};
+            carpet_points = study.run(input, cd0_values);
+            carpet_plot_study::write_to_csv(
+                carpet_points, "output/carpet_plot_study.csv");
+
+            carpet_plot_full full_carpet{atm};
+            full_carpet_points = full_carpet.run(input, cd0_values);
+            carpet_plot_full::write_to_csv(
+                full_carpet_points, "output/carpet_plot_full.csv");
+
+            true_carpet_constraints true_carpet{atm};
+            true_carpet_points = true_carpet.run(input, cd0_values);
+            true_carpet_constraints::write_to_csv(
+                true_carpet_points, "output/true_carpet_constraints.csv");
+        }
 
         // ============================================================
-        // 5. FULL CARPET PLOT DATA
+        // 5. PROPELLER OPERATING-POINT EVIDENCE
         // ============================================================
-        carpet_plot_full full_carpet{atm};
+        if (is_propeller)
+        {
+            propeller_constraint_analysis propeller_analysis{atm};
+            const std::vector<propeller_operating_point> points = {
+                propeller_analysis.evaluate(
+                    input, input.cruise.altitude_m, input.cruise.speed_ms,
+                    input.propeller.continuous),
+                propeller_analysis.evaluate(
+                    input, input.climb.altitude_m, input.climb.speed_ms,
+                    input.propeller.continuous),
+                propeller_analysis.evaluate(
+                    input, input.turn.altitude_m, input.turn.speed_ms,
+                    input.propeller.continuous),
+                propeller_analysis.evaluate(
+                    input, input.acceleration.altitude_m,
+                    input.acceleration.speed_ms, input.propeller.continuous)
+            };
 
-        const auto full_carpet_points =
-            full_carpet.run(input, cd0_values);
-
-        carpet_plot_full::write_to_csv(
-            full_carpet_points,
-            "output/carpet_plot_full.csv");
-
-        // ============================================================
-        // 6. TRUE CARPET CONSTRAINT FAMILY DATA
-        // ============================================================
-        true_carpet_constraints true_carpet{atm};
-
-        const auto true_carpet_points =
-            true_carpet.run(input, cd0_values);
-
-        true_carpet_constraints::write_to_csv(
-            true_carpet_points,
-            "output/true_carpet_constraints.csv");
+            std::ofstream file("output/propeller_operating_points.csv");
+            file << "altitude_m,speed_ms,density_kg_m3,rpm,pitch_deg,"
+                    "advance_ratio,CT,CP,eta,thrust_N,shaft_power_W\n";
+            for (const auto& point : points)
+            {
+                file << point.altitude_m << "," << point.speed_ms << ","
+                     << point.density_kg_m3 << "," << point.rpm << ","
+                     << point.pitch_deg << "," << point.advance_ratio << ","
+                     << point.thrust_coefficient << ","
+                     << point.power_coefficient << "," << point.efficiency << ","
+                     << point.thrust_N << "," << point.shaft_power_W << "\n";
+            }
+        }
 
         // ============================================================
         // 7. PRINT RESULTS
@@ -349,26 +407,31 @@ int main(int argc, char* argv[])
         std::cout << "\n=== sampled_best_design_point ===\n";
         std::cout
             << "wing_loading = " << sampled_best_point.wing_loading
-            << "  thrust_to_weight = " << sampled_best_point.thrust_to_weight
+            << (is_propeller ? "  shaft_power_to_weight = " : "  thrust_to_weight = ")
+            << sampled_best_point.thrust_to_weight
             << '\n';
 
         std::cout << "\n=== interpolated_best_design_point ===\n";
         std::cout
             << "wing_loading = " << best_point.wing_loading
-            << "  thrust_to_weight = " << best_point.thrust_to_weight
+            << (is_propeller ? "  shaft_power_to_weight = " : "  thrust_to_weight = ")
+            << best_point.thrust_to_weight
             << '\n';
 
         std::cout << "\n=== minimum_feasible_envelope_point_reference ===\n";
         std::cout
             << "wing_loading = " << feasible_best_point.wing_loading
-            << "  thrust_to_weight = " << feasible_best_point.thrust_to_weight
+            << (is_propeller ? "  shaft_power_to_weight = " : "  thrust_to_weight = ")
+            << feasible_best_point.thrust_to_weight
             << '\n';
 
         std::cout << "\n=== aircraft_point_from_aerodynamics_area ===\n";
         std::cout
             << "wing_area = " << input.aircraft.wing_area_m2 << " m^2"
             << "  wing_loading = " << aircraft_wing_loading
-            << "  required_thrust_to_weight = "
+            << (is_propeller
+                    ? "  required_shaft_power_to_weight = "
+                    : "  required_thrust_to_weight = ")
             << aircraft_required_thrust_to_weight
             << "  vertical_constraints_feasible = "
             << (aircraft_wing_loading_feasible ? "yes" : "no")
@@ -406,6 +469,8 @@ int main(int argc, char* argv[])
             }
         }
 
+        if (!is_propeller)
+        {
         std::cout << "\n=== carpet_plot_study ===\n";
 
         for (const auto& point : carpet_points)
@@ -431,6 +496,27 @@ int main(int argc, char* argv[])
             << true_carpet_points.size()
             << '\n';
         std::cout << "CSV: output/true_carpet_constraints.csv\n";
+        }
+
+        if (is_propeller)
+        {
+            const double available_power_to_weight =
+                input.propeller.maximum_total_shaft_power_W /
+                input.aircraft.takeoff_weight_N;
+            std::cout << "\n=== propeller_power_availability ===\n";
+            std::cout << "maximum_total_shaft_power = "
+                      << input.propeller.maximum_total_shaft_power_W << " W\n";
+            std::cout << "available_shaft_power_to_weight = "
+                      << available_power_to_weight << " W/N\n";
+            std::cout << "required_best_shaft_power_to_weight = "
+                      << feasible_best_point.thrust_to_weight << " W/N\n";
+            std::cout << "installed_power_feasible = "
+                      << (available_power_to_weight >=
+                                  feasible_best_point.thrust_to_weight
+                              ? "yes" : "no")
+                      << '\n';
+            std::cout << "CSV: output/propeller_operating_points.csv\n";
+        }
 
         std::cout << "\nCSV files written into ./output folder\n";
     }
