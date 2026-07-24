@@ -99,8 +99,8 @@ if envelope is None:
     raise FileNotFoundError("constraint_envelope.csv not found.")
 
 
-# Prefer the C++ interpolated design point. Fall back to the sampled
-# envelope minimum for compatibility with older output folders.
+# Prefer the C++ aircraft point calculated from the aerodynamic reference
+# area. Fall back to the sampled envelope minimum for older output folders.
 design_point_path = os.path.join(output_dir, "design_point.csv")
 
 if os.path.exists(design_point_path):
@@ -138,25 +138,18 @@ gust_ws_limit = read_vertical_limit("jet_gust_limit.csv")
 
 
 # Axis limits
-x_data_min = envelope["wing_loading"].min()
-x_data_max = envelope["wing_loading"].max()
+x_min = envelope["wing_loading"].min()
 
-# Keep the full calculated curves visible from their first wing-loading
-# sample. Mirror the distance from that left edge to the gust minimum on
-# the right side of the rightmost upper physical limit.
-upper_physical_limits = [
-    value for value in (landing_ws_limit, stall_ws_limit)
+# The landing and stall limits can lie outside the sampled W/S range.
+# Expand the plotting range so those vertical constraint lines remain visible.
+vertical_limits = [
+    value for value in (landing_ws_limit, stall_ws_limit, gust_ws_limit)
     if value is not None
 ]
-x_min = x_data_min
-x_right_limit = max(upper_physical_limits) if upper_physical_limits else x_data_max
 
-if gust_ws_limit is not None:
-    x_limit_margin = max(0.0, gust_ws_limit - x_min)
-else:
-    x_limit_margin = 0.03 * (x_right_limit - x_min)
-
-x_max = x_right_limit + x_limit_margin
+x_data_max = envelope["wing_loading"].max()
+x_limit_max = max(vertical_limits, default=x_data_max)
+x_max = max(x_data_max, x_limit_max) * 1.05
 
 y_min = 0.0
 y_max = max(
@@ -230,7 +223,7 @@ ax.scatter(
     edgecolor="white",
     linewidth=1.4,
     zorder=6,
-    label="Selected design point",
+    label="Aircraft point from aero Sref",
 )
 
 ax.annotate(
