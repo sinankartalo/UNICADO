@@ -220,8 +220,9 @@ int main(int argc, char* argv[])
         envelope_output.curves.push_back(envelope);
         constraint_output_writer::write_all_curves_to_csv(envelope_output, "output");
 
-        // The plotting script reads this file so the marker represents the
-        // aircraft defined by the aerodynamic reference area.
+        // Keep both engineering interpretations in one traceable plotting
+        // interface: the existing aircraft from aerodynamic Sref and the
+        // minimum feasible point proposed by the constraint analysis.
         {
             std::ofstream file("output/design_point.csv");
             file << "wing_loading,thrust_to_weight,wing_area_m2,"
@@ -231,6 +232,12 @@ int main(int argc, char* argv[])
                  << input.aircraft.wing_area_m2 << ","
                  << aircraft_wing_loading_feasible << ","
                  << "aerodynamics_reference_area\n";
+            file << feasible_best_point.wing_loading << ","
+                 << feasible_best_point.thrust_to_weight << ","
+                 << input.aircraft.takeoff_weight_N /
+                        feasible_best_point.wing_loading << ","
+                 << true << ","
+                 << "best_design_point\n";
         }
 
         for (const auto& vc : output.vertical_constraints)
