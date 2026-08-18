@@ -182,6 +182,9 @@ if os.path.exists(design_point_path):
     if not best_rows.empty:
         best_ws = float(best_rows.iloc[0]["wing_loading"])
         best_tw = float(best_rows.iloc[0][design_value_column])
+        best_area_m2 = None
+        if "wing_area_m2" in best_rows.columns:
+            best_area_m2 = float(best_rows.iloc[0]["wing_area_m2"])
         best_power_MW = None
         if (propeller_mode and
                 "required_total_shaft_power_W" in best_rows.columns):
@@ -193,6 +196,7 @@ if os.path.exists(design_point_path):
         best_ws = float(envelope.loc[idx, "wing_loading"])
         best_tw = float(envelope.loc[idx, "thrust_to_weight"])
         best_power_MW = None
+        best_area_m2 = None
 else:
     idx = envelope["thrust_to_weight"].idxmin()
     best_ws = float(envelope.loc[idx, "wing_loading"])
@@ -201,6 +205,11 @@ else:
     aircraft_tw = best_tw
     aircraft_power_MW = None
     best_power_MW = None
+    best_area_m2 = None
+
+takeoff_weight_N = None
+if best_power_MW is not None and best_tw > 0.0:
+    takeoff_weight_N = best_power_MW * 1.0e6 / best_tw
 
 aircraft_annotation = (
     f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\n{y_symbol} = {aircraft_tw:.3f}"
@@ -291,8 +300,8 @@ for name, df in constraints.items():
         zorder=2,
     )
 
-# Lightly mark the wing-loading interval allowed by all vertical limits.
-# The thrust constraints still determine the required T/W inside this band.
+# Wing loading must remain between the lower and upper vertical limits.
+# For a required-power chart, only the area above the envelope is feasible.
 upper_ws_limits = [
     value for value in (landing_ws_limit, stall_ws_limit)
     if value is not None
@@ -301,11 +310,19 @@ feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
 feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
 
 if feasible_ws_min < feasible_ws_max:
-    ax.axvspan(
-        feasible_ws_min,
-        feasible_ws_max,
+    feasible_mask = (
+        (envelope["wing_loading"] >= feasible_ws_min) &
+        (envelope["wing_loading"] <= feasible_ws_max)
+    )
+    ax.fill_between(
+        envelope["wing_loading"],
+        envelope["thrust_to_weight"],
+        y_max,
+        where=feasible_mask,
         color="#2ca02c",
-        alpha=0.055,
+        alpha=0.075,
+        interpolate=True,
+        label="Feasible design region",
         zorder=0,
     )
 
@@ -667,9 +684,110 @@ if propeller_mode:
                 linewidth=2.0,
                 label=display_name,
             )
-        ax.set_title("Propeller Constraint Carpet: Required Shaft Power")
+
+        ax.plot(
+            envelope["wing_loading"],
+            envelope["thrust_to_weight"],
+            color="black",
+            linewidth=3.0,
+            label="Constraint envelope",
+            zorder=5,
+        )
+        ax.scatter(
+            best_ws,
+            best_tw,
+            marker="*",
+            s=160,
+            color="#2ca02c",
+            edgecolor="white",
+            linewidth=1.2,
+            label="Best design point",
+            zorder=7,
+        )
+        optimum_label = (
+            f"W/S = {best_ws:.0f} N/m²\nP/W = {best_tw:.3f} W/N"
+        )
+        if best_power_MW is not None:
+            optimum_label += f"\nP = {best_power_MW:.2f} MW"
+        if best_area_m2 is not None:
+            optimum_label += f"\nS = {best_area_m2:.1f} m²"
+        ax.annotate(
+            optimum_label,
+            xy=(best_ws, best_tw),
+            xytext=(-22, -70),
+            textcoords="offset points",
+            ha="right",
+            fontsize=9.5,
+            arrowprops=dict(arrowstyle="-", color="#4d4d4d"),
+            bbox=dict(
+                boxstyle="round,pad=0.35",
+                facecolor="white",
+                edgecolor="#b3b3b3",
+                alpha=0.96,
+            ),
+            zorder=8,
+        )
+        if gust_ws_limit is not None:
+            ax.axvline(
+                gust_ws_limit,
+                color="#7f7f7f",
+                linestyle="-.",
+                linewidth=1.8,
+                label=f"Gust min ({gust_ws_limit:.0f})",
+            )
+        if landing_ws_limit is not None:
+            ax.axvline(
+                landing_ws_limit,
+                color="#9467bd",
+                linestyle="--",
+                linewidth=1.8,
+                label=f"Landing max ({landing_ws_limit:.0f})",
+            )
+        if stall_ws_limit is not None:
+            ax.axvline(
+                stall_ws_limit,
+                color="#bcbd22",
+                linestyle=":",
+                linewidth=1.8,
+                label=f"Stall max ({stall_ws_limit:.0f})",
+            )
+
+        carpet_y_max = max(
+            carpet["required_shaft_power_to_weight_W_N"].max(),
+            envelope["thrust_to_weight"].max(),
+        ) * 1.08
+        if feasible_ws_min < feasible_ws_max:
+            feasible_mask = (
+                (envelope["wing_loading"] >= feasible_ws_min) &
+                (envelope["wing_loading"] <= feasible_ws_max)
+            )
+            ax.fill_between(
+                envelope["wing_loading"],
+                envelope["thrust_to_weight"],
+                carpet_y_max,
+                where=feasible_mask,
+                color="#2ca02c",
+                alpha=0.06,
+                interpolate=True,
+                label="Feasible design region",
+                zorder=0,
+            )
+
+        if takeoff_weight_N is not None:
+            secondary = ax.secondary_yaxis(
+                "right",
+                functions=(
+                    lambda power_loading: power_loading * takeoff_weight_N / 1.0e6,
+                    lambda power_MW: power_MW * 1.0e6 / takeoff_weight_N,
+                ),
+            )
+            secondary.set_ylabel("Required Total Shaft Power [MW]")
+
+        ax.set_title("Propeller Constraint Carpet and Design Requirements")
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
+        ax.set_xlim(x_min, x_max)
+        ax.set_ylim(0.0, carpet_y_max)
         ax.legend(loc="upper left", frameon=False, ncol=2)
         save_plot("05_propeller_constraint_carpet")
 
