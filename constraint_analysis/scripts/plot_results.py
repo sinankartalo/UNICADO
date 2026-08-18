@@ -79,18 +79,10 @@ metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
 if os.path.exists(metadata_path):
     metadata = pd.read_csv(metadata_path)
     propeller_mode = metadata.iloc[0]["propulsion_type"] == "propeller"
-    available_power_to_weight = None
-    if (propeller_mode and
-            "available_shaft_power_to_weight_W_N" in metadata.columns and
-            pd.notna(metadata.iloc[0]["available_shaft_power_to_weight_W_N"])):
-        available_power_to_weight = float(
-            metadata.iloc[0]["available_shaft_power_to_weight_W_N"]
-        )
 else:
     propeller_mode = os.path.exists(
         os.path.join(output_dir, "propeller_takeoff_constraint.csv")
     )
-    available_power_to_weight = None
 
 if propeller_mode:
     constraint_files = {
@@ -180,20 +172,46 @@ if os.path.exists(design_point_path):
 
     aircraft_ws = float(aircraft_rows.iloc[0]["wing_loading"])
     aircraft_tw = float(aircraft_rows.iloc[0][design_value_column])
+    aircraft_power_MW = None
+    if (propeller_mode and
+            "required_total_shaft_power_W" in aircraft_rows.columns):
+        aircraft_power_MW = float(
+            aircraft_rows.iloc[0]["required_total_shaft_power_W"]
+        ) / 1.0e6
 
     if not best_rows.empty:
         best_ws = float(best_rows.iloc[0]["wing_loading"])
         best_tw = float(best_rows.iloc[0][design_value_column])
+        best_power_MW = None
+        if (propeller_mode and
+                "required_total_shaft_power_W" in best_rows.columns):
+            best_power_MW = float(
+                best_rows.iloc[0]["required_total_shaft_power_W"]
+            ) / 1.0e6
     else:
         idx = envelope["thrust_to_weight"].idxmin()
         best_ws = float(envelope.loc[idx, "wing_loading"])
         best_tw = float(envelope.loc[idx, "thrust_to_weight"])
+        best_power_MW = None
 else:
     idx = envelope["thrust_to_weight"].idxmin()
     best_ws = float(envelope.loc[idx, "wing_loading"])
     best_tw = float(envelope.loc[idx, "thrust_to_weight"])
     aircraft_ws = best_ws
     aircraft_tw = best_tw
+    aircraft_power_MW = None
+    best_power_MW = None
+
+aircraft_annotation = (
+    f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\n{y_symbol} = {aircraft_tw:.3f}"
+)
+best_annotation = (
+    f"Best design point\nW/S = {best_ws:.0f} N/m²\n{y_symbol} = {best_tw:.3f}"
+)
+if aircraft_power_MW is not None:
+    aircraft_annotation += f"\nP required = {aircraft_power_MW:.2f} MW"
+if best_power_MW is not None:
+    best_annotation += f"\nP required = {best_power_MW:.2f} MW"
 
 
 def read_vertical_limit(filename):
@@ -240,8 +258,6 @@ y_max = max(
     envelope["thrust_to_weight"].max(),
     max(df["thrust_to_weight"].max() for df in constraints.values())
 )
-if available_power_to_weight is not None:
-    y_max = max(y_max, available_power_to_weight)
 y_max *= 1.15
 
 
@@ -302,30 +318,6 @@ ax.plot(
     zorder=5,
 )
 
-if available_power_to_weight is not None:
-    ax.axhline(
-        available_power_to_weight,
-        color="#6a3d9a",
-        linestyle="--",
-        linewidth=2.0,
-        label=f"Available shaft P/W ({available_power_to_weight:.3f} W/N)",
-        zorder=4,
-    )
-    feasible_power = (
-        envelope["thrust_to_weight"].values <= available_power_to_weight
-    )
-    ax.fill_between(
-        envelope["wing_loading"],
-        envelope["thrust_to_weight"],
-        available_power_to_weight,
-        where=feasible_power,
-        color="#2ca02c",
-        alpha=0.08,
-        interpolate=True,
-        label="Installed-power feasible",
-        zorder=1,
-    )
-
 ax.scatter(
     aircraft_ws,
     aircraft_tw,
@@ -338,7 +330,7 @@ ax.scatter(
 )
 
 ax.annotate(
-    f"Aircraft\nW/S = {aircraft_ws:.0f} N/m²\n{y_symbol} = {aircraft_tw:.3f}",
+    aircraft_annotation,
     xy=(aircraft_ws, aircraft_tw),
     xytext=(18, 28),
     textcoords="offset points",
@@ -372,7 +364,7 @@ ax.scatter(
 )
 
 ax.annotate(
-    f"Best design point\nW/S = {best_ws:.0f} N/m²\n{y_symbol} = {best_tw:.3f}",
+    best_annotation,
     xy=(best_ws, best_tw),
     xytext=(-20, -48),
     textcoords="offset points",
@@ -633,32 +625,25 @@ if propeller_mode:
     if os.path.exists(capacity_path):
         capacity = pd.read_csv(capacity_path)
         x = np.arange(len(capacity))
-        width = 0.25
+        width = 0.36
         fig, ax = plt.subplots(figsize=(11.0, 6.0))
         ax.bar(
-            x - width,
+            x - width / 2,
             capacity["required_total_shaft_power_W"] / 1.0e6,
             width,
             label="Required",
             color="#d62728",
         )
         ax.bar(
-            x,
+            x + width / 2,
             capacity["deck_total_shaft_power_W"] / 1.0e6,
             width,
             label="Supplied propeller-deck output",
             color="#1f77b4",
         )
-        ax.bar(
-            x + width,
-            capacity["configured_max_total_shaft_power_W"] / 1.0e6,
-            width,
-            label="Configured maximum",
-            color="#2ca02c",
-        )
         ax.set_xticks(x, capacity["case"].str.title())
         ax.set_ylabel("Total Shaft Power [MW]")
-        ax.set_title("Propeller Power Demand and Availability Screening")
+        ax.set_title("Required Power and Supplied Propeller-Map Reference")
         ax.legend(frameon=False)
         save_plot("04_propeller_capacity_check")
 
@@ -682,17 +667,7 @@ if propeller_mode:
                 linewidth=2.0,
                 label=display_name,
             )
-        available = float(
-            carpet["available_shaft_power_to_weight_W_N"].iloc[0]
-        )
-        ax.axhline(
-            available,
-            color="black",
-            linestyle="--",
-            linewidth=2.3,
-            label=f"Available shaft P/W = {available:.3f} W/N",
-        )
-        ax.set_title("Propeller Constraint Carpet: Required and Available Power")
+        ax.set_title("Propeller Constraint Carpet: Required Shaft Power")
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
         ax.legend(loc="upper left", frameon=False, ncol=2)

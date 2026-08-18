@@ -189,9 +189,6 @@ namespace constraint_analysis
                 "propeller_count",
                 "engine/propeller/count");
             xml_map_value(config, *selected_case,
-                "propeller_maximum_total_shaft_power_W",
-                "engine/propeller/maximum_total_shaft_power");
-            xml_map_value(config, *selected_case,
                 "propeller_takeoff_rpm",
                 "engine/propeller/takeoff/RPM");
             xml_map_value(config, *selected_case,
@@ -392,8 +389,6 @@ namespace constraint_analysis
             input.propeller.diameter_m = xml_double(config, "propeller_diameter_m");
             input.propeller.count = static_cast<int>(
                 xml_double(config, "propeller_count"));
-            input.propeller.maximum_total_shaft_power_W =
-                xml_double(config, "propeller_maximum_total_shaft_power_W");
             input.propeller.takeoff.rpm =
                 xml_double(config, "propeller_takeoff_rpm");
             input.propeller.takeoff.pitch_deg =

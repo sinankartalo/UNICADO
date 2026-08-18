@@ -284,7 +284,6 @@
             <deck_path><value>../libraries/aerodynamics/test/stubs/engine/propeller/prop.csv</value></deck_path>
             <diameter><value>3.96</value></diameter>
             <count><value>2</value></count>
-            <maximum_total_shaft_power><value>20000000.0</value></maximum_total_shaft_power>
             <takeoff>
               <RPM><value>1200.0</value></RPM>
               <pitch><value>15.0</value></pitch>

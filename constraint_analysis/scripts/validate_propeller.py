@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import math
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -16,7 +15,6 @@ MISSION_CSV = (
     / "UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv"
 )
 OUTPUT = ROOT / "constraint_analysis/output"
-CONFIG_XML = ROOT / "constraint_analysis/config/constraint_analysis_conf.xml"
 
 CD0 = 0.00455002
 K = 0.0217487
@@ -106,17 +104,6 @@ def takeoff_weight_N() -> float:
     header = [cell.strip() for cell in rows[0]]
     mass_index = header.index("Total mass [kg]")
     return float(rows[1][mass_index]) * G0
-
-
-def configured_maximum_total_shaft_power_W() -> float:
-    root = ET.parse(CONFIG_XML).getroot()
-    for case in root.findall(".//constraint_case"):
-        if case.attrib.get("ID") == "UNICADO_PROPELLER":
-            value = case.find("./engine/propeller/maximum_total_shaft_power/value")
-            if value is None or value.text is None:
-                break
-            return float(value.text)
-    raise ValueError("UNICADO_PROPELLER maximum total shaft power is missing")
 
 
 def airborne_power_loading(
@@ -224,13 +211,12 @@ def main() -> None:
             checks["propeller_cruise_constraint"]):
         raise AssertionError("Airborne constraint ordering is physically inconsistent")
 
-    available_W_N = configured_maximum_total_shaft_power_W() / takeoff_weight_N()
     required_envelope_W_N = max(checks.values())
+    required_total_shaft_power_W = required_envelope_W_N * takeoff_weight_N()
     print(
-        "installed shaft-power check: "
-        f"available={available_W_N:.8f} W/N, "
-        f"required envelope={required_envelope_W_N:.8f} W/N, "
-        f"feasible={'yes' if required_envelope_W_N <= available_W_N else 'no'}"
+        "required shaft-power check: "
+        f"envelope={required_envelope_W_N:.8f} W/N, "
+        f"total={required_total_shaft_power_W / 1.0e6:.8f} MW"
     )
 
 

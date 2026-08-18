@@ -10,7 +10,6 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -190,18 +189,11 @@ int main(int argc, char* argv[])
         input.propeller.model = propeller_model.get();
         {
             std::ofstream metadata("output/analysis_metadata.csv");
-            metadata << "case_id,propulsion_type,y_axis,y_unit,"
-                        "available_shaft_power_to_weight_W_N\n";
+            metadata << "case_id,propulsion_type,y_axis,y_unit\n";
             metadata << xml_string(config, "active_constraint_case_id") << ","
                      << (is_propeller ? "propeller" : "jet") << ","
                      << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
-                     << "," << (is_propeller ? "W/N" : "-") << ",";
-            if (is_propeller)
-            {
-                metadata << input.propeller.maximum_total_shaft_power_W /
-                                input.aircraft.takeoff_weight_N;
-            }
-            metadata << "\n";
+                     << "," << (is_propeller ? "W/N" : "-") << "\n";
         }
         std::cout << "Using UNICADO atmosphere library.\n";
         if (is_propeller)
@@ -271,19 +263,6 @@ int main(int argc, char* argv[])
             satisfies_vertical_constraints(
                 aircraft_wing_loading,
                 output.vertical_constraints);
-        const double available_shaft_power_to_weight_W_N =
-            is_propeller
-                ? input.propeller.maximum_total_shaft_power_W /
-                      input.aircraft.takeoff_weight_N
-                : std::numeric_limits<double>::infinity();
-        const bool aircraft_power_feasible =
-            !is_propeller ||
-            aircraft_required_thrust_to_weight <=
-                available_shaft_power_to_weight_W_N;
-        const bool best_point_power_feasible =
-            !is_propeller ||
-            feasible_best_point.thrust_to_weight <=
-                available_shaft_power_to_weight_W_N;
 
         const auto active_constraints =
             active_constraint_analyzer::analyze(output);
@@ -304,24 +283,26 @@ int main(int argc, char* argv[])
             std::ofstream file("output/design_point.csv");
             file << "wing_loading,"
                     << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
-                    << ",wing_area_m2,"
-                    "vertical_constraints_feasible,power_available_feasible,"
-                    "overall_feasible,method\n";
+                    << ",wing_area_m2,";
+            if (is_propeller)
+                file << "required_total_shaft_power_W,";
+            file << "vertical_constraints_feasible,method\n";
             file << aircraft_wing_loading << ","
                  << aircraft_required_thrust_to_weight << ","
-                 << input.aircraft.wing_area_m2 << ","
-                 << aircraft_wing_loading_feasible << ","
-                 << aircraft_power_feasible << ","
-                 << (aircraft_wing_loading_feasible && aircraft_power_feasible) << ","
+                 << input.aircraft.wing_area_m2 << ",";
+            if (is_propeller)
+                file << aircraft_required_thrust_to_weight *
+                            input.aircraft.takeoff_weight_N << ",";
+            file << aircraft_wing_loading_feasible << ","
                  << "aerodynamics_reference_area\n";
             file << feasible_best_point.wing_loading << ","
                  << feasible_best_point.thrust_to_weight << ","
                  << input.aircraft.takeoff_weight_N /
-                        feasible_best_point.wing_loading << ","
-                 << true << ","
-                 << best_point_power_feasible << ","
-                 << best_point_power_feasible << ","
-                 << "best_design_point\n";
+                        feasible_best_point.wing_loading << ",";
+            if (is_propeller)
+                file << feasible_best_point.thrust_to_weight *
+                            input.aircraft.takeoff_weight_N << ",";
+            file << true << "," << "best_design_point\n";
         }
 
         for (const auto& vc : output.vertical_constraints)
@@ -351,17 +332,14 @@ int main(int argc, char* argv[])
             std::ofstream carpet("output/propeller_constraint_carpet.csv");
             carpet << "constraint,wing_loading_N_m2,"
                        "required_shaft_power_to_weight_W_N,"
-                       "available_shaft_power_to_weight_W_N,"
-                       "power_margin_W_N,power_feasible\n";
+                       "required_total_shaft_power_W\n";
             for (const auto& curve : output.curves)
             {
                 for (const auto& point : curve.points)
                 {
-                    const double margin_W_N =
-                        available_shaft_power_to_weight_W_N - point.y;
                     carpet << curve.name << "," << point.x << "," << point.y
-                           << "," << available_shaft_power_to_weight_W_N << ","
-                           << margin_W_N << "," << (margin_W_N >= 0.0) << "\n";
+                           << "," << point.y * input.aircraft.takeoff_weight_N
+                           << "\n";
                 }
             }
         }
@@ -492,10 +470,8 @@ int main(int argc, char* argv[])
                         "pitch_deg,advance_ratio,required_power_to_weight_W_N,"
                         "required_total_shaft_power_W,required_total_thrust_N,"
                         "deck_total_shaft_power_W,deck_total_thrust_N,"
-                        "configured_max_total_shaft_power_W,"
                         "deck_power_margin_W,deck_thrust_margin_N,"
-                        "configured_power_margin_W,raw_deck_capacity_feasible,"
-                        "configured_power_feasible,data_status\n";
+                        "data_status\n";
 
             const auto limiting_takeoff_step = std::max_element(
                 takeoff_result.steps.begin(), takeoff_result.steps.end(),
@@ -526,17 +502,6 @@ int main(int argc, char* argv[])
                     input.propeller.count * step.deck_point.shaft_power_W;
                 const double deck_thrust_N =
                     input.propeller.count * step.deck_point.thrust_N;
-                const bool raw_deck_feasible = std::all_of(
-                    takeoff_result.steps.begin(), takeoff_result.steps.end(),
-                    [&](const propeller_takeoff_step& candidate)
-                    {
-                        return input.propeller.count *
-                                   candidate.deck_point.shaft_power_W >=
-                                   candidate.required_total_shaft_power_W &&
-                               input.propeller.count *
-                                   candidate.deck_point.thrust_N >=
-                                   candidate.required_thrust_N;
-                    });
                 capacity << "takeoff,"
                          << feasible_best_point.wing_loading << ","
                          << input.takeoff.altitude_m << "," << step.speed_ms << ","
@@ -547,14 +512,8 @@ int main(int argc, char* argv[])
                          << step.required_total_shaft_power_W << ","
                          << step.required_thrust_N << ","
                          << deck_power_W << "," << deck_thrust_N << ","
-                         << input.propeller.maximum_total_shaft_power_W << ","
                          << deck_power_W - step.required_total_shaft_power_W << ","
                          << deck_thrust_N - step.required_thrust_N << ","
-                         << input.propeller.maximum_total_shaft_power_W -
-                                step.required_total_shaft_power_W << ","
-                         << raw_deck_feasible << ","
-                         << (input.propeller.maximum_total_shaft_power_W >=
-                             step.required_total_shaft_power_W) << ","
                          << "limiting_integrated_supplied_deck_point\n";
             }
 
@@ -581,15 +540,8 @@ int main(int argc, char* argv[])
                          << point.advance_ratio << "," << required_W_N << ","
                          << required_power_W << "," << required_thrust_N << ","
                          << deck_power_W << "," << deck_thrust_N << ","
-                         << input.propeller.maximum_total_shaft_power_W << ","
                          << deck_power_W - required_power_W << ","
                          << deck_thrust_N - required_thrust_N << ","
-                         << input.propeller.maximum_total_shaft_power_W -
-                                required_power_W << ","
-                         << (deck_power_W >= required_power_W &&
-                             deck_thrust_N >= required_thrust_N) << ","
-                         << (input.propeller.maximum_total_shaft_power_W >=
-                             required_power_W) << ","
                          << "supplied_propeller_operating_point\n";
             }
 
@@ -603,8 +555,8 @@ int main(int argc, char* argv[])
                      "cruise_climb_turn_and_acceleration_power_loading\n"
                      "vertical_constraints,implemented,"
                      "landing_stall_and_gust_wing_loading_limits\n"
-                     "installed_shaft_power,implemented,"
-                     "configured_available_total_shaft_power\n"
+                     "installed_shaft_power,not_evaluated,"
+                     "matching_chart_reports_required_power\n"
                      "range_fuel_burn,not_evaluated,"
                      "not_required_by_available_data_scope\n";
         }
@@ -681,12 +633,11 @@ int main(int argc, char* argv[])
             << aircraft_required_thrust_to_weight
             << "  vertical_constraints_feasible = "
             << (aircraft_wing_loading_feasible ? "yes" : "no")
-            << "  installed_power_feasible = "
-            << (aircraft_power_feasible ? "yes" : "no")
-            << "  overall_feasible = "
-            << (aircraft_wing_loading_feasible && aircraft_power_feasible
-                    ? "yes" : "no")
-            << '\n';
+            << (is_propeller ? "  required_total_shaft_power = " : "") ;
+        if (is_propeller)
+            std::cout << aircraft_required_thrust_to_weight *
+                             input.aircraft.takeoff_weight_N << " W";
+        std::cout << '\n';
 
         std::cout << "\n=== active_constraints ===\n";
 
@@ -751,17 +702,21 @@ int main(int argc, char* argv[])
 
         if (is_propeller)
         {
-            std::cout << "\n=== propeller_power_availability ===\n";
-            std::cout << "maximum_total_shaft_power = "
-                      << input.propeller.maximum_total_shaft_power_W << " W\n";
-            std::cout << "available_shaft_power_to_weight = "
-                      << available_shaft_power_to_weight_W_N << " W/N\n";
+            const double required_total_shaft_power_W =
+                feasible_best_point.thrust_to_weight *
+                input.aircraft.takeoff_weight_N;
+            const double required_wing_area_m2 =
+                input.aircraft.takeoff_weight_N /
+                feasible_best_point.wing_loading;
+            std::cout << "\n=== propeller_design_requirements ===\n";
             std::cout << "required_best_shaft_power_to_weight = "
                       << feasible_best_point.thrust_to_weight << " W/N\n";
-            std::cout << "installed_power_feasible = "
-                      << (best_point_power_feasible
-                              ? "yes" : "no")
-                      << '\n';
+            std::cout << "required_total_shaft_power = "
+                      << required_total_shaft_power_W << " W\n";
+            std::cout << "required_total_shaft_power = "
+                      << required_total_shaft_power_W / 1.0e6 << " MW\n";
+            std::cout << "required_wing_area = "
+                      << required_wing_area_m2 << " m^2\n";
             std::cout << "CSV: output/propeller_operating_points.csv\n";
         }
 
