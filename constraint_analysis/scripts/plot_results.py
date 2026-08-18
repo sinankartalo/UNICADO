@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 
 # ============================================================
@@ -520,6 +521,17 @@ for name, df in constraints.items():
         linewidth=1.2,
     )
 
+performance_legend_handles = [
+    Line2D(
+        [0],
+        [0],
+        color=color_map.get(name, "black"),
+        linewidth=2.2,
+        label=name,
+    )
+    for name in constraints
+]
+
 # Continuous envelope background to avoid visual gaps
 ax.plot(
     x_env,
@@ -528,6 +540,9 @@ ax.plot(
     linewidth=2.0,
     alpha=0.35,
     label="Envelope"
+)
+envelope_legend_handle = Line2D(
+    [0], [0], color="black", linewidth=3.0, label="Constraint envelope"
 )
 
 start = 0
@@ -562,7 +577,7 @@ for i in range(1, len(x_env) + 1):
 
         start = i
 
-ax.scatter(
+aircraft_point_handle = ax.scatter(
     aircraft_ws,
     aircraft_tw,
     s=85,
@@ -573,7 +588,7 @@ ax.scatter(
     label="Aircraft point from aero Sref",
 )
 
-ax.scatter(
+best_point_handle = ax.scatter(
     best_ws,
     best_tw,
     s=115,
@@ -585,29 +600,37 @@ ax.scatter(
     label="Best design point",
 )
 
+reference_legend_handles = [aircraft_point_handle, best_point_handle]
+
 if landing_ws_limit is not None:
-    ax.axvline(
+    landing_handle = ax.axvline(
         landing_ws_limit,
         color="purple",
         linestyle="--",
         linewidth=2.0,
+        label=f"Landing W/S max ({landing_ws_limit:.0f})",
     )
+    reference_legend_handles.append(landing_handle)
 
 if stall_ws_limit is not None:
-    ax.axvline(
+    stall_handle = ax.axvline(
         stall_ws_limit,
         color=color_map["Stall speed"],
         linestyle=":",
         linewidth=2.4,
+        label=f"Stall W/S max ({stall_ws_limit:.0f})",
     )
+    reference_legend_handles.append(stall_handle)
 
 if gust_ws_limit is not None:
-    ax.axvline(
+    gust_handle = ax.axvline(
         gust_ws_limit,
         color=color_map["Gust"],
         linestyle="-.",
         linewidth=2.0,
+        label=f"Gust W/S min ({gust_ws_limit:.0f})",
     )
+    reference_legend_handles.append(gust_handle)
 
 ax.set_title(analysis_title("Active Constraint Regions"))
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
@@ -615,10 +638,21 @@ ax.set_ylabel(y_axis_label)
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
 
-# Tekrarlı legend temizliği
-handles, labels = ax.get_legend_handles_labels()
-unique = dict(zip(labels, handles))
-ax.legend(unique.values(), unique.keys(), loc="upper left", frameon=True)
+performance_legend = ax.legend(
+    handles=[envelope_legend_handle, *performance_legend_handles],
+    title="Performance constraints",
+    loc="upper left",
+    ncol=2,
+    frameon=True,
+)
+ax.add_artist(performance_legend)
+
+ax.legend(
+    handles=reference_legend_handles,
+    title="Design points and wing-loading limits",
+    loc="lower right",
+    frameon=True,
+)
 
 save_plot("02_active_constraint_regions")
 
