@@ -104,7 +104,8 @@ int main(int argc, char* argv[])
 {
     try
     {
-        std::filesystem::create_directories("output");
+        const std::filesystem::path output_root = "output";
+        std::filesystem::create_directories(output_root);
 
         // Command-line arguments are optional.
         // Supported forms:
@@ -148,10 +149,16 @@ int main(int argc, char* argv[])
         }
 
         const auto config = read_xml_config(config_path, case_override_id);
+        const std::string active_case_id =
+            xml_string(config, "active_constraint_case_id");
+        const std::filesystem::path output_directory =
+            output_root / active_case_id;
+        std::filesystem::create_directories(output_directory);
 
         std::cout << "Using XML configuration: " << config_path << '\n';
-        std::cout << "Using constraint case ID: "
-                  << xml_string(config, "active_constraint_case_id") << '\n';
+        std::cout << "Using constraint case ID: " << active_case_id << '\n';
+        std::cout << "Case output directory: "
+                  << output_directory.string() << '\n';
 
         const bool is_propeller =
             xml_string(config, "propulsion_type") == "propeller";
@@ -188,9 +195,9 @@ int main(int argc, char* argv[])
 
         input.propeller.model = propeller_model.get();
         {
-            std::ofstream metadata("output/analysis_metadata.csv");
+            std::ofstream metadata(output_directory / "analysis_metadata.csv");
             metadata << "case_id,propulsion_type,y_axis,y_unit\n";
-            metadata << xml_string(config, "active_constraint_case_id") << ","
+            metadata << active_case_id << ","
                      << (is_propeller ? "propeller" : "jet") << ","
                      << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
                      << "," << (is_propeller ? "W/N" : "-") << "\n";
@@ -210,7 +217,7 @@ int main(int argc, char* argv[])
                      "propeller_model_limitations.csv"})
             {
                 std::filesystem::remove(
-                    std::filesystem::path("output") / stale_file);
+                    output_directory / stale_file);
             }
         }
         else
@@ -270,17 +277,19 @@ int main(int argc, char* argv[])
         // ============================================================
         // 3. WRITE MAIN CSV OUTPUTS
         // ============================================================
-        constraint_output_writer::write_all_curves_to_csv(output, "output");
+        constraint_output_writer::write_all_curves_to_csv(
+            output, output_directory.string());
 
         constraint_output envelope_output;
         envelope_output.curves.push_back(envelope);
-        constraint_output_writer::write_all_curves_to_csv(envelope_output, "output");
+        constraint_output_writer::write_all_curves_to_csv(
+            envelope_output, output_directory.string());
 
         // Keep both engineering interpretations in one traceable plotting
         // interface: the existing aircraft from aerodynamic Sref and the
         // minimum feasible point proposed by the constraint analysis.
         {
-            std::ofstream file("output/design_point.csv");
+            std::ofstream file(output_directory / "design_point.csv");
             file << "wing_loading,"
                     << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
                     << ",wing_area_m2,";
@@ -307,7 +316,7 @@ int main(int argc, char* argv[])
 
         for (const auto& vc : output.vertical_constraints)
         {
-            std::ofstream file("output/" + vc.name + ".csv");
+            std::ofstream file(output_directory / (vc.name + ".csv"));
             file << "W/S_limit,type\n";
             file << vc.x_limit << ","
                  << (vc.is_upper_limit ? "max" : "min") << "\n";
@@ -315,7 +324,7 @@ int main(int argc, char* argv[])
 
         for (const auto& range_result : output.range_constraints)
         {
-            std::ofstream file("output/" + range_result.name + ".csv");
+            std::ofstream file(output_directory / (range_result.name + ".csv"));
             file << "wing_loading,lift_to_drag,required_fuel_fraction,feasible\n";
 
             for (const auto& point : range_result.points)
@@ -329,7 +338,8 @@ int main(int argc, char* argv[])
 
         if (is_propeller)
         {
-            std::ofstream carpet("output/propeller_constraint_carpet.csv");
+            std::ofstream carpet(
+                output_directory / "propeller_constraint_carpet.csv");
             carpet << "constraint,wing_loading_N_m2,"
                        "required_shaft_power_to_weight_W_N,"
                        "required_total_shaft_power_W\n";
@@ -363,17 +373,20 @@ int main(int argc, char* argv[])
             carpet_plot_study study{atm};
             carpet_points = study.run(input, cd0_values);
             carpet_plot_study::write_to_csv(
-                carpet_points, "output/carpet_plot_study.csv");
+                carpet_points,
+                (output_directory / "carpet_plot_study.csv").string());
 
             carpet_plot_full full_carpet{atm};
             full_carpet_points = full_carpet.run(input, cd0_values);
             carpet_plot_full::write_to_csv(
-                full_carpet_points, "output/carpet_plot_full.csv");
+                full_carpet_points,
+                (output_directory / "carpet_plot_full.csv").string());
 
             true_carpet_constraints true_carpet{atm};
             true_carpet_points = true_carpet.run(input, cd0_values);
             true_carpet_constraints::write_to_csv(
-                true_carpet_points, "output/true_carpet_constraints.csv");
+                true_carpet_points,
+                (output_directory / "true_carpet_constraints.csv").string());
         }
 
         // ============================================================
@@ -397,7 +410,8 @@ int main(int argc, char* argv[])
                     input.acceleration.speed_ms, input.propeller.continuous)
             };
 
-            std::ofstream file("output/propeller_operating_points.csv");
+            std::ofstream file(
+                output_directory / "propeller_operating_points.csv");
             file << "altitude_m,speed_ms,density_kg_m3,rpm,pitch_deg,"
                     "advance_ratio,CT,CP,eta,thrust_N,shaft_power_W\n";
             for (const auto& point : points)
@@ -414,7 +428,8 @@ int main(int argc, char* argv[])
                 propeller_analysis.solve_takeoff_ground_roll(
                     input, feasible_best_point.wing_loading, true);
             {
-                std::ofstream profile("output/propeller_takeoff_profile.csv");
+                std::ofstream profile(
+                    output_directory / "propeller_takeoff_profile.csv");
                 profile << "wing_loading_N_m2,speed_ms,distance_m,"
                            "acceleration_ms2,lift_N,drag_N,"
                            "rolling_resistance_N,required_thrust_N,"
@@ -465,7 +480,8 @@ int main(int argc, char* argv[])
                  input.propeller.continuous},
             };
 
-            std::ofstream capacity("output/propeller_capacity_check.csv");
+            std::ofstream capacity(
+                output_directory / "propeller_capacity_check.csv");
             capacity << "case,wing_loading_N_m2,altitude_m,speed_ms,rpm,"
                         "pitch_deg,advance_ratio,required_power_to_weight_W_N,"
                         "required_total_shaft_power_W,required_total_thrust_N,"
@@ -545,7 +561,8 @@ int main(int argc, char* argv[])
                          << "supplied_propeller_operating_point\n";
             }
 
-            std::ofstream scope("output/propeller_model_scope.csv");
+            std::ofstream scope(
+                output_directory / "propeller_model_scope.csv");
             scope << "item,status,implementation_basis\n"
                      "propeller_aerodynamic_map,implemented,"
                      "supplied_UNICADO_propeller_deck\n"
@@ -690,14 +707,18 @@ int main(int argc, char* argv[])
             << "Full carpet plot points written: "
             << full_carpet_points.size()
             << '\n';
-        std::cout << "CSV: output/carpet_plot_full.csv\n";
+        std::cout << "CSV: "
+                  << (output_directory / "carpet_plot_full.csv").string()
+                  << "\n";
 
         std::cout << "\n=== true_carpet_constraints ===\n";
         std::cout
             << "True carpet constraint points written: "
             << true_carpet_points.size()
             << '\n';
-        std::cout << "CSV: output/true_carpet_constraints.csv\n";
+        std::cout << "CSV: "
+                  << (output_directory / "true_carpet_constraints.csv").string()
+                  << "\n";
         }
 
         if (is_propeller)
@@ -717,10 +738,18 @@ int main(int argc, char* argv[])
                       << required_total_shaft_power_W / 1.0e6 << " MW\n";
             std::cout << "required_wing_area = "
                       << required_wing_area_m2 << " m^2\n";
-            std::cout << "CSV: output/propeller_operating_points.csv\n";
+            std::cout << "CSV: "
+                      << (output_directory / "propeller_operating_points.csv").string()
+                      << "\n";
         }
 
-        std::cout << "\nCSV files written into ./output folder\n";
+        {
+            std::ofstream latest_case(output_root / "latest_case.txt");
+            latest_case << active_case_id << '\n';
+        }
+
+        std::cout << "\nCSV files written into "
+                  << output_directory.string() << "\n";
     }
     catch (const std::string& error)
     {

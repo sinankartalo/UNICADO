@@ -14,7 +14,9 @@ MISSION_CSV = (
     / "UNICADO-SMR-01/clean_sheet_design/mission_data"
     / "UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv"
 )
-OUTPUT = ROOT / "constraint_analysis/output"
+OUTPUT_ROOT = ROOT / "constraint_analysis/output"
+CASE_OUTPUT = OUTPUT_ROOT / "UNICADO_PROPELLER"
+OUTPUT = CASE_OUTPUT if CASE_OUTPUT.exists() else OUTPUT_ROOT
 
 CD0 = 0.00455002
 K = 0.0217487

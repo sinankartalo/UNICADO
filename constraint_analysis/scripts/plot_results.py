@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,10 +7,35 @@ from matplotlib.lines import Line2D
 
 
 # ============================================================
-# Paths
+# Case-specific paths
 # ============================================================
-output_dir = "output"
-save_dir = "plots"
+output_root = "output"
+plots_root = "plots"
+
+if len(sys.argv) > 2:
+    raise SystemExit("Usage: python scripts/plot_results.py [CASE_ID]")
+
+selected_case_id = sys.argv[1] if len(sys.argv) == 2 else None
+latest_case_path = os.path.join(output_root, "latest_case.txt")
+
+if selected_case_id is None and os.path.exists(latest_case_path):
+    with open(latest_case_path, encoding="utf-8") as latest_case_file:
+        selected_case_id = latest_case_file.read().strip()
+
+if selected_case_id:
+    output_dir = os.path.join(output_root, selected_case_id)
+    save_dir = os.path.join(plots_root, selected_case_id)
+else:
+    # Backward-compatible fallback for output generated before case folders.
+    output_dir = output_root
+    save_dir = plots_root
+
+if not os.path.isdir(output_dir):
+    raise FileNotFoundError(
+        f"No analysis output found for case '{selected_case_id}': {output_dir}. "
+        "Run the C++ application for that case before plotting."
+    )
+
 os.makedirs(save_dir, exist_ok=True)
 
 
@@ -80,6 +106,11 @@ metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
 if os.path.exists(metadata_path):
     metadata = pd.read_csv(metadata_path)
     case_id = str(metadata.iloc[0]["case_id"])
+    if selected_case_id and case_id != selected_case_id:
+        raise RuntimeError(
+            f"Selected case '{selected_case_id}' does not match metadata "
+            f"case '{case_id}' in {metadata_path}."
+        )
     propeller_mode = metadata.iloc[0]["propulsion_type"] == "propeller"
 else:
     propeller_mode = os.path.exists(
