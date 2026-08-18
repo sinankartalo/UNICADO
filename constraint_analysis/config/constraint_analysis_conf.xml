@@ -283,6 +283,8 @@
             <!-- Authoritative inputs for the available-data propeller analysis. -->
             <deck_path><value>../libraries/aerodynamics/test/stubs/engine/propeller/prop.csv</value></deck_path>
             <diameter><value>3.96</value></diameter>
+            <!-- Supervisor-defined maximum helical blade-tip Mach number. -->
+            <tip_mach_limit><value>0.95</value></tip_mach_limit>
             <count><value>2</value></count>
             <takeoff>
               <RPM><value>1200.0</value></RPM>

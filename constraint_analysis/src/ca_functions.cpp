@@ -194,10 +194,17 @@ namespace constraint_analysis
         point.altitude_m = altitude_m;
         point.speed_ms = speed_ms;
         point.density_kg_m3 = atmosphere_.getDensity(altitude_m);
+        point.speed_of_sound_ms = atmosphere_.getSpeedOfSound(altitude_m);
         point.rpm = setting.rpm;
         point.pitch_deg = setting.pitch_deg;
 
         const double rotations_per_second = setting.rpm / 60.0;
+        const double rotational_tip_speed_ms =
+            std::numbers::pi * input.propeller.diameter_m * rotations_per_second;
+        point.tip_speed_ms = std::hypot(speed_ms, rotational_tip_speed_ms);
+        point.tip_mach = point.tip_speed_ms / point.speed_of_sound_ms;
+        point.tip_mach_limit = input.propeller.tip_mach_limit;
+        point.tip_mach_feasible = point.tip_mach <= point.tip_mach_limit;
         point.advance_ratio =
             speed_ms / (rotations_per_second * input.propeller.diameter_m);
 

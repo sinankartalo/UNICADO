@@ -25,12 +25,24 @@ DIAMETER_M = 3.96
 RPM = 1200.0
 WS = 4000.0
 G0 = 9.80665
+TIP_MACH_LIMIT = 0.95
 
 
 def isa_density(altitude_m: float) -> float:
     temperature = 288.15 - 0.0065 * altitude_m
     pressure = 101325.0 * (temperature / 288.15) ** 5.255877
     return pressure / (287.05287 * temperature)
+
+
+def isa_speed_of_sound(altitude_m: float) -> float:
+    temperature = 288.15 - 0.0065 * altitude_m
+    return math.sqrt(1.4 * 287.05287 * temperature)
+
+
+def tip_mach(altitude_m: float, speed_ms: float, rpm: float = RPM) -> float:
+    rotational_tip_speed = math.pi * DIAMETER_M * rpm / 60.0
+    helical_tip_speed = math.hypot(speed_ms, rotational_tip_speed)
+    return helical_tip_speed / isa_speed_of_sound(altitude_m)
 
 
 def prop_row(pitch_deg: float, advance_ratio: float) -> tuple[float, float, float]:
@@ -220,6 +232,34 @@ def main() -> None:
         f"envelope={required_envelope_W_N:.8f} W/N, "
         f"total={required_total_shaft_power_W / 1.0e6:.8f} MW"
     )
+
+    operating_points_path = OUTPUT / "propeller_operating_points.csv"
+    if operating_points_path.exists():
+        with operating_points_path.open() as stream:
+            operating_points = list(csv.DictReader(stream))
+        for row in operating_points:
+            expected = tip_mach(
+                float(row["altitude_m"]),
+                float(row["speed_ms"]),
+                float(row["rpm"]),
+            )
+            actual = float(row["tip_mach"])
+            if abs(actual - expected) > 2.0e-5:
+                raise AssertionError(
+                    f"tip Mach mismatch: program={actual}, hand={expected}"
+                )
+            expected_status = "PASS" if expected <= TIP_MACH_LIMIT else "FAIL"
+            if row["tip_mach_status"] != expected_status:
+                raise AssertionError(
+                    f"tip Mach status mismatch: {row['tip_mach_status']} "
+                    f"!= {expected_status}"
+                )
+        maximum = max(float(row["tip_mach"]) for row in operating_points)
+        print(
+            f"tip Mach check: maximum={maximum:.6f}, "
+            f"limit={TIP_MACH_LIMIT:.2f}, "
+            f"status={'PASS' if maximum <= TIP_MACH_LIMIT else 'FAIL'}"
+        )
 
 
 if __name__ == "__main__":

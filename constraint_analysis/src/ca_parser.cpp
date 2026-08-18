@@ -186,6 +186,9 @@ namespace constraint_analysis
                 "propeller_diameter_m",
                 "engine/propeller/diameter");
             xml_map_value(config, *selected_case,
+                "propeller_tip_mach_limit",
+                "engine/propeller/tip_mach_limit");
+            xml_map_value(config, *selected_case,
                 "propeller_count",
                 "engine/propeller/count");
             xml_map_value(config, *selected_case,
@@ -387,6 +390,14 @@ namespace constraint_analysis
             input.propulsion = propulsion_type::propeller;
             input.propeller.deck_path = xml_string(config, "propeller_deck_path");
             input.propeller.diameter_m = xml_double(config, "propeller_diameter_m");
+            input.propeller.tip_mach_limit =
+                xml_double(config, "propeller_tip_mach_limit");
+            if (input.propeller.tip_mach_limit <= 0.0 ||
+                input.propeller.tip_mach_limit > 1.5)
+            {
+                throw std::runtime_error(
+                    "propeller tip_mach_limit must be in (0, 1.5].");
+            }
             input.propeller.count = static_cast<int>(
                 xml_double(config, "propeller_count"));
             input.propeller.takeoff.rpm =

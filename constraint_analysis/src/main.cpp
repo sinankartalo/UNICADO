@@ -413,7 +413,9 @@ int main(int argc, char* argv[])
             std::ofstream file(
                 output_directory / "propeller_operating_points.csv");
             file << "altitude_m,speed_ms,density_kg_m3,rpm,pitch_deg,"
-                    "advance_ratio,CT,CP,eta,thrust_N,shaft_power_W\n";
+                    "advance_ratio,CT,CP,eta,thrust_N,shaft_power_W,"
+                    "speed_of_sound_ms,tip_speed_ms,tip_mach,"
+                    "tip_mach_limit,tip_mach_status\n";
             for (const auto& point : points)
             {
                 file << point.altitude_m << "," << point.speed_ms << ","
@@ -421,7 +423,10 @@ int main(int argc, char* argv[])
                      << point.pitch_deg << "," << point.advance_ratio << ","
                      << point.thrust_coefficient << ","
                      << point.power_coefficient << "," << point.efficiency << ","
-                     << point.thrust_N << "," << point.shaft_power_W << "\n";
+                     << point.thrust_N << "," << point.shaft_power_W << ","
+                     << point.speed_of_sound_ms << "," << point.tip_speed_ms << ","
+                     << point.tip_mach << "," << point.tip_mach_limit << ","
+                     << (point.tip_mach_feasible ? "PASS" : "FAIL") << "\n";
             }
 
             const auto takeoff_result =
@@ -435,7 +440,9 @@ int main(int argc, char* argv[])
                            "rolling_resistance_N,required_thrust_N,"
                            "required_total_shaft_power_W,advance_ratio,CT,CP,"
                            "eta,deck_single_thrust_N,deck_single_shaft_power_W,"
-                           "deck_total_thrust_N,deck_total_shaft_power_W\n";
+                           "deck_total_thrust_N,deck_total_shaft_power_W,"
+                           "speed_of_sound_ms,tip_speed_ms,tip_mach,"
+                           "tip_mach_limit,tip_mach_status\n";
                 for (const auto& step : takeoff_result.steps)
                 {
                     profile << takeoff_result.wing_loading_N_m2 << ","
@@ -452,7 +459,12 @@ int main(int argc, char* argv[])
                             << step.deck_point.thrust_N << ","
                             << step.deck_point.shaft_power_W << ","
                             << input.propeller.count * step.deck_point.thrust_N << ","
-                            << input.propeller.count * step.deck_point.shaft_power_W
+                            << input.propeller.count * step.deck_point.shaft_power_W << ","
+                            << step.deck_point.speed_of_sound_ms << ","
+                            << step.deck_point.tip_speed_ms << ","
+                            << step.deck_point.tip_mach << ","
+                            << step.deck_point.tip_mach_limit << ","
+                            << (step.deck_point.tip_mach_feasible ? "PASS" : "FAIL")
                             << "\n";
                 }
             }
@@ -487,7 +499,7 @@ int main(int argc, char* argv[])
                         "required_total_shaft_power_W,required_total_thrust_N,"
                         "deck_total_shaft_power_W,deck_total_thrust_N,"
                         "deck_power_margin_W,deck_thrust_margin_N,"
-                        "data_status\n";
+                        "tip_mach,tip_mach_limit,tip_mach_status,data_status\n";
 
             const auto limiting_takeoff_step = std::max_element(
                 takeoff_result.steps.begin(), takeoff_result.steps.end(),
@@ -530,6 +542,9 @@ int main(int argc, char* argv[])
                          << deck_power_W << "," << deck_thrust_N << ","
                          << deck_power_W - step.required_total_shaft_power_W << ","
                          << deck_thrust_N - step.required_thrust_N << ","
+                         << step.deck_point.tip_mach << ","
+                         << step.deck_point.tip_mach_limit << ","
+                         << (step.deck_point.tip_mach_feasible ? "PASS" : "FAIL") << ","
                          << "limiting_integrated_supplied_deck_point\n";
             }
 
@@ -558,6 +573,8 @@ int main(int argc, char* argv[])
                          << deck_power_W << "," << deck_thrust_N << ","
                          << deck_power_W - required_power_W << ","
                          << deck_thrust_N - required_thrust_N << ","
+                         << point.tip_mach << "," << point.tip_mach_limit << ","
+                         << (point.tip_mach_feasible ? "PASS" : "FAIL") << ","
                          << "supplied_propeller_operating_point\n";
             }
 
@@ -572,10 +589,37 @@ int main(int argc, char* argv[])
                      "cruise_climb_turn_and_acceleration_power_loading\n"
                      "vertical_constraints,implemented,"
                      "landing_stall_and_gust_wing_loading_limits\n"
+                     "propeller_tip_mach,implemented,"
+                     "helical_tip_speed_checked_against_configured_limit\n"
                      "installed_shaft_power,not_evaluated,"
                      "matching_chart_reports_required_power\n"
                      "range_fuel_burn,not_evaluated,"
                      "not_required_by_available_data_scope\n";
+
+            const auto worst_operating_point = std::max_element(
+                points.begin(), points.end(),
+                [](const propeller_operating_point& left,
+                   const propeller_operating_point& right)
+                {
+                    return left.tip_mach < right.tip_mach;
+                });
+            const auto worst_takeoff_step = std::max_element(
+                takeoff_result.steps.begin(), takeoff_result.steps.end(),
+                [](const propeller_takeoff_step& left,
+                   const propeller_takeoff_step& right)
+                {
+                    return left.deck_point.tip_mach < right.deck_point.tip_mach;
+                });
+            const double maximum_tip_mach = std::max(
+                worst_operating_point->tip_mach,
+                worst_takeoff_step->deck_point.tip_mach);
+            std::cout << "\n=== propeller_tip_mach_check ===\n"
+                      << "maximum_tip_mach = " << maximum_tip_mach << "\n"
+                      << "tip_mach_limit = " << input.propeller.tip_mach_limit << "\n"
+                      << "status = "
+                      << (maximum_tip_mach <= input.propeller.tip_mach_limit
+                              ? "PASS" : "FAIL")
+                      << "\n";
         }
 
         // ============================================================

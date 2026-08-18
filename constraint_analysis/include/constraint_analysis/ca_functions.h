@@ -32,6 +32,7 @@ namespace constraint_analysis
         aerodynamics::Propeller* model = nullptr;
         std::string deck_path;
         double diameter_m = 0.0;
+        double tip_mach_limit = 0.95;
         int count = 1;
         propeller_setting takeoff;
         propeller_setting continuous;
@@ -186,6 +187,7 @@ namespace constraint_analysis
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double density_kg_m3 = 0.0;
+        double speed_of_sound_ms = 0.0;
         double rpm = 0.0;
         double pitch_deg = 0.0;
         double advance_ratio = 0.0;
@@ -194,6 +196,10 @@ namespace constraint_analysis
         double efficiency = 0.0;
         double thrust_N = 0.0;
         double shaft_power_W = 0.0;
+        double tip_speed_ms = 0.0;
+        double tip_mach = 0.0;
+        double tip_mach_limit = 0.0;
+        bool tip_mach_feasible = false;
     };
 
     struct propeller_takeoff_step
