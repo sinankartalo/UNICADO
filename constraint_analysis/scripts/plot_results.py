@@ -309,22 +309,27 @@ upper_ws_limits = [
 feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
 feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
 
-if feasible_ws_min < feasible_ws_max:
-    feasible_mask = (
-        (envelope["wing_loading"] >= feasible_ws_min) &
-        (envelope["wing_loading"] <= feasible_ws_max)
-    )
-    ax.fill_between(
+def shade_feasible_design_region(ax, upper_y, label=True):
+    if feasible_ws_min >= feasible_ws_max:
+        return
+    region_x = np.linspace(feasible_ws_min, feasible_ws_max, 500)
+    region_envelope = np.interp(
+        region_x,
         envelope["wing_loading"],
         envelope["thrust_to_weight"],
-        y_max,
-        where=feasible_mask,
+    )
+    ax.fill_between(
+        region_x,
+        region_envelope,
+        upper_y,
         color="#2ca02c",
         alpha=0.075,
-        interpolate=True,
-        label="Feasible design region",
+        label="Feasible design region" if label else None,
         zorder=0,
     )
+
+
+shade_feasible_design_region(ax, y_max)
 
 ax.plot(
     envelope["wing_loading"],
@@ -756,22 +761,7 @@ if propeller_mode:
             carpet["required_shaft_power_to_weight_W_N"].max(),
             envelope["thrust_to_weight"].max(),
         ) * 1.08
-        if feasible_ws_min < feasible_ws_max:
-            feasible_mask = (
-                (envelope["wing_loading"] >= feasible_ws_min) &
-                (envelope["wing_loading"] <= feasible_ws_max)
-            )
-            ax.fill_between(
-                envelope["wing_loading"],
-                envelope["thrust_to_weight"],
-                carpet_y_max,
-                where=feasible_mask,
-                color="#2ca02c",
-                alpha=0.06,
-                interpolate=True,
-                label="Feasible design region",
-                zorder=0,
-            )
+        shade_feasible_design_region(ax, carpet_y_max)
 
         if takeoff_weight_N is not None:
             secondary = ax.secondary_yaxis(
