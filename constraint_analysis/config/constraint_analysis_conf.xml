@@ -200,7 +200,7 @@
         <design_space>
           <wing_loading_min><value>1000.0</value></wing_loading_min>
           <wing_loading_max><value>7000.0</value></wing_loading_max>
-          <wing_loading_step><value>500.0</value></wing_loading_step>
+          <wing_loading_step><value>100.0</value></wing_loading_step>
         </design_space>
 
         <constraints>
@@ -228,7 +228,7 @@
         <design_space>
           <wing_loading_min><value>1000.0</value></wing_loading_min>
           <wing_loading_max><value>9000.0</value></wing_loading_max>
-          <wing_loading_step><value>500.0</value></wing_loading_step>
+          <wing_loading_step><value>100.0</value></wing_loading_step>
         </design_space>
 
         <constraints>
@@ -256,7 +256,7 @@
         <design_space>
           <wing_loading_min><value>1000.0</value></wing_loading_min>
           <wing_loading_max><value>7000.0</value></wing_loading_max>
-          <wing_loading_step><value>500.0</value></wing_loading_step>
+          <wing_loading_step><value>100.0</value></wing_loading_step>
         </design_space>
 
         <constraints>
