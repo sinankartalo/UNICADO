@@ -78,11 +78,28 @@ def save_plot(name):
 metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
 if os.path.exists(metadata_path):
     metadata = pd.read_csv(metadata_path)
+    case_id = str(metadata.iloc[0]["case_id"])
     propeller_mode = metadata.iloc[0]["propulsion_type"] == "propeller"
 else:
     propeller_mode = os.path.exists(
         os.path.join(output_dir, "propeller_takeoff_constraint.csv")
     )
+    case_id = "UNICADO_PROPELLER" if propeller_mode else "JET_CASE"
+
+case_labels = {
+    "UNICADO_TEST_ENGINE": "Jet — V2527-A5 Test Engine",
+    "UNICADO_REAL_ENGINE": "Jet — PW1127G-JM Real Engine",
+    "SHORT_FIELD_DEMO": "Jet — Short-Field Demo",
+    "UNICADO_PROPELLER": "Propeller — UNICADO",
+}
+analysis_label = case_labels.get(
+    case_id,
+    f"{'Propeller' if propeller_mode else 'Jet'} — {case_id}",
+)
+
+
+def analysis_title(title):
+    return f"{analysis_label}: {title}"
 
 if propeller_mode:
     constraint_files = {
@@ -441,7 +458,11 @@ if gust_ws_limit is not None:
         zorder=3,
     )
 
-ax.set_title("Constraint Analysis Matching Chart", pad=12, fontweight="semibold")
+ax.set_title(
+    analysis_title("Constraint Analysis Matching Chart"),
+    pad=12,
+    fontweight="semibold",
+)
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
 
@@ -588,7 +609,7 @@ if gust_ws_limit is not None:
         linewidth=2.0,
     )
 
-ax.set_title("Active Constraint Regions")
+ax.set_title(analysis_title("Active Constraint Regions"))
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
 ax.set_xlim(x_min, x_max)
@@ -632,7 +653,7 @@ if propeller_mode:
         )
         ax2.set_ylabel("Acceleration [m/s²]", color="#d62728")
         ax2.tick_params(axis="y", labelcolor="#d62728")
-        ax1.set_title("Integrated Propeller Takeoff Ground Roll")
+        ax1.set_title(analysis_title("Integrated Takeoff Ground Roll"))
         lines1, labels1 = ax1.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
         ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
@@ -665,7 +686,9 @@ if propeller_mode:
         )
         ax.set_xticks(x, capacity["case"].str.title())
         ax.set_ylabel("Total Shaft Power [MW]")
-        ax.set_title("Required Power and Supplied Propeller-Map Reference")
+        ax.set_title(
+            analysis_title("Required Power and Supplied Propeller-Map Reference")
+        )
         ax.legend(frameon=False)
         save_plot("04_propeller_capacity_check")
 
@@ -773,7 +796,9 @@ if propeller_mode:
             )
             secondary.set_ylabel("Required Total Shaft Power [MW]")
 
-        ax.set_title("Propeller Constraint Carpet and Design Requirements")
+        ax.set_title(
+            analysis_title("Constraint Carpet and Design Requirements")
+        )
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
         ax.set_xlim(x_min, x_max)
@@ -818,7 +843,9 @@ if (not propeller_mode and os.path.exists(carpet_path)
         label="Optimum points",
     )
 
-    ax.set_title("Carpet Plot: Effect of Zero-Lift Drag Coefficient")
+    ax.set_title(
+        analysis_title("Carpet Plot: Effect of Zero-Lift Drag Coefficient")
+    )
     ax.set_xlabel("Wing Loading, W/S [N/m²]")
     ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
     ax.legend(loc="upper left", frameon=True, ncol=2)
@@ -839,7 +866,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
         linewidth=2.2,
     )
 
-    ax.set_title("Sensitivity of Optimum T/W to CD₀")
+    ax.set_title(analysis_title("Sensitivity of Optimum T/W to CD₀"))
     ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
     ax.set_ylabel("Optimum Required T/W [-]")
 
@@ -869,7 +896,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
         linewidth=2.2,
     )
 
-    ax.set_title("Sensitivity of Optimum W/S to CD₀")
+    ax.set_title(analysis_title("Sensitivity of Optimum W/S to CD₀"))
     ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
     ax.set_ylabel("Optimum Wing Loading, W/S [N/m²]")
 
@@ -924,7 +951,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
 
         ax2.set_ylabel("Lift-to-Drag Ratio, L/D [-]")
 
-        plt.title("Range Constraint: Fuel Fraction and L/D")
+        plt.title(analysis_title("Range Constraint: Fuel Fraction and L/D"))
 
         lines_1, labels_1 = ax1.get_legend_handles_labels()
         lines_2, labels_2 = ax2.get_legend_handles_labels()
@@ -1018,7 +1045,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
                 label=f"Gust W/S min = {gust_ws_limit:.0f}"
             )
 
-        ax.set_title("Constraint Envelope Carpet Plot")
+        ax.set_title(analysis_title("Constraint Envelope Carpet Plot"))
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
 
