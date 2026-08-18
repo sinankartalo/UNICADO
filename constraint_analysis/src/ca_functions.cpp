@@ -333,7 +333,7 @@ namespace constraint_analysis
                     valid_pitches.push_back(45.0);
                 if (valid_pitches.empty())
                     throw std::runtime_error(
-                        "No valid test-deck pitch slice for integrated takeoff.");
+                        "No valid supplied-deck pitch slice for integrated takeoff.");
 
                 propeller_operating_point deck_point;
                 double best_power_per_thrust =

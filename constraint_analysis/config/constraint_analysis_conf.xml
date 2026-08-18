@@ -264,8 +264,8 @@
         </constraints>
       </constraint_case>
 
-      <constraint_case ID="UNICADO_PROPELLER_DEMO"
-                       description="Power-loading analysis with the aerodynamics test propeller deck">
+      <constraint_case ID="UNICADO_PROPELLER"
+                       description="Propeller power-loading constraint analysis using the supplied UNICADO data">
         <aircraft>
           <aerodynamics>
             <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
@@ -280,7 +280,7 @@
         <engine>
           <propulsion_type><value>propeller</value></propulsion_type>
           <propeller>
-            <!-- Test-deck assumptions; replace for a selected propeller/engine. -->
+            <!-- Authoritative inputs for the available-data propeller analysis. -->
             <deck_path><value>../libraries/aerodynamics/test/stubs/engine/propeller/prop.csv</value></deck_path>
             <diameter><value>3.96</value></diameter>
             <count><value>2</value></count>

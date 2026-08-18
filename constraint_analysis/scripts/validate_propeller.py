@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import math
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -15,6 +16,7 @@ MISSION_CSV = (
     / "UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv"
 )
 OUTPUT = ROOT / "constraint_analysis/output"
+CONFIG_XML = ROOT / "constraint_analysis/config/constraint_analysis_conf.xml"
 
 CD0 = 0.00455002
 K = 0.0217487
@@ -96,6 +98,25 @@ def mission_betas() -> dict[str, float]:
         "climb": at_altitude("climb", 3000.0),
         "cruise_end": cruise_end,
     }
+
+
+def takeoff_weight_N() -> float:
+    with MISSION_CSV.open(encoding="utf-8-sig") as stream:
+        rows = list(csv.reader(stream, delimiter=";"))
+    header = [cell.strip() for cell in rows[0]]
+    mass_index = header.index("Total mass [kg]")
+    return float(rows[1][mass_index]) * G0
+
+
+def configured_maximum_total_shaft_power_W() -> float:
+    root = ET.parse(CONFIG_XML).getroot()
+    for case in root.findall(".//constraint_case"):
+        if case.attrib.get("ID") == "UNICADO_PROPELLER":
+            value = case.find("./engine/propeller/maximum_total_shaft_power/value")
+            if value is None or value.text is None:
+                break
+            return float(value.text)
+    raise ValueError("UNICADO_PROPELLER maximum total shaft power is missing")
 
 
 def airborne_power_loading(
@@ -194,6 +215,23 @@ def main() -> None:
             if error > 2.0e-3:
                 raise AssertionError(f"{name}: {status}")
         print(f"{name}: hand={expected:.8f} W/N, {status}")
+
+    if not all(math.isfinite(value) and value > 0.0 for value in checks.values()):
+        raise AssertionError("All propeller power-loading checks must be finite and positive")
+    if not (checks["propeller_acceleration_constraint"] >
+            checks["propeller_turn_constraint"] >
+            checks["propeller_climb_constraint"] >
+            checks["propeller_cruise_constraint"]):
+        raise AssertionError("Airborne constraint ordering is physically inconsistent")
+
+    available_W_N = configured_maximum_total_shaft_power_W() / takeoff_weight_N()
+    required_envelope_W_N = max(checks.values())
+    print(
+        "installed shaft-power check: "
+        f"available={available_W_N:.8f} W/N, "
+        f"required envelope={required_envelope_W_N:.8f} W/N, "
+        f"feasible={'yes' if required_envelope_W_N <= available_W_N else 'no'}"
+    )
 
 
 if __name__ == "__main__":

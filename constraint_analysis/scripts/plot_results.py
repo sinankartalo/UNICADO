@@ -79,10 +79,18 @@ metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
 if os.path.exists(metadata_path):
     metadata = pd.read_csv(metadata_path)
     propeller_mode = metadata.iloc[0]["propulsion_type"] == "propeller"
+    available_power_to_weight = None
+    if (propeller_mode and
+            "available_shaft_power_to_weight_W_N" in metadata.columns and
+            pd.notna(metadata.iloc[0]["available_shaft_power_to_weight_W_N"])):
+        available_power_to_weight = float(
+            metadata.iloc[0]["available_shaft_power_to_weight_W_N"]
+        )
 else:
     propeller_mode = os.path.exists(
         os.path.join(output_dir, "propeller_takeoff_constraint.csv")
     )
+    available_power_to_weight = None
 
 if propeller_mode:
     constraint_files = {
@@ -231,7 +239,10 @@ y_min = 0.0
 y_max = max(
     envelope["thrust_to_weight"].max(),
     max(df["thrust_to_weight"].max() for df in constraints.values())
-) * 1.15
+)
+if available_power_to_weight is not None:
+    y_max = max(y_max, available_power_to_weight)
+y_max *= 1.15
 
 
 # ============================================================
@@ -290,6 +301,30 @@ ax.plot(
     label="Envelope",
     zorder=5,
 )
+
+if available_power_to_weight is not None:
+    ax.axhline(
+        available_power_to_weight,
+        color="#6a3d9a",
+        linestyle="--",
+        linewidth=2.0,
+        label=f"Available shaft P/W ({available_power_to_weight:.3f} W/N)",
+        zorder=4,
+    )
+    feasible_power = (
+        envelope["thrust_to_weight"].values <= available_power_to_weight
+    )
+    ax.fill_between(
+        envelope["wing_loading"],
+        envelope["thrust_to_weight"],
+        available_power_to_weight,
+        where=feasible_power,
+        color="#2ca02c",
+        alpha=0.08,
+        interpolate=True,
+        label="Installed-power feasible",
+        zorder=1,
+    )
 
 ax.scatter(
     aircraft_ws,
@@ -611,7 +646,7 @@ if propeller_mode:
             x,
             capacity["deck_total_shaft_power_W"] / 1.0e6,
             width,
-            label="Raw test-deck output",
+            label="Supplied propeller-deck output",
             color="#1f77b4",
         )
         ax.bar(
@@ -626,6 +661,42 @@ if propeller_mode:
         ax.set_title("Propeller Power Demand and Availability Screening")
         ax.legend(frameon=False)
         save_plot("04_propeller_capacity_check")
+
+    # ============================================================
+    # Plot 5: Propeller power-loading constraint carpet
+    # ============================================================
+    propeller_carpet_path = os.path.join(
+        output_dir, "propeller_constraint_carpet.csv"
+    )
+    if os.path.exists(propeller_carpet_path):
+        carpet = pd.read_csv(propeller_carpet_path)
+        fig, ax = plt.subplots(figsize=(11.0, 6.3))
+        for constraint_name, group in carpet.groupby("constraint"):
+            group = group.sort_values("wing_loading_N_m2")
+            display_name = constraint_name.replace("propeller_", "").replace(
+                "_constraint", ""
+            ).replace("_", " ").title()
+            ax.plot(
+                group["wing_loading_N_m2"],
+                group["required_shaft_power_to_weight_W_N"],
+                linewidth=2.0,
+                label=display_name,
+            )
+        available = float(
+            carpet["available_shaft_power_to_weight_W_N"].iloc[0]
+        )
+        ax.axhline(
+            available,
+            color="black",
+            linestyle="--",
+            linewidth=2.3,
+            label=f"Available shaft P/W = {available:.3f} W/N",
+        )
+        ax.set_title("Propeller Constraint Carpet: Required and Available Power")
+        ax.set_xlabel("Wing Loading, W/S [N/m²]")
+        ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
+        ax.legend(loc="upper left", frameon=False, ncol=2)
+        save_plot("05_propeller_constraint_carpet")
 
 
 # ============================================================
