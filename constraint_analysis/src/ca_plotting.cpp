@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 #include <numbers>
 #include <cmath>
@@ -111,6 +112,50 @@ namespace constraint_analysis
                     design_point_finder::find_interpolated_feasible_minimum_point(
                         output, output.vertical_constraints);
 
+                std::string active_constraint_name;
+                double active_constraint_value =
+                    -std::numeric_limits<double>::infinity();
+                for (const auto& curve : output.curves)
+                {
+                    if (curve.points.empty())
+                    {
+                        continue;
+                    }
+
+                    const auto upper = std::lower_bound(
+                        curve.points.begin(), curve.points.end(),
+                        feasible_point.wing_loading,
+                        [](const curve_point& point, double ws)
+                        {
+                            return point.x < ws;
+                        });
+
+                    double value = 0.0;
+                    if (upper == curve.points.begin())
+                    {
+                        value = upper->y;
+                    }
+                    else if (upper == curve.points.end())
+                    {
+                        value = curve.points.back().y;
+                    }
+                    else
+                    {
+                        const auto& right = *upper;
+                        const auto& left = *(upper - 1);
+                        const double fraction =
+                            (feasible_point.wing_loading - left.x) /
+                            (right.x - left.x);
+                        value = left.y + fraction * (right.y - left.y);
+                    }
+
+                    if (value > active_constraint_value)
+                    {
+                        active_constraint_value = value;
+                        active_constraint_name = curve.name;
+                    }
+                }
+
                 bool range_feasible = true;
                 for (const auto& range_result : output.range_constraints)
                 {
@@ -157,12 +202,23 @@ namespace constraint_analysis
                             range_result.available_fuel_fraction;
                 }
 
+                const bool is_baseline =
+                    std::abs(cd0 - base_input.aircraft.polar.cd_0) <=
+                        1.0e-12 * std::max(
+                            1.0, std::abs(base_input.aircraft.polar.cd_0)) &&
+                    std::abs(
+                        induced_drag_factor - base_input.aircraft.polar.k) <=
+                        1.0e-12 * std::max(
+                            1.0, std::abs(base_input.aircraft.polar.k));
+
                 results.push_back({
                     cd0,
                     induced_drag_factor,
                     feasible_point.wing_loading,
                     feasible_point.thrust_to_weight,
-                    range_feasible});
+                    range_feasible,
+                    is_baseline,
+                    active_constraint_name});
             }
         }
         return results;
@@ -178,14 +234,17 @@ namespace constraint_analysis
                 "Could not open jet aerodynamic carpet CSV file: " + file_path);
 
         file << "cd_0,induced_drag_factor,best_wing_loading,"
-                "best_thrust_to_weight,range_feasible\n";
+                "best_thrust_to_weight,range_feasible,is_baseline,"
+                "active_constraint_name\n";
         for (const auto& point : points)
         {
             file << point.cd_0 << ","
                  << point.induced_drag_factor << ","
                  << point.best_wing_loading << ","
                  << point.best_thrust_to_weight << ","
-                 << point.range_feasible << "\n";
+                 << point.range_feasible << ","
+                 << point.is_baseline << ","
+                 << point.active_constraint_name << "\n";
         }
     }
 
