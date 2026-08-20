@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import matplotlib.tri as mtri
 from matplotlib.lines import Line2D
 
 
@@ -88,7 +87,14 @@ def load_xy_csv(filename):
     return df[required].dropna().sort_values("wing_loading")
 
 
+plot_allowlist = None
+
+
 def save_plot(name, tight=True):
+
+    if plot_allowlist is not None and name not in plot_allowlist:
+        plt.close()
+        return
 
     png_path = os.path.join(save_dir, f"{name}.png")
 
@@ -159,6 +165,21 @@ analysis_label = case_labels.get(
     case_id,
     f"{'Propeller' if propeller_mode else 'Jet'} — {case_id}",
 )
+
+# Keep the deliverable aligned with the lecture workflow.  The existing
+# matching chart and active-constraint figure remain part of the output; the
+# new work is limited to one sensitivity plot and one classical carpet.
+plot_allowlist = {
+    "01_matching_chart_professional",
+    "02_active_constraint_regions",
+    "02_parameter_sensitivity",
+    "03_classical_carpet_plot",
+}
+for existing_plot in os.listdir(save_dir):
+    if not existing_plot.endswith(".png"):
+        continue
+    if os.path.splitext(existing_plot)[0] not in plot_allowlist:
+        os.remove(os.path.join(save_dir, existing_plot))
 
 
 def analysis_title(title):
@@ -904,7 +925,7 @@ if propeller_mode:
         save_plot("05_propeller_constraint_carpet")
 
     # ============================================================
-    # Plot 6: Supplied-deck J-pitch propeller performance carpet
+    # Lecture-style propeller sensitivity and classical carpet
     # ============================================================
     performance_map_path = os.path.join(
         output_dir, "propeller_performance_map.csv"
@@ -920,67 +941,105 @@ if propeller_mode:
                 "Propeller performance map has too few physically valid points."
             )
 
-        triangulation = mtri.Triangulation(
-            valid_map["advance_ratio"], valid_map["pitch_deg"]
+        pitch_values = np.sort(valid_map["pitch_deg"].unique())
+
+        # One-parameter sensitivity: vary J on each supplied pitch slice.
+        fig, ax = plt.subplots(figsize=(10.0, 6.0))
+        pitch_colors = mpl.colormaps["viridis"](
+            np.linspace(0.18, 0.82, len(pitch_values))
         )
-        fig, axes = plt.subplots(1, 2, figsize=(14.0, 6.2), sharex=True, sharey=True)
-        contour_specs = [
-            ("thrust_coefficient", "Thrust coefficient, Cₜ", "white"),
-            ("power_coefficient", "Power coefficient, Cₚ", "#3b0f70"),
+        for color, pitch in zip(pitch_colors, pitch_values):
+            pitch_slice = valid_map[
+                valid_map["pitch_deg"] == pitch
+            ].sort_values("advance_ratio")
+            ax.plot(
+                pitch_slice["advance_ratio"], pitch_slice["efficiency"],
+                color=color, marker="o", markersize=4.0, linewidth=2.2,
+                label=f"Pitch = {pitch:g}°",
+            )
+        ax.set_title(analysis_title("Variation of Advance Ratio"))
+        ax.set_xlabel("Advance Ratio, J [-]")
+        ax.set_ylabel("Propeller Efficiency, η [-]")
+        ax.set_ylim(0.0, 1.0)
+        clean_axes(ax)
+        ax.legend(frameon=False)
+        save_plot("02_parameter_sensitivity")
+
+        # Classical carpet: green lines are constant pitch, red lines are
+        # constant J.  The plot uses CT and CP as the two configuration outputs.
+        fig, ax = plt.subplots(figsize=(10.0, 7.0))
+        pitch_color = "#10b981"
+        advance_ratio_color = "#ef4444"
+        for pitch in pitch_values:
+            pitch_slice = valid_map[
+                valid_map["pitch_deg"] == pitch
+            ].sort_values("advance_ratio")
+            ax.plot(
+                pitch_slice["thrust_coefficient"],
+                pitch_slice["power_coefficient"],
+                color=pitch_color, linewidth=2.4,
+            )
+            label_row = pitch_slice.iloc[len(pitch_slice) // 2]
+            ax.annotate(
+                f"Pitch {pitch:g}°",
+                (label_row["thrust_coefficient"],
+                 label_row["power_coefficient"]),
+                xytext=(5, 5), textcoords="offset points",
+                fontsize=9, color="#047857",
+            )
+
+        minimum_common_j = max(
+            valid_map[valid_map["pitch_deg"] == pitch]["advance_ratio"].min()
+            for pitch in pitch_values
+        )
+        maximum_common_j = min(
+            valid_map[valid_map["pitch_deg"] == pitch]["advance_ratio"].max()
+            for pitch in pitch_values
+        )
+        common_j_values = np.linspace(
+            minimum_common_j, maximum_common_j, 5
+        )
+        for advance_ratio in common_j_values:
+            ct_values = []
+            cp_values = []
+            for pitch in pitch_values:
+                pitch_slice = valid_map[
+                    valid_map["pitch_deg"] == pitch
+                ].sort_values("advance_ratio")
+                ct_values.append(np.interp(
+                    advance_ratio,
+                    pitch_slice["advance_ratio"],
+                    pitch_slice["thrust_coefficient"],
+                ))
+                cp_values.append(np.interp(
+                    advance_ratio,
+                    pitch_slice["advance_ratio"],
+                    pitch_slice["power_coefficient"],
+                ))
+            ax.plot(
+                ct_values, cp_values, color=advance_ratio_color,
+                linewidth=2.2, marker="o", markersize=5.0,
+                markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+            )
+            ax.annotate(
+                f"J = {advance_ratio:.2f}",
+                (ct_values[-1], cp_values[-1]),
+                xytext=(5, 0), textcoords="offset points",
+                fontsize=9, color="#b91c1c", va="center",
+            )
+
+        family_handles = [
+            Line2D([0], [0], color=pitch_color, linewidth=2.4,
+                   label="Constant pitch"),
+            Line2D([0], [0], color=advance_ratio_color, linewidth=2.2,
+                   label="Constant advance ratio J"),
         ]
-
-        for ax, (column, contour_label, contour_color) in zip(
-                axes, contour_specs):
-            filled = ax.tricontourf(
-                triangulation,
-                valid_map["efficiency"],
-                levels=np.linspace(0.0, 1.0, 21),
-                cmap="viridis",
-                extend="neither",
-            )
-            coefficient = valid_map[column].to_numpy()
-            coefficient_min = float(np.nanmin(coefficient))
-            coefficient_max = float(np.nanmax(coefficient))
-            if coefficient_max > coefficient_min:
-                coefficient_levels = np.linspace(
-                    coefficient_min, coefficient_max, 7
-                )[1:-1]
-                lines = ax.tricontour(
-                    triangulation,
-                    coefficient,
-                    levels=coefficient_levels,
-                    colors=contour_color,
-                    linewidths=0.85,
-                    alpha=0.88,
-                )
-                ax.clabel(lines, inline=True, fontsize=8, fmt="%.3g")
-
-            ax.scatter(
-                valid_map["advance_ratio"], valid_map["pitch_deg"],
-                s=9, color="black", alpha=0.42,
-                zorder=5,
-            )
-            ax.set_xlabel("Advance Ratio, J [-]")
-            ax.set_title(f"Efficiency with {contour_label} contours")
-            clean_axes(ax)
-
-        axes[0].set_ylabel("Blade Pitch [deg]")
-        fig.suptitle(
-            analysis_title("Propeller Performance Carpet from Supplied Deck"),
-            fontsize=15,
-            fontweight="semibold",
-        )
-        colorbar = fig.colorbar(
-            filled, ax=axes, pad=0.025, fraction=0.035
-        )
-        colorbar.set_label("Propeller Efficiency, η [-]")
-        fig.text(
-            0.5, 0.015,
-            "Filled contours interpolate the supplied deck for visualization; black points show the actual data support.",
-            ha="center", fontsize=9, color="#4d4d4d",
-        )
-        fig.subplots_adjust(bottom=0.12, top=0.86, right=0.91, wspace=0.12)
-        save_plot("06_propeller_j_pitch_carpet", tight=False)
+        ax.set_title(analysis_title("Classical Propeller Carpet Plot"))
+        ax.set_xlabel("Thrust Coefficient, Cₜ [-]")
+        ax.set_ylabel("Power Coefficient, Cₚ [-]")
+        clean_axes(ax)
+        ax.legend(handles=family_handles, frameon=False)
+        save_plot("03_classical_carpet_plot")
 
 
 # ============================================================
@@ -995,61 +1054,8 @@ if (not propeller_mode and os.path.exists(carpet_path)
     carpet = pd.read_csv(carpet_path)
     study = pd.read_csv(study_path)
 
-    fig, ax = plt.subplots(figsize=(12.0, 6.8))
-
-    cd0_values = sorted(carpet["cd_0"].unique())
-    normalization = mpl.colors.Normalize(
-        vmin=min(cd0_values), vmax=max(cd0_values)
-    )
-    color_map_cd0 = mpl.colormaps["viridis"]
-
-    for cd0 in cd0_values:
-        group = carpet[carpet["cd_0"] == cd0].sort_values("wing_loading")
-
-        ax.plot(
-            group["wing_loading"],
-            group["thrust_to_weight"],
-            linewidth=2.25,
-            color=color_map_cd0(normalization(cd0)),
-            alpha=0.92,
-        )
-
-    feasible_study = study[study["range_feasible"] == 1]
-    infeasible_study = study[study["range_feasible"] == 0]
-    ax.plot(
-        feasible_study["best_wing_loading"],
-        feasible_study["best_thrust_to_weight"],
-        color="black", marker="o", markersize=6.5,
-        markeredgecolor="white", linewidth=1.6, zorder=7,
-        label="Feasible optimum locus",
-    )
-    if not infeasible_study.empty:
-        ax.scatter(
-            infeasible_study["best_wing_loading"],
-            infeasible_study["best_thrust_to_weight"],
-            color="#D55E00", marker="x", s=80, linewidth=2.0,
-            zorder=8, label="Range-infeasible optimum",
-        )
-
-    colorbar = fig.colorbar(
-        mpl.cm.ScalarMappable(norm=normalization, cmap=color_map_cd0),
-        ax=ax, pad=0.02,
-    )
-    colorbar.set_label("Zero-lift drag coefficient, CD₀ [-]")
-
-    ax.set_title(
-        analysis_title("Carpet Plot: Effect of Zero-Lift Drag Coefficient")
-    )
-    ax.set_xlabel("Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
-    clean_axes(ax)
-    ax.legend(loc="upper left", frameon=False)
-
-    save_plot("03_cd0_carpet_plot")
-
-
     # ========================================================
-    # Plot 4: Best T/W vs CD0
+    # Lecture-style one-parameter sensitivity
     # ========================================================
     fig, ax = plt.subplots(figsize=(9, 5.5))
 
@@ -1075,7 +1081,8 @@ if (not propeller_mode and os.path.exists(carpet_path)
             fontsize=9,
         )
 
-    save_plot("04_optimum_tw_vs_cd0")
+    clean_axes(ax)
+    save_plot("02_parameter_sensitivity")
 
 
     # ========================================================
@@ -1161,7 +1168,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
         save_plot("06_range_fuel_fraction_and_ld")
 
     # ============================================================
-    # Plot 7: Two-parameter CD0-k aerodynamic carpet
+    # Lecture-style two-family CD0-k aerodynamic carpet
     # ============================================================
     aerodynamic_carpet_path = os.path.join(
         output_dir, "jet_cd0_k_carpet.csv"
@@ -1173,76 +1180,83 @@ if (not propeller_mode and os.path.exists(carpet_path)
             aero_carpet["induced_drag_factor"].unique()
         )
 
-        def carpet_grid(value_column):
-            pivot = aero_carpet.pivot(
-                index="induced_drag_factor",
-                columns="cd_0",
-                values=value_column,
-            ).reindex(index=k_grid_values, columns=cd0_grid_values)
-            if pivot.isna().any().any():
-                raise RuntimeError(
-                    "Jet CD0-k carpet is not a complete rectangular grid."
-                )
-            return pivot.to_numpy()
-
-        optimum_tw_grid = carpet_grid("best_thrust_to_weight")
-        optimum_ws_grid = carpet_grid("best_wing_loading")
-        grid_cd0, grid_k = np.meshgrid(cd0_grid_values, k_grid_values)
-
-        fig, axes = plt.subplots(1, 2, figsize=(14.0, 6.2), sharex=True, sharey=True)
-        panels = [
-            (optimum_tw_grid, "Optimum Required T/W [-]", "viridis", "%.3f"),
-            (optimum_ws_grid, "Optimum W/S [N/m²]", "cividis", "%.0f"),
-        ]
-        for ax, (values, title, cmap, label_format) in zip(axes, panels):
-            filled = ax.contourf(
-                grid_cd0, grid_k, values, levels=12, cmap=cmap
+        expected_points = len(cd0_grid_values) * len(k_grid_values)
+        if len(aero_carpet) != expected_points:
+            raise RuntimeError(
+                "Jet CD0-k carpet is not a complete rectangular grid."
             )
-            if float(np.nanmax(values)) > float(np.nanmin(values)):
-                lines = ax.contour(
-                    grid_cd0, grid_k, values, levels=6,
-                    colors="white", linewidths=0.8, alpha=0.85,
-                )
-                ax.clabel(lines, inline=True, fontsize=8, fmt=label_format)
 
-            infeasible_rows = aero_carpet[
-                aero_carpet["range_feasible"] == 0
-            ]
-            if not infeasible_rows.empty:
-                ax.scatter(
-                    infeasible_rows["cd_0"],
-                    infeasible_rows["induced_drag_factor"],
-                    marker="x", s=55, linewidth=1.8, color="#D55E00",
-                    label="Range infeasible",
-                    zorder=7,
-                )
+        fig, ax = plt.subplots(figsize=(10.0, 7.0))
+        cd0_color = "#10b981"
+        k_color = "#ef4444"
 
-            baseline_cd0 = cd0_grid_values[len(cd0_grid_values) // 2]
-            baseline_k = k_grid_values[len(k_grid_values) // 2]
+        # Green family: CD0 remains constant while k varies.
+        for cd0 in cd0_grid_values:
+            family = aero_carpet[
+                aero_carpet["cd_0"] == cd0
+            ].sort_values("induced_drag_factor")
+            ax.plot(
+                family["best_wing_loading"],
+                family["best_thrust_to_weight"],
+                color=cd0_color, linewidth=2.4,
+            )
+            label_row = family.iloc[-1]
+            ax.annotate(
+                f"CD₀ = {cd0:.4f}",
+                (label_row["best_wing_loading"],
+                 label_row["best_thrust_to_weight"]),
+                xytext=(5, 4), textcoords="offset points",
+                fontsize=8.5, color="#047857",
+            )
+
+        # Red family: k remains constant while CD0 varies.
+        for induced_drag_factor in k_grid_values:
+            family = aero_carpet[
+                aero_carpet["induced_drag_factor"] == induced_drag_factor
+            ].sort_values("cd_0")
+            ax.plot(
+                family["best_wing_loading"],
+                family["best_thrust_to_weight"],
+                color=k_color, linewidth=2.2, marker="o", markersize=4.5,
+                markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+            )
+            label_row = family.iloc[-1]
+            ax.annotate(
+                f"k = {induced_drag_factor:.4f}",
+                (label_row["best_wing_loading"],
+                 label_row["best_thrust_to_weight"]),
+                xytext=(5, -6), textcoords="offset points",
+                fontsize=8.5, color="#b91c1c",
+            )
+
+        infeasible = aero_carpet[aero_carpet["range_feasible"] == 0]
+        if not infeasible.empty:
             ax.scatter(
-                baseline_cd0, baseline_k, marker="*", s=135,
-                color="white", edgecolor="black", linewidth=0.9,
-                label="Baseline polar", zorder=8,
+                infeasible["best_wing_loading"],
+                infeasible["best_thrust_to_weight"],
+                marker="x", s=65, linewidth=1.8, color="#D55E00",
+                label="Range infeasible", zorder=8,
             )
-            ax.set_title(title)
-            ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
-            clean_axes(ax)
-            fig.colorbar(filled, ax=ax, pad=0.02)
-            ax.legend(loc="upper left", frameon=False)
 
-        axes[0].set_ylabel("Induced Drag Factor, k [-]")
-        fig.suptitle(
-            analysis_title("Aerodynamic Sensitivity Carpet"),
-            fontsize=15,
-            fontweight="semibold",
-        )
-        fig.text(
-            0.5, 0.015,
-            "Both aerodynamic coefficients are varied from 80% to 120% of the imported baseline polar.",
-            ha="center", fontsize=9, color="#4d4d4d",
-        )
-        fig.subplots_adjust(bottom=0.12, top=0.86, wspace=0.22)
-        save_plot("07_jet_cd0_k_carpet", tight=False)
+        family_handles = [
+            Line2D([0], [0], color=cd0_color, linewidth=2.4,
+                   label="Constant CD₀"),
+            Line2D([0], [0], color=k_color, linewidth=2.2,
+                   marker="o", markerfacecolor="#0f172a",
+                   markeredgecolor="#0f172a", label="Constant k"),
+        ]
+        if not infeasible.empty:
+            family_handles.append(Line2D(
+                [0], [0], color="#D55E00", marker="x", linestyle="None",
+                markersize=7, label="Range infeasible",
+            ))
+
+        ax.set_title(analysis_title("Classical Aerodynamic Carpet Plot"))
+        ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
+        ax.set_ylabel("Optimum Required T/W [-]")
+        clean_axes(ax)
+        ax.legend(handles=family_handles, frameon=False)
+        save_plot("03_classical_carpet_plot")
 
 print()
 print("Plot generation completed.")
