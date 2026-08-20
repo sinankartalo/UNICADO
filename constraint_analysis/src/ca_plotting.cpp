@@ -9,6 +9,7 @@
 // ============================================================
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include <stdexcept>
 #include <numbers>
 #include <cmath>
@@ -106,27 +107,54 @@ namespace constraint_analysis
                 input.aircraft.polar.k = induced_drag_factor;
 
                 const constraint_output output = tool.run(input);
-                const constraint_curve envelope =
-                    constraint_envelope_analyzer::build_envelope(output);
                 const design_point feasible_point =
-                    feasible_design_point_finder::find_feasible_minimum_point(
-                        envelope, output.vertical_constraints);
+                    design_point_finder::find_interpolated_feasible_minimum_point(
+                        output, output.vertical_constraints);
 
                 bool range_feasible = true;
                 for (const auto& range_result : output.range_constraints)
                 {
-                    bool local_feasible = false;
-                    for (const auto& point : range_result.points)
+                    if (range_result.points.empty())
                     {
-                        if (std::abs(
-                                point.wing_loading -
-                                feasible_point.wing_loading) < 1.0e-9)
-                        {
-                            local_feasible = point.feasible;
-                            break;
-                        }
+                        range_feasible = false;
+                        continue;
                     }
-                    range_feasible = range_feasible && local_feasible;
+
+                    const auto upper = std::lower_bound(
+                        range_result.points.begin(),
+                        range_result.points.end(),
+                        feasible_point.wing_loading,
+                        [](const range_constraint_point& point, double ws)
+                        {
+                            return point.wing_loading < ws;
+                        });
+
+                    double required_fuel_fraction = 0.0;
+                    if (upper == range_result.points.begin())
+                    {
+                        required_fuel_fraction = upper->required_fuel_fraction;
+                    }
+                    else if (upper == range_result.points.end())
+                    {
+                        required_fuel_fraction =
+                            range_result.points.back().required_fuel_fraction;
+                    }
+                    else
+                    {
+                        const auto& right = *upper;
+                        const auto& left = *(upper - 1);
+                        const double fraction =
+                            (feasible_point.wing_loading - left.wing_loading) /
+                            (right.wing_loading - left.wing_loading);
+                        required_fuel_fraction =
+                            left.required_fuel_fraction + fraction *
+                            (right.required_fuel_fraction -
+                             left.required_fuel_fraction);
+                    }
+
+                    range_feasible = range_feasible &&
+                        required_fuel_fraction <=
+                            range_result.available_fuel_fraction;
                 }
 
                 results.push_back({
