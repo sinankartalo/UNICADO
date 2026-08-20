@@ -1205,7 +1205,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
                 f"CD₀ = {cd0:.4f}",
                 (label_row["best_wing_loading"],
                  label_row["best_thrust_to_weight"]),
-                xytext=(5, 4), textcoords="offset points",
+                xytext=(7, 5), textcoords="offset points",
                 fontsize=8.5, color="#047857",
             )
 
@@ -1225,9 +1225,29 @@ if (not propeller_mode and os.path.exists(carpet_path)
                 f"k = {induced_drag_factor:.4f}",
                 (label_row["best_wing_loading"],
                  label_row["best_thrust_to_weight"]),
-                xytext=(5, -6), textcoords="offset points",
+                xytext=(7, -7), textcoords="offset points",
                 fontsize=8.5, color="#b91c1c",
             )
+
+        baseline_cd0 = cd0_grid_values[len(cd0_grid_values) // 2]
+        baseline_k = k_grid_values[len(k_grid_values) // 2]
+        baseline = aero_carpet[
+            np.isclose(aero_carpet["cd_0"], baseline_cd0) &
+            np.isclose(
+                aero_carpet["induced_drag_factor"], baseline_k
+            )
+        ]
+        if len(baseline) != 1:
+            raise RuntimeError(
+                "Jet CD0-k carpet must contain one nominal polar point."
+            )
+        baseline_row = baseline.iloc[0]
+        ax.scatter(
+            baseline_row["best_wing_loading"],
+            baseline_row["best_thrust_to_weight"],
+            marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
+            linewidth=0.9, label="Imported nominal polar", zorder=9,
+        )
 
         infeasible = aero_carpet[aero_carpet["range_feasible"] == 0]
         if not infeasible.empty:
@@ -1244,6 +1264,9 @@ if (not propeller_mode and os.path.exists(carpet_path)
             Line2D([0], [0], color=k_color, linewidth=2.2,
                    marker="o", markerfacecolor="#0f172a",
                    markeredgecolor="#0f172a", label="Constant k"),
+            Line2D([0], [0], color="#fbbf24", marker="*",
+                   markeredgecolor="#0f172a", linestyle="None",
+                   markersize=11, label="Imported nominal polar"),
         ]
         if not infeasible.empty:
             family_handles.append(Line2D(
@@ -1256,6 +1279,13 @@ if (not propeller_mode and os.path.exists(carpet_path)
         ax.set_ylabel("Optimum Required T/W [-]")
         clean_axes(ax)
         ax.legend(handles=family_handles, frameon=False)
+        ax.text(
+            0.01, 0.02,
+            "CD₀ and k are swept from 80% to 120% of the imported polar; "
+            "each point uses the interpolated feasible optimum.",
+            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+            va="bottom",
+        )
         save_plot("04_classical_carpet_plot")
 
 print()
