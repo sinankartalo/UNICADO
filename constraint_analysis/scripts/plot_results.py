@@ -1181,9 +1181,10 @@ if (not propeller_mode and os.path.exists(carpet_path)
         )
 
         expected_points = len(cd0_grid_values) * len(k_grid_values)
-        if len(aero_carpet) != expected_points:
+        if (len(cd0_grid_values) != 9 or len(k_grid_values) != 9 or
+                len(aero_carpet) != expected_points):
             raise RuntimeError(
-                "Jet CD0-k carpet is not a complete rectangular grid."
+                "Jet CD0-k carpet must be a complete 9x9 grid."
             )
 
         fig, ax = plt.subplots(figsize=(10.0, 7.0))
@@ -1191,62 +1192,78 @@ if (not propeller_mode and os.path.exists(carpet_path)
         k_color = "#ef4444"
 
         # Green family: CD0 remains constant while k varies.
-        for cd0 in cd0_grid_values:
+        label_indices = {0, 2, 4, 6, 8}
+        for cd0_index, cd0 in enumerate(cd0_grid_values):
             family = aero_carpet[
                 aero_carpet["cd_0"] == cd0
             ].sort_values("induced_drag_factor")
             ax.plot(
                 family["best_wing_loading"],
                 family["best_thrust_to_weight"],
-                color=cd0_color, linewidth=2.4,
+                color=cd0_color,
+                linewidth=2.4 if cd0_index in label_indices else 1.25,
+                alpha=1.0 if cd0_index in label_indices else 0.42,
             )
-            label_row = family.iloc[-1]
-            ax.annotate(
-                f"CD₀ = {cd0:.4f}",
-                (label_row["best_wing_loading"],
-                 label_row["best_thrust_to_weight"]),
-                xytext=(7, 5), textcoords="offset points",
-                fontsize=8.5, color="#047857",
-            )
+            if cd0_index in label_indices:
+                label_row = family.iloc[-1]
+                ax.annotate(
+                    f"CD₀ = {cd0:.4f}",
+                    (label_row["best_wing_loading"],
+                     label_row["best_thrust_to_weight"]),
+                    xytext=(7, 5), textcoords="offset points",
+                    fontsize=8.5, color="#047857",
+                )
 
         # Red family: k remains constant while CD0 varies.
-        for induced_drag_factor in k_grid_values:
+        for k_index, induced_drag_factor in enumerate(k_grid_values):
             family = aero_carpet[
                 aero_carpet["induced_drag_factor"] == induced_drag_factor
             ].sort_values("cd_0")
             ax.plot(
                 family["best_wing_loading"],
                 family["best_thrust_to_weight"],
-                color=k_color, linewidth=2.2, marker="o", markersize=4.5,
+                color=k_color,
+                linewidth=2.2 if k_index in label_indices else 1.2,
+                alpha=1.0 if k_index in label_indices else 0.38,
+                marker="o", markersize=4.2,
                 markerfacecolor="#0f172a", markeredgecolor="#0f172a",
             )
-            label_row = family.iloc[-1]
-            ax.annotate(
-                f"k = {induced_drag_factor:.4f}",
-                (label_row["best_wing_loading"],
-                 label_row["best_thrust_to_weight"]),
-                xytext=(7, -7), textcoords="offset points",
-                fontsize=8.5, color="#b91c1c",
-            )
+            if k_index in label_indices:
+                label_row = family.iloc[-1]
+                ax.annotate(
+                    f"k = {induced_drag_factor:.4f}",
+                    (label_row["best_wing_loading"],
+                     label_row["best_thrust_to_weight"]),
+                    xytext=(7, -7), textcoords="offset points",
+                    fontsize=8.5, color="#b91c1c",
+                )
 
-        baseline_cd0 = cd0_grid_values[len(cd0_grid_values) // 2]
-        baseline_k = k_grid_values[len(k_grid_values) // 2]
-        baseline = aero_carpet[
-            np.isclose(aero_carpet["cd_0"], baseline_cd0) &
-            np.isclose(
-                aero_carpet["induced_drag_factor"], baseline_k
+        required_columns = {"is_baseline", "active_constraint_name"}
+        if not required_columns.issubset(aero_carpet.columns):
+            raise RuntimeError(
+                "Rerun the C++ application: carpet CSV schema is outdated."
             )
-        ]
+        baseline = aero_carpet[aero_carpet["is_baseline"] == 1]
         if len(baseline) != 1:
             raise RuntimeError(
                 "Jet CD0-k carpet must contain one nominal polar point."
             )
         baseline_row = baseline.iloc[0]
+        baseline_active = str(baseline_row["active_constraint_name"])
         ax.scatter(
             baseline_row["best_wing_loading"],
             baseline_row["best_thrust_to_weight"],
             marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
             linewidth=0.9, label="Imported nominal polar", zorder=9,
+        )
+        ax.annotate(
+            f"Nominal polar\nActive: {baseline_active}",
+            (baseline_row["best_wing_loading"],
+             baseline_row["best_thrust_to_weight"]),
+            xytext=(12, 14), textcoords="offset points", fontsize=8.5,
+            color="#334155",
+            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                      edgecolor="#cbd5e1", alpha=0.92),
         )
 
         infeasible = aero_carpet[aero_carpet["range_feasible"] == 0]
@@ -1281,8 +1298,8 @@ if (not propeller_mode and os.path.exists(carpet_path)
         ax.legend(handles=family_handles, frameon=False)
         ax.text(
             0.01, 0.02,
-            "CD₀ and k are swept from 80% to 120% of the imported polar; "
-            "each point uses the interpolated feasible optimum.",
+            "81 interpolated feasible optima; labels show every other "
+            "CD₀ and k level (80–120% of the imported polar).",
             transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
             va="bottom",
         )
