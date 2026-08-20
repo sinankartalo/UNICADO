@@ -1231,6 +1231,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
     )
     k_curve_cmap = mpl.colormaps["Blues"]
     gust_cmap = mpl.colormaps["Oranges"]
+    gust_limit_family = []
 
     for k_index, induced_drag_factor in enumerate(k_values):
         curve = k_sensitivity[np.isclose(
@@ -1255,12 +1256,15 @@ if (not propeller_mode and os.path.exists(carpet_path)
         )
 
         gust_limit = float(curve["gust_wing_loading_limit"].iloc[0])
+        gust_limit_family.append((
+            k_index, induced_drag_factor, gust_limit, is_nominal
+        ))
         ax.axvline(
             gust_limit,
             color="#9a3412" if is_nominal
             else gust_cmap(k_normalization(induced_drag_factor)),
-            linewidth=2.6 if is_nominal else 1.25,
-            alpha=1.0 if is_nominal else 0.68,
+            linewidth=2.2 if is_nominal else 0.85,
+            alpha=0.95 if is_nominal else 0.34,
             linestyle="--" if is_nominal else "-",
             label=(f"Nominal gust limit = {gust_limit:.0f} N/m²"
                    if is_nominal else None),
@@ -1276,6 +1280,42 @@ if (not propeller_mode and os.path.exists(carpet_path)
                 xytext=(5, 0), textcoords="offset points",
                 fontsize=8.5, color="#1d4ed8", va="center",
             )
+
+    gust_limits = np.array([
+        item[2] for item in gust_limit_family
+    ], dtype=float)
+    gust_span = float(gust_limits.max() - gust_limits.min())
+    gust_padding = max(0.18 * gust_span, 2.0)
+    gust_inset = ax.inset_axes([0.57, 0.57, 0.29, 0.29])
+    for k_index, induced_drag_factor, gust_limit, is_nominal in (
+            gust_limit_family):
+        gust_inset.axvline(
+            gust_limit,
+            color="#9a3412" if is_nominal
+            else gust_cmap(k_normalization(induced_drag_factor)),
+            linewidth=2.5 if is_nominal else 1.25,
+            linestyle="--" if is_nominal else "-",
+            alpha=1.0 if is_nominal else 0.78,
+        )
+    selected_gust_items = [
+        item for item in gust_limit_family if item[0] in label_indices
+    ]
+    gust_inset.set_xlim(
+        gust_limits.min() - gust_padding,
+        gust_limits.max() + gust_padding,
+    )
+    gust_inset.set_ylim(0.0, 1.0)
+    gust_inset.set_yticks([])
+    gust_inset.set_xticks([item[2] for item in selected_gust_items])
+    gust_inset.set_xticklabels(
+        [f"{item[1] / nominal_k:.0%}" for item in selected_gust_items],
+        rotation=40, ha="right", fontsize=7.5,
+    )
+    gust_inset.set_title("Gust-limit shift", fontsize=9)
+    gust_inset.set_xlabel("W/S [N/m²]", fontsize=8)
+    gust_inset.grid(axis="x", alpha=0.18)
+    gust_inset.spines["top"].set_visible(False)
+    gust_inset.spines["right"].set_visible(False)
 
     low_k_curve = k_sensitivity[np.isclose(
         k_sensitivity["induced_drag_factor"], k_values[0],
@@ -1314,10 +1354,11 @@ if (not propeller_mode and os.path.exists(carpet_path)
         "other aircraft parameters remain constant.",
         transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
         va="bottom",
+        bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                  edgecolor="none", alpha=0.88),
     )
     clean_axes(ax)
-    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
-    fig.subplots_adjust(right=0.79)
+    ax.legend(loc="upper right", frameon=False)
     save_plot("04_k_parameter_sensitivity")
 
 
