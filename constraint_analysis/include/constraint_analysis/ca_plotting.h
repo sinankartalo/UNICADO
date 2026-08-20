@@ -52,6 +52,8 @@ namespace constraint_analysis
         double best_wing_loading = 0.0;
         double best_thrust_to_weight = 0.0;
         bool range_feasible = false;
+        bool is_baseline = false;
+        std::string active_constraint_name;
     };
 
     class jet_aerodynamic_carpet_study
