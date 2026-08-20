@@ -172,8 +172,8 @@ analysis_label = case_labels.get(
 plot_allowlist = {
     "01_matching_chart_professional",
     "02_active_constraint_regions",
-    "02_parameter_sensitivity",
-    "03_classical_carpet_plot",
+    "03_parameter_sensitivity",
+    "04_classical_carpet_plot",
 }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -963,7 +963,7 @@ if propeller_mode:
         ax.set_ylim(0.0, 1.0)
         clean_axes(ax)
         ax.legend(frameon=False)
-        save_plot("02_parameter_sensitivity")
+        save_plot("03_parameter_sensitivity")
 
         # Classical carpet: green lines are constant pitch, red lines are
         # constant J.  The plot uses CT and CP as the two configuration outputs.
@@ -1039,7 +1039,7 @@ if propeller_mode:
         ax.set_ylabel("Power Coefficient, Cₚ [-]")
         clean_axes(ax)
         ax.legend(handles=family_handles, frameon=False)
-        save_plot("03_classical_carpet_plot")
+        save_plot("04_classical_carpet_plot")
 
 
 # ============================================================
@@ -1082,7 +1082,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
         )
 
     clean_axes(ax)
-    save_plot("02_parameter_sensitivity")
+    save_plot("03_parameter_sensitivity")
 
 
     # ========================================================
@@ -1256,7 +1256,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
         ax.set_ylabel("Optimum Required T/W [-]")
         clean_axes(ax)
         ax.legend(handles=family_handles, frameon=False)
-        save_plot("03_classical_carpet_plot")
+        save_plot("04_classical_carpet_plot")
 
 print()
 print("Plot generation completed.")
