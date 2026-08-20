@@ -169,12 +169,21 @@ analysis_label = case_labels.get(
 # Keep the deliverable aligned with the lecture workflow.  The existing
 # matching chart and active-constraint figure remain part of the output; the
 # new work is limited to one sensitivity plot and one classical carpet.
-plot_allowlist = {
-    "01_matching_chart_professional",
-    "02_active_constraint_regions",
-    "03_parameter_sensitivity",
-    "04_classical_carpet_plot",
-}
+if propeller_mode:
+    plot_allowlist = {
+        "01_matching_chart_professional",
+        "02_active_constraint_regions",
+        "03_parameter_sensitivity",
+        "04_classical_carpet_plot",
+    }
+else:
+    plot_allowlist = {
+        "01_matching_chart_professional",
+        "02_active_constraint_regions",
+        "03_cd0_parameter_sensitivity",
+        "04_k_parameter_sensitivity",
+        "05_classical_carpet_plot",
+    }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
         continue
@@ -1175,18 +1184,6 @@ if (not propeller_mode and os.path.exists(carpet_path)
         arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
     )
 
-    vertical_sensitivity_limits = [
-        (gust_ws_limit, "Gust minimum", "#7f7f7f", "-."),
-        (landing_ws_limit, "Landing maximum", "#9467bd", "--"),
-        (stall_ws_limit, "Stall maximum", "#bcbd22", ":"),
-    ]
-    for limit, label, color, linestyle in vertical_sensitivity_limits:
-        if limit is not None:
-            ax.axvline(
-                limit, color=color, linestyle=linestyle, linewidth=1.6,
-                alpha=0.9, label=f"{label} ({limit:.0f})",
-            )
-
     ax.set_title(analysis_title(
         f"Acceleration-Constraint Sensitivity to CD₀ "
         f"at Nominal k = {nominal_k:.4f}"
@@ -1195,8 +1192,8 @@ if (not propeller_mode and os.path.exists(carpet_path)
     ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
     ax.text(
         0.01, 0.02,
-        "Only CD₀ varies (80–120%); k, mission, propulsion and all "
-        "other aircraft parameters remain constant.",
+        "Only CD₀ varies (80–120%); k and the vertical wing-loading "
+        "limits remain constant.",
         transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
         va="bottom",
     )
@@ -1204,7 +1201,124 @@ if (not propeller_mode and os.path.exists(carpet_path)
     clean_axes(ax)
     ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
     fig.subplots_adjust(right=0.79)
-    save_plot("03_parameter_sensitivity")
+    save_plot("03_cd0_parameter_sensitivity")
+
+    # ========================================================
+    # k sensitivity with a moving gust-limit family
+    # ========================================================
+    k_sensitivity_path = os.path.join(
+        output_dir, "jet_k_sensitivity_curves.csv"
+    )
+    if not os.path.exists(k_sensitivity_path):
+        raise FileNotFoundError(
+            "jet_k_sensitivity_curves.csv not found; rerun the C++ application."
+        )
+    k_sensitivity = pd.read_csv(k_sensitivity_path).dropna()
+    required_k_columns = {
+        "induced_drag_factor", "constraint_name", "wing_loading",
+        "thrust_to_weight", "gust_wing_loading_limit",
+    }
+    if not required_k_columns.issubset(k_sensitivity.columns):
+        raise RuntimeError("k sensitivity CSV schema is outdated.")
+
+    k_values = np.sort(k_sensitivity["induced_drag_factor"].unique())
+    if len(k_values) != 9:
+        raise RuntimeError("k sensitivity must contain nine parameter levels.")
+
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    k_normalization = mpl.colors.Normalize(
+        vmin=k_values.min(), vmax=k_values.max()
+    )
+    k_curve_cmap = mpl.colormaps["Blues"]
+    gust_cmap = mpl.colormaps["Oranges"]
+
+    for k_index, induced_drag_factor in enumerate(k_values):
+        curve = k_sensitivity[np.isclose(
+            k_sensitivity["induced_drag_factor"], induced_drag_factor,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("wing_loading")
+        is_nominal = np.isclose(
+            induced_drag_factor, nominal_k,
+            rtol=1.0e-9, atol=1.0e-12,
+        )
+        curve_color = (
+            "#1e3a8a" if is_nominal
+            else k_curve_cmap(k_normalization(induced_drag_factor))
+        )
+        ax.plot(
+            curve["wing_loading"], curve["thrust_to_weight"],
+            color=curve_color, linewidth=3.0 if is_nominal else 1.45,
+            alpha=1.0 if is_nominal else 0.72,
+            label=(f"Nominal k = {induced_drag_factor:.5f}"
+                   if is_nominal else None),
+            zorder=4 if is_nominal else 2,
+        )
+
+        gust_limit = float(curve["gust_wing_loading_limit"].iloc[0])
+        ax.axvline(
+            gust_limit,
+            color="#9a3412" if is_nominal
+            else gust_cmap(k_normalization(induced_drag_factor)),
+            linewidth=2.6 if is_nominal else 1.25,
+            alpha=1.0 if is_nominal else 0.68,
+            linestyle="--" if is_nominal else "-",
+            label=(f"Nominal gust limit = {gust_limit:.0f} N/m²"
+                   if is_nominal else None),
+            zorder=3,
+        )
+
+        if k_index in label_indices:
+            label_row = curve.iloc[-1]
+            ax.annotate(
+                f"{induced_drag_factor / nominal_k:.0%}",
+                (label_row["wing_loading"],
+                 label_row["thrust_to_weight"]),
+                xytext=(5, 0), textcoords="offset points",
+                fontsize=8.5, color="#1d4ed8", va="center",
+            )
+
+    low_k_curve = k_sensitivity[np.isclose(
+        k_sensitivity["induced_drag_factor"], k_values[0],
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("wing_loading")
+    high_k_curve = k_sensitivity[np.isclose(
+        k_sensitivity["induced_drag_factor"], k_values[-1],
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("wing_loading")
+    k_middle_ws = float(k_sensitivity["wing_loading"].median())
+    low_k_y = np.interp(
+        k_middle_ws, low_k_curve["wing_loading"],
+        low_k_curve["thrust_to_weight"],
+    )
+    high_k_y = np.interp(
+        k_middle_ws, high_k_curve["wing_loading"],
+        high_k_curve["thrust_to_weight"],
+    )
+    ax.annotate(
+        "Increasing k",
+        xy=(k_middle_ws, high_k_y),
+        xytext=(k_middle_ws, low_k_y),
+        ha="center", va="bottom", fontsize=9.5, color="#334155",
+        arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
+    )
+
+    ax.set_title(analysis_title(
+        f"Acceleration and Gust-Limit Sensitivity to k "
+        f"at Nominal CD₀ = {nominal_cd0:.5f}"
+    ))
+    ax.set_xlabel("Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
+    ax.text(
+        0.01, 0.02,
+        "Only k varies (80–120%); CD₀, mission, propulsion and all "
+        "other aircraft parameters remain constant.",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+    )
+    clean_axes(ax)
+    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
+    fig.subplots_adjust(right=0.79)
+    save_plot("04_k_parameter_sensitivity")
 
 
     # ========================================================
@@ -1425,7 +1539,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
             transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
             va="bottom",
         )
-        save_plot("04_classical_carpet_plot")
+        save_plot("05_classical_carpet_plot")
 
 print()
 print("Plot generation completed.")
