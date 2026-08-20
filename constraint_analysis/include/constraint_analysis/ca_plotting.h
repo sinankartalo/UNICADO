@@ -165,4 +165,30 @@ namespace constraint_analysis
     private:
         const atmosphere& atmosphere_;
     };
+
+    struct k_sensitivity_curve_point
+    {
+        double induced_drag_factor = 0.0;
+        std::string constraint_name;
+        double wing_loading = 0.0;
+        double thrust_to_weight = 0.0;
+        double gust_wing_loading_limit = 0.0;
+    };
+
+    class k_sensitivity_study
+    {
+    public:
+        explicit k_sensitivity_study(const atmosphere& atmosphere);
+
+        std::vector<k_sensitivity_curve_point> run(
+            const constraint_input& base_input,
+            const std::vector<double>& induced_drag_factor_values) const;
+
+        static void write_to_csv(
+            const std::vector<k_sensitivity_curve_point>& points,
+            const std::string& file_path);
+
+    private:
+        const atmosphere& atmosphere_;
+    };
 }
