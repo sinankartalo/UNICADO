@@ -168,7 +168,8 @@ analysis_label = case_labels.get(
 
 # Keep the deliverable aligned with the lecture workflow.  The existing
 # matching chart and active-constraint figure remain part of the output; the
-# new work is limited to one sensitivity plot and one classical carpet.
+# added studies remain limited to explicit sensitivity and classical-carpet
+# figures; no additional matching-chart variants are produced.
 if propeller_mode:
     plot_allowlist = {
         "01_matching_chart_professional",
@@ -183,6 +184,8 @@ else:
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
         "05_classical_carpet_plot",
+        "06_ar_parameter_sensitivity",
+        "07_cd0_ar_classical_carpet_plot",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -1361,6 +1364,161 @@ if (not propeller_mode and os.path.exists(carpet_path)
     ax.legend(loc="upper right", frameon=False)
     save_plot("04_k_parameter_sensitivity")
 
+    # ========================================================
+    # Effective-aspect-ratio sensitivity derived from k
+    # ========================================================
+    # The imported polar supplies k, not wing geometry.  For a transparent
+    # lecture-style AR study, hold Oswald efficiency fixed and use
+    # k = 1 / (pi * e * AR).  The result is therefore an effective AR.
+    oswald_efficiency_assumption = 0.80
+    ar_sensitivity = k_sensitivity.copy()
+    ar_sensitivity["effective_aspect_ratio"] = 1.0 / (
+        np.pi * oswald_efficiency_assumption
+        * ar_sensitivity["induced_drag_factor"]
+    )
+    ar_values = np.sort(
+        ar_sensitivity["effective_aspect_ratio"].unique()
+    )
+    nominal_ar = 1.0 / (
+        np.pi * oswald_efficiency_assumption * nominal_k
+    )
+
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    ar_normalization = mpl.colors.Normalize(
+        vmin=ar_values.min(), vmax=ar_values.max()
+    )
+    ar_curve_cmap = mpl.colormaps["Purples"]
+    ar_gust_cmap = mpl.colormaps["Oranges"]
+    ar_gust_family = []
+
+    for ar_index, effective_ar in enumerate(ar_values):
+        curve = ar_sensitivity[np.isclose(
+            ar_sensitivity["effective_aspect_ratio"], effective_ar,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("wing_loading")
+        is_nominal = np.isclose(
+            effective_ar, nominal_ar, rtol=1.0e-9, atol=1.0e-12,
+        )
+        curve_color = (
+            "#5b21b6" if is_nominal
+            else ar_curve_cmap(ar_normalization(effective_ar))
+        )
+        ax.plot(
+            curve["wing_loading"], curve["thrust_to_weight"],
+            color=curve_color, linewidth=3.0 if is_nominal else 1.45,
+            alpha=1.0 if is_nominal else 0.72,
+            label=(f"Nominal effective AR = {effective_ar:.2f}"
+                   if is_nominal else None),
+            zorder=4 if is_nominal else 2,
+        )
+
+        gust_limit = float(curve["gust_wing_loading_limit"].iloc[0])
+        ar_gust_family.append((
+            ar_index, effective_ar, gust_limit, is_nominal
+        ))
+        ax.axvline(
+            gust_limit,
+            color="#9a3412" if is_nominal
+            else ar_gust_cmap(ar_normalization(effective_ar)),
+            linewidth=2.2 if is_nominal else 0.85,
+            alpha=0.95 if is_nominal else 0.34,
+            linestyle="--" if is_nominal else "-",
+            label=(f"Nominal gust limit = {gust_limit:.0f} N/m²"
+                   if is_nominal else None),
+            zorder=3,
+        )
+
+        if ar_index in label_indices:
+            label_row = curve.iloc[-1]
+            ax.annotate(
+                f"AR = {effective_ar:.1f}",
+                (label_row["wing_loading"],
+                 label_row["thrust_to_weight"]),
+                xytext=(5, 0), textcoords="offset points",
+                fontsize=8.5, color="#6d28d9", va="center",
+            )
+
+    ar_gust_limits = np.array([
+        item[2] for item in ar_gust_family
+    ], dtype=float)
+    ar_gust_span = float(ar_gust_limits.max() - ar_gust_limits.min())
+    ar_gust_padding = max(0.18 * ar_gust_span, 2.0)
+    ar_gust_inset = ax.inset_axes([0.57, 0.57, 0.29, 0.29])
+    for ar_index, effective_ar, gust_limit, is_nominal in ar_gust_family:
+        ar_gust_inset.axvline(
+            gust_limit,
+            color="#9a3412" if is_nominal
+            else ar_gust_cmap(ar_normalization(effective_ar)),
+            linewidth=2.5 if is_nominal else 1.25,
+            linestyle="--" if is_nominal else "-",
+            alpha=1.0 if is_nominal else 0.78,
+        )
+    selected_ar_gust_items = [
+        item for item in ar_gust_family if item[0] in label_indices
+    ]
+    ar_gust_inset.set_xlim(
+        ar_gust_limits.min() - ar_gust_padding,
+        ar_gust_limits.max() + ar_gust_padding,
+    )
+    ar_gust_inset.set_ylim(0.0, 1.0)
+    ar_gust_inset.set_yticks([])
+    ar_gust_inset.set_xticks([
+        item[2] for item in selected_ar_gust_items
+    ])
+    ar_gust_inset.set_xticklabels(
+        [f"{item[1]:.1f}" for item in selected_ar_gust_items],
+        rotation=40, ha="right", fontsize=7.5,
+    )
+    ar_gust_inset.set_title("Gust-limit shift", fontsize=9)
+    ar_gust_inset.set_xlabel("Effective AR", fontsize=8)
+    ar_gust_inset.grid(axis="x", alpha=0.18)
+    ar_gust_inset.spines["top"].set_visible(False)
+    ar_gust_inset.spines["right"].set_visible(False)
+
+    low_ar_curve = ar_sensitivity[np.isclose(
+        ar_sensitivity["effective_aspect_ratio"], ar_values[0],
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("wing_loading")
+    high_ar_curve = ar_sensitivity[np.isclose(
+        ar_sensitivity["effective_aspect_ratio"], ar_values[-1],
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("wing_loading")
+    ar_middle_ws = float(ar_sensitivity["wing_loading"].median())
+    low_ar_y = np.interp(
+        ar_middle_ws, low_ar_curve["wing_loading"],
+        low_ar_curve["thrust_to_weight"],
+    )
+    high_ar_y = np.interp(
+        ar_middle_ws, high_ar_curve["wing_loading"],
+        high_ar_curve["thrust_to_weight"],
+    )
+    ax.annotate(
+        "Increasing effective AR",
+        xy=(ar_middle_ws, high_ar_y),
+        xytext=(ar_middle_ws, low_ar_y),
+        ha="center", va="bottom", fontsize=9.5, color="#334155",
+        arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
+    )
+
+    ax.set_title(analysis_title(
+        "Acceleration and Gust-Limit Sensitivity to Effective AR "
+        f"at Nominal CD₀ = {nominal_cd0:.5f}"
+    ))
+    ax.set_xlabel("Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
+    ax.text(
+        0.01, 0.02,
+        "Effective AR is derived from k = 1/(πeAR) with e = 0.80; "
+        "CD₀, mission, propulsion and all other parameters remain constant.",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+        bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                  edgecolor="none", alpha=0.88),
+    )
+    clean_axes(ax)
+    ax.legend(loc="upper right", frameon=False)
+    save_plot("06_ar_parameter_sensitivity")
+
 
     # ========================================================
     # Plot 5: Best W/S vs CD0
@@ -1581,6 +1739,136 @@ if (not propeller_mode and os.path.exists(carpet_path)
             va="bottom",
         )
         save_plot("05_classical_carpet_plot")
+
+        # ============================================================
+        # Classical CD0-effective-AR carpet derived from the same grid
+        # ============================================================
+        ar_carpet = aero_carpet.copy()
+        ar_carpet["effective_aspect_ratio"] = 1.0 / (
+            np.pi * oswald_efficiency_assumption
+            * ar_carpet["induced_drag_factor"]
+        )
+        ar_grid_values = np.sort(
+            ar_carpet["effective_aspect_ratio"].unique()
+        )
+
+        fig, ax = plt.subplots(figsize=(10.0, 7.0))
+        cd0_ar_color = "#10b981"
+        ar_color = "#7c3aed"
+
+        # Green family: CD0 remains constant while effective AR varies.
+        for cd0_index, cd0 in enumerate(cd0_grid_values):
+            family = ar_carpet[np.isclose(
+                ar_carpet["cd_0"], cd0,
+                rtol=1.0e-9, atol=1.0e-12,
+            )].sort_values("effective_aspect_ratio")
+            ax.plot(
+                family["best_wing_loading"],
+                family["best_thrust_to_weight"],
+                color=cd0_ar_color,
+                linewidth=2.4 if cd0_index in label_indices else 1.25,
+                alpha=1.0 if cd0_index in label_indices else 0.42,
+            )
+            if cd0_index in label_indices:
+                label_row = family.iloc[-1]
+                ax.annotate(
+                    f"CD₀ = {cd0:.4f}",
+                    (label_row["best_wing_loading"],
+                     label_row["best_thrust_to_weight"]),
+                    xytext=(7, 5), textcoords="offset points",
+                    fontsize=8.5, color="#047857",
+                )
+
+        # Purple family: effective AR remains constant while CD0 varies.
+        for ar_index, effective_ar in enumerate(ar_grid_values):
+            family = ar_carpet[np.isclose(
+                ar_carpet["effective_aspect_ratio"], effective_ar,
+                rtol=1.0e-9, atol=1.0e-12,
+            )].sort_values("cd_0")
+            ax.plot(
+                family["best_wing_loading"],
+                family["best_thrust_to_weight"],
+                color=ar_color,
+                linewidth=2.2 if ar_index in label_indices else 1.2,
+                alpha=1.0 if ar_index in label_indices else 0.38,
+                marker="o", markersize=4.2,
+                markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+            )
+            if ar_index in label_indices:
+                label_row = family.iloc[-1]
+                ax.annotate(
+                    f"AR = {effective_ar:.1f}",
+                    (label_row["best_wing_loading"],
+                     label_row["best_thrust_to_weight"]),
+                    xytext=(7, -7), textcoords="offset points",
+                    fontsize=8.5, color="#6d28d9",
+                )
+
+        ar_baseline = ar_carpet[ar_carpet["is_baseline"] == 1]
+        if len(ar_baseline) != 1:
+            raise RuntimeError(
+                "Jet CD0-AR carpet must contain one nominal polar point."
+            )
+        ar_baseline_row = ar_baseline.iloc[0]
+        ax.scatter(
+            ar_baseline_row["best_wing_loading"],
+            ar_baseline_row["best_thrust_to_weight"],
+            marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
+            linewidth=0.9, label="Imported nominal polar", zorder=9,
+        )
+        ax.annotate(
+            f"Nominal effective AR = {nominal_ar:.2f}\n"
+            f"Active: {baseline_active}",
+            (ar_baseline_row["best_wing_loading"],
+             ar_baseline_row["best_thrust_to_weight"]),
+            xytext=(12, 14), textcoords="offset points", fontsize=8.5,
+            color="#334155",
+            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                      edgecolor="#cbd5e1", alpha=0.92),
+        )
+
+        if not infeasible.empty:
+            ar_infeasible = ar_carpet[ar_carpet["range_feasible"] == 0]
+            ax.scatter(
+                ar_infeasible["best_wing_loading"],
+                ar_infeasible["best_thrust_to_weight"],
+                marker="x", s=65, linewidth=1.8, color="#D55E00",
+                label="Range infeasible", zorder=8,
+            )
+
+        ar_family_handles = [
+            Line2D([0], [0], color=cd0_ar_color, linewidth=2.4,
+                   label="Constant CD₀"),
+            Line2D([0], [0], color=ar_color, linewidth=2.2,
+                   marker="o", markerfacecolor="#0f172a",
+                   markeredgecolor="#0f172a",
+                   label="Constant effective AR"),
+            Line2D([0], [0], color="#fbbf24", marker="*",
+                   markeredgecolor="#0f172a", linestyle="None",
+                   markersize=11, label="Imported nominal polar"),
+        ]
+        if not infeasible.empty:
+            ar_family_handles.append(Line2D(
+                [0], [0], color="#D55E00", marker="x",
+                linestyle="None", markersize=7,
+                label="Range infeasible",
+            ))
+
+        ax.set_title(analysis_title(
+            "Classical CD₀–Effective-AR Carpet Plot"
+        ))
+        ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
+        ax.set_ylabel("Optimum Required T/W [-]")
+        clean_axes(ax)
+        ax.legend(handles=ar_family_handles, frameon=False)
+        ax.text(
+            0.01, 0.02,
+            "81 interpolated optima; effective AR is derived from "
+            "k = 1/(πeAR) with fixed e = 0.80, not imported wing geometry.",
+            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+            va="bottom",
+        )
+        save_plot("07_cd0_ar_classical_carpet_plot")
 
 print()
 print("Plot generation completed.")
