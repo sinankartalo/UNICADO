@@ -1055,23 +1055,87 @@ if (not propeller_mode and os.path.exists(carpet_path)
     study = pd.read_csv(study_path)
 
     # ========================================================
-    # Lecture-style one-parameter sensitivity
+    # Lecture-style one-parameter sensitivity at nominal k
     # ========================================================
+    aerodynamic_carpet_path = os.path.join(
+        output_dir, "jet_cd0_k_carpet.csv"
+    )
+    if not os.path.exists(aerodynamic_carpet_path):
+        raise FileNotFoundError(
+            "jet_cd0_k_carpet.csv not found; rerun the C++ application."
+        )
+    sensitivity_carpet = pd.read_csv(aerodynamic_carpet_path).dropna()
+    required_sensitivity_columns = {
+        "cd_0", "induced_drag_factor", "best_thrust_to_weight",
+        "is_baseline", "active_constraint_name",
+    }
+    if not required_sensitivity_columns.issubset(
+            sensitivity_carpet.columns):
+        raise RuntimeError(
+            "Rerun the C++ application: carpet CSV schema is outdated."
+        )
+
+    baseline_rows = sensitivity_carpet[
+        sensitivity_carpet["is_baseline"] == 1
+    ]
+    if len(baseline_rows) != 1:
+        raise RuntimeError(
+            "Jet carpet must contain exactly one nominal polar point."
+        )
+    baseline_row = baseline_rows.iloc[0]
+    nominal_k = float(baseline_row["induced_drag_factor"])
+    sensitivity = sensitivity_carpet[np.isclose(
+        sensitivity_carpet["induced_drag_factor"], nominal_k,
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("cd_0")
+    if len(sensitivity) != 9:
+        raise RuntimeError(
+            "CD0 sensitivity at nominal k must contain nine points."
+        )
+
     fig, ax = plt.subplots(figsize=(9, 5.5))
 
     ax.plot(
-        study["cd_0"],
-        study["best_thrust_to_weight"],
-        marker="o",
-        color="black",
+        sensitivity["cd_0"],
+        sensitivity["best_thrust_to_weight"],
+        color="#334155",
         linewidth=2.2,
+        zorder=2,
     )
 
-    ax.set_title(analysis_title("Sensitivity of Optimum T/W to CD₀"))
+    active_names = list(sensitivity["active_constraint_name"].unique())
+    active_palette = mpl.colormaps["tab10"](
+        np.linspace(0.0, 0.8, max(len(active_names), 1))
+    )
+    for active_name, active_color in zip(active_names, active_palette):
+        active_rows = sensitivity[
+            sensitivity["active_constraint_name"] == active_name
+        ]
+        display_name = str(active_name).replace(
+            "jet_", ""
+        ).replace("_constraint", "").replace("_", " ").title()
+        ax.scatter(
+            active_rows["cd_0"],
+            active_rows["best_thrust_to_weight"],
+            s=52, color=active_color, edgecolor="white", linewidth=0.7,
+            label=f"Active: {display_name}", zorder=4,
+        )
+
+    ax.scatter(
+        baseline_row["cd_0"], baseline_row["best_thrust_to_weight"],
+        marker="*", s=170, color="#fbbf24", edgecolor="#0f172a",
+        linewidth=0.9, label="Imported nominal polar", zorder=6,
+    )
+
+    ax.set_title(analysis_title(
+        f"Optimum T/W Sensitivity to CD₀ at Nominal k = {nominal_k:.4f}"
+    ))
     ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
     ax.set_ylabel("Optimum Required T/W [-]")
 
-    for _, row in study.iterrows():
+    for row_index, (_, row) in enumerate(sensitivity.iterrows()):
+        if row_index % 2 != 0:
+            continue
         ax.annotate(
             f"{row['best_thrust_to_weight']:.3f}",
             xy=(row["cd_0"], row["best_thrust_to_weight"]),
@@ -1082,6 +1146,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
         )
 
     clean_axes(ax)
+    ax.legend(frameon=False)
     save_plot("03_parameter_sensitivity")
 
 
