@@ -214,6 +214,7 @@ int main(int argc, char* argv[])
                      "carpet_plot_study.csv", "carpet_plot_full.csv",
                      "true_carpet_constraints.csv",
                      "jet_cd0_k_carpet.csv",
+                     "jet_k_sensitivity_curves.csv",
                      "jet_range_fuel_fraction_constraint.csv",
                      "propeller_model_limitations.csv"})
             {
@@ -373,6 +374,7 @@ int main(int argc, char* argv[])
         std::vector<carpet_full_point> full_carpet_points;
         std::vector<true_carpet_constraint_point> true_carpet_points;
         std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
+        std::vector<k_sensitivity_curve_point> k_sensitivity_points;
 
         if (!is_propeller)
         {
@@ -412,6 +414,14 @@ int main(int argc, char* argv[])
             jet_aerodynamic_carpet_study::write_to_csv(
                 jet_aero_carpet_points,
                 (output_directory / "jet_cd0_k_carpet.csv").string());
+
+            k_sensitivity_study k_sensitivity{atm};
+            k_sensitivity_points = k_sensitivity.run(
+                input, induced_drag_factor_values);
+            k_sensitivity_study::write_to_csv(
+                k_sensitivity_points,
+                (output_directory /
+                    "jet_k_sensitivity_curves.csv").string());
         }
 
         // ============================================================
