@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.lines import Line2D
 
 
@@ -51,10 +52,14 @@ plt.rcParams.update({
     "xtick.labelsize": 10,
     "ytick.labelsize": 10,
     "axes.grid": True,
+    "axes.axisbelow": True,
+    "axes.facecolor": "#fbfbfb",
+    "figure.facecolor": "white",
     "grid.alpha": 0.28,
     "grid.linestyle": "--",
     "lines.linewidth": 1.8,
     "savefig.dpi": 300,
+    "savefig.facecolor": "white",
 })
 
 
@@ -97,6 +102,30 @@ def save_plot(name):
     plt.close()
 
     print(f"Saved: {png_path}")
+
+
+def clean_axes(ax):
+    """Apply one restrained visual language to every engineering plot."""
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(axis="x", alpha=0.16)
+    ax.grid(axis="y", alpha=0.24)
+
+
+def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
+    point = ax.scatter(
+        x, y, marker="*", s=165, color="#007f5f", edgecolor="white",
+        linewidth=1.2, label=label, zorder=9,
+    )
+    ax.annotate(
+        annotation, xy=(x, y), xytext=offset, textcoords="offset points",
+        ha="right" if offset[0] < 0 else "left", fontsize=9.5,
+        arrowprops=dict(arrowstyle="-", color="#4d4d4d", linewidth=1.0),
+        bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
+                  edgecolor="#b3b3b3", alpha=0.96),
+        zorder=10,
+    )
+    return point
 
 
 # ============================================================
@@ -167,6 +196,11 @@ else:
     y_axis_label = "Required Thrust-to-Weight Ratio, T/W [-]"
     y_symbol = "T/W"
     design_value_column = "thrust_to_weight"
+    stale_duplicate = os.path.join(
+        save_dir, "07_constraint_envelope_carpet_plot.png"
+    )
+    if os.path.exists(stale_duplicate):
+        os.remove(stale_duplicate)
 
 constraints = {}
 missing_constraint_files = []
@@ -541,7 +575,7 @@ for i in range(len(x_env)):
     active.append(max(values_here, key=values_here.get))
 
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
 for name, df in constraints.items():
     ax.plot(
@@ -597,7 +631,7 @@ for i in range(1, len(x_env) + 1):
 
         ax.text(
             x_env[mid],
-            y_env[mid] + 0.04,
+            y_env[mid] + 0.035 * y_max,
             name,
             ha="center",
             va="bottom",
@@ -673,18 +707,22 @@ performance_legend = ax.legend(
     handles=[envelope_legend_handle, *performance_legend_handles],
     title="Performance constraints",
     loc="upper left",
-    ncol=2,
-    frameon=True,
+    bbox_to_anchor=(1.01, 1.0),
+    ncol=1,
+    frameon=False,
 )
 ax.add_artist(performance_legend)
 
 ax.legend(
     handles=reference_legend_handles,
     title="Design points and wing-loading limits",
-    loc="lower right",
-    frameon=True,
+    loc="lower left",
+    bbox_to_anchor=(1.01, 0.0),
+    frameon=False,
 )
 
+clean_axes(ax)
+fig.subplots_adjust(right=0.76)
 save_plot("02_active_constraint_regions")
 
 if propeller_mode:
@@ -765,7 +803,14 @@ if propeller_mode:
     )
     if os.path.exists(propeller_carpet_path):
         carpet = pd.read_csv(propeller_carpet_path)
-        fig, ax = plt.subplots(figsize=(11.0, 6.3))
+        fig, ax = plt.subplots(figsize=(13.0, 7.0))
+        carpet_colors = {
+            "Acceleration": "#0072B2",
+            "Climb": "#009E73",
+            "Cruise": "#E69F00",
+            "Takeoff": "#D55E00",
+            "Turn": "#CC79A7",
+        }
         for constraint_name, group in carpet.groupby("constraint"):
             group = group.sort_values("wing_loading_N_m2")
             display_name = constraint_name.replace("propeller_", "").replace(
@@ -774,7 +819,9 @@ if propeller_mode:
             ax.plot(
                 group["wing_loading_N_m2"],
                 group["required_shaft_power_to_weight_W_N"],
-                linewidth=2.0,
+                linewidth=1.8,
+                color=carpet_colors.get(display_name),
+                alpha=0.80,
                 label=display_name,
             )
 
@@ -786,17 +833,6 @@ if propeller_mode:
             label="Constraint envelope",
             zorder=5,
         )
-        ax.scatter(
-            best_ws,
-            best_tw,
-            marker="*",
-            s=160,
-            color="#2ca02c",
-            edgecolor="white",
-            linewidth=1.2,
-            label="Best design point",
-            zorder=7,
-        )
         optimum_label = (
             f"W/S = {best_ws:.0f} N/m²\nP/W = {best_tw:.3f} W/N"
         )
@@ -804,21 +840,9 @@ if propeller_mode:
             optimum_label += f"\nP = {best_power_MW:.2f} MW"
         if best_area_m2 is not None:
             optimum_label += f"\nS = {best_area_m2:.1f} m²"
-        ax.annotate(
-            optimum_label,
-            xy=(best_ws, best_tw),
-            xytext=(-22, -70),
-            textcoords="offset points",
-            ha="right",
-            fontsize=9.5,
-            arrowprops=dict(arrowstyle="-", color="#4d4d4d"),
-            bbox=dict(
-                boxstyle="round,pad=0.35",
-                facecolor="white",
-                edgecolor="#b3b3b3",
-                alpha=0.96,
-            ),
-            zorder=8,
+        add_design_point(
+            ax, best_ws, best_tw, "Best feasible design point",
+            optimum_label, offset=(-24, -72),
         )
         if gust_ws_limit is not None:
             ax.axvline(
@@ -861,14 +885,20 @@ if propeller_mode:
             )
             secondary.set_ylabel("Required Total Shaft Power [MW]")
 
-        ax.set_title(
-            analysis_title("Constraint Carpet and Design Requirements")
+        ax.set_title(analysis_title("Power-Loading Constraint Family"))
+        ax.text(
+            0.01, 0.02,
+            "Feasible designs lie above the black envelope and inside the wing-loading limits.",
+            transform=ax.transAxes, fontsize=9, color="#4d4d4d", va="bottom",
         )
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(0.0, carpet_y_max)
-        ax.legend(loc="upper left", frameon=False, ncol=2)
+        clean_axes(ax)
+        ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0),
+                  frameon=False, title="Constraints and limits")
+        fig.subplots_adjust(right=0.79)
         save_plot("05_propeller_constraint_carpet")
 
 
@@ -884,9 +914,13 @@ if (not propeller_mode and os.path.exists(carpet_path)
     carpet = pd.read_csv(carpet_path)
     study = pd.read_csv(study_path)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(12.0, 6.8))
 
     cd0_values = sorted(carpet["cd_0"].unique())
+    normalization = mpl.colors.Normalize(
+        vmin=min(cd0_values), vmax=max(cd0_values)
+    )
+    color_map_cd0 = mpl.colormaps["viridis"]
 
     for cd0 in cd0_values:
         group = carpet[carpet["cd_0"] == cd0].sort_values("wing_loading")
@@ -894,26 +928,41 @@ if (not propeller_mode and os.path.exists(carpet_path)
         ax.plot(
             group["wing_loading"],
             group["thrust_to_weight"],
-            linewidth=2.0,
-            label=f"CD₀ = {cd0:.3f}",
+            linewidth=2.25,
+            color=color_map_cd0(normalization(cd0)),
+            alpha=0.92,
         )
 
-    ax.scatter(
-        study["best_wing_loading"],
-        study["best_thrust_to_weight"],
-        color="black",
-        edgecolor="white",
-        s=70,
-        zorder=5,
-        label="Optimum points",
+    feasible_study = study[study["range_feasible"] == 1]
+    infeasible_study = study[study["range_feasible"] == 0]
+    ax.plot(
+        feasible_study["best_wing_loading"],
+        feasible_study["best_thrust_to_weight"],
+        color="black", marker="o", markersize=6.5,
+        markeredgecolor="white", linewidth=1.6, zorder=7,
+        label="Feasible optimum locus",
     )
+    if not infeasible_study.empty:
+        ax.scatter(
+            infeasible_study["best_wing_loading"],
+            infeasible_study["best_thrust_to_weight"],
+            color="#D55E00", marker="x", s=80, linewidth=2.0,
+            zorder=8, label="Range-infeasible optimum",
+        )
+
+    colorbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=normalization, cmap=color_map_cd0),
+        ax=ax, pad=0.02,
+    )
+    colorbar.set_label("Zero-lift drag coefficient, CD₀ [-]")
 
     ax.set_title(
         analysis_title("Carpet Plot: Effect of Zero-Lift Drag Coefficient")
     )
     ax.set_xlabel("Wing Loading, W/S [N/m²]")
     ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
-    ax.legend(loc="upper left", frameon=True, ncol=2)
+    clean_axes(ax)
+    ax.legend(loc="upper left", frameon=False)
 
     save_plot("03_cd0_carpet_plot")
 
@@ -1029,96 +1078,6 @@ if (not propeller_mode and os.path.exists(carpet_path)
         )
 
         save_plot("06_range_fuel_fraction_and_ld")
-
-    # ============================================================
-    # Plot 7: Constraint envelope carpet plot
-    # ============================================================
-
-    carpet_path = os.path.join(output_dir, "carpet_plot_full.csv")
-    study_path = os.path.join(output_dir, "carpet_plot_study.csv")
-
-    if os.path.exists(carpet_path):
-
-        carpet = pd.read_csv(carpet_path)
-
-        fig, ax = plt.subplots(figsize=(11, 6.5))
-
-        cd0_values = sorted(carpet["cd_0"].unique())
-
-        for cd0 in cd0_values:
-            group = carpet[carpet["cd_0"] == cd0].sort_values("wing_loading")
-
-            ax.plot(
-                group["wing_loading"],
-                group["thrust_to_weight"],
-                linewidth=2.4,
-                label=f"CD₀ = {cd0:.3f}"
-            )
-
-        if os.path.exists(study_path):
-            study = pd.read_csv(study_path)
-
-            feasible = study[study["range_feasible"] == 1]
-            infeasible = study[study["range_feasible"] == 0]
-
-            ax.scatter(
-                feasible["best_wing_loading"],
-                feasible["best_thrust_to_weight"],
-                s=80,
-                color="black",
-                edgecolor="white",
-                zorder=5,
-                label="Feasible optimum"
-            )
-
-            if len(infeasible) > 0:
-                ax.scatter(
-                    infeasible["best_wing_loading"],
-                    infeasible["best_thrust_to_weight"],
-                    s=95,
-                    marker="x",
-                    color="red",
-                    linewidth=2.2,
-                    zorder=6,
-                    label="Range infeasible optimum"
-                )
-
-        if landing_ws_limit is not None:
-            ax.axvline(
-                landing_ws_limit,
-                color="purple",
-                linestyle="--",
-                linewidth=1.8,
-                label=f"Landing W/S limit = {landing_ws_limit:.0f}"
-            )
-
-        if stall_ws_limit is not None:
-            ax.axvline(
-                stall_ws_limit,
-                color=color_map["Stall speed"],
-                linestyle=":",
-                linewidth=2.0,
-                label=f"Stall speed W/S limit = {stall_ws_limit:.0f}"
-            )
-
-        if gust_ws_limit is not None:
-            ax.axvline(
-                gust_ws_limit,
-                color=color_map["Gust"],
-                linestyle="-.",
-                linewidth=1.8,
-                label=f"Gust W/S min = {gust_ws_limit:.0f}"
-            )
-
-        ax.set_title(analysis_title("Constraint Envelope Carpet Plot"))
-        ax.set_xlabel("Wing Loading, W/S [N/m²]")
-        ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
-
-        ax.grid(True, linestyle="--", alpha=0.3)
-        ax.legend(loc="upper left", frameon=True)
-
-        save_plot("07_constraint_envelope_carpet_plot")
-
 
 print()
 print("Plot generation completed.")
