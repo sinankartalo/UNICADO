@@ -168,7 +168,7 @@ analysis_label = case_labels.get(
 
 # Keep the deliverable aligned with the lecture workflow.  The existing
 # matching chart and active-constraint figure remain part of the output; the
-# new work is limited to one sensitivity plot and one classical carpet.
+# added work is limited to sensitivity plots and one classical carpet.
 if propeller_mode:
     plot_allowlist = {
         "01_matching_chart_professional",
