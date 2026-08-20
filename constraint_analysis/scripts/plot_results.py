@@ -1055,7 +1055,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
     study = pd.read_csv(study_path)
 
     # ========================================================
-    # Lecture-style one-parameter sensitivity at nominal k
+    # Lecture-style one-parameter constraint-family sensitivity
     # ========================================================
     aerodynamic_carpet_path = os.path.join(
         output_dir, "jet_cd0_k_carpet.csv"
@@ -1084,69 +1084,126 @@ if (not propeller_mode and os.path.exists(carpet_path)
         )
     baseline_row = baseline_rows.iloc[0]
     nominal_k = float(baseline_row["induced_drag_factor"])
-    sensitivity = sensitivity_carpet[np.isclose(
-        sensitivity_carpet["induced_drag_factor"], nominal_k,
-        rtol=1.0e-9, atol=1.0e-12,
-    )].sort_values("cd_0")
-    if len(sensitivity) != 9:
+    sensitivity_cd0_values = np.sort(
+        sensitivity_carpet["cd_0"].unique()
+    )
+    if len(sensitivity_cd0_values) != 9:
         raise RuntimeError(
-            "CD0 sensitivity at nominal k must contain nine points."
+            "CD0 sensitivity must contain nine parameter levels."
         )
 
-    fig, ax = plt.subplots(figsize=(9, 5.5))
-
-    ax.plot(
-        sensitivity["cd_0"],
-        sensitivity["best_thrust_to_weight"],
-        color="#334155",
-        linewidth=2.2,
-        zorder=2,
+    curve_family_path = os.path.join(
+        output_dir, "true_carpet_constraints.csv"
     )
+    if not os.path.exists(curve_family_path):
+        raise FileNotFoundError(
+            "true_carpet_constraints.csv not found; rerun the C++ application."
+        )
+    curve_family = pd.read_csv(curve_family_path).dropna()
+    required_curve_columns = {
+        "cd_0", "constraint_name", "wing_loading", "thrust_to_weight"
+    }
+    if not required_curve_columns.issubset(curve_family.columns):
+        raise RuntimeError("Constraint-family CSV schema is outdated.")
 
-    active_names = list(sensitivity["active_constraint_name"].unique())
-    active_palette = mpl.colormaps["tab10"](
-        np.linspace(0.0, 0.8, max(len(active_names), 1))
-    )
-    for active_name, active_color in zip(active_names, active_palette):
-        active_rows = sensitivity[
-            sensitivity["active_constraint_name"] == active_name
-        ]
-        display_name = str(active_name).replace(
-            "jet_", ""
-        ).replace("_constraint", "").replace("_", " ").title()
-        ax.scatter(
-            active_rows["cd_0"],
-            active_rows["best_thrust_to_weight"],
-            s=52, color=active_color, edgecolor="white", linewidth=0.7,
-            label=f"Active: {display_name}", zorder=4,
+    acceleration_family = curve_family[
+        curve_family["constraint_name"].str.contains(
+            "acceleration", case=False, na=False
+        )
+    ].copy()
+    if len(acceleration_family["cd_0"].unique()) != 9:
+        raise RuntimeError(
+            "Acceleration sensitivity must contain nine CD0 curves."
         )
 
-    ax.scatter(
-        baseline_row["cd_0"], baseline_row["best_thrust_to_weight"],
-        marker="*", s=170, color="#fbbf24", edgecolor="#0f172a",
-        linewidth=0.9, label="Imported nominal polar", zorder=6,
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    normalization = mpl.colors.Normalize(
+        vmin=sensitivity_cd0_values.min(),
+        vmax=sensitivity_cd0_values.max(),
     )
+    sensitivity_cmap = mpl.colormaps["Greens"]
+    label_indices = {0, 2, 4, 6, 8}
+    nominal_cd0 = float(baseline_row["cd_0"])
+
+    for cd0_index, cd0 in enumerate(sensitivity_cd0_values):
+        curve = acceleration_family[np.isclose(
+            acceleration_family["cd_0"], cd0,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("wing_loading")
+        is_nominal = np.isclose(
+            cd0, nominal_cd0, rtol=1.0e-9, atol=1.0e-12
+        )
+        ax.plot(
+            curve["wing_loading"], curve["thrust_to_weight"],
+            color="#064e3b" if is_nominal
+            else sensitivity_cmap(normalization(cd0)),
+            linewidth=3.0 if is_nominal else 1.45,
+            alpha=1.0 if is_nominal else 0.72,
+            label=(f"Nominal CD₀ = {cd0:.5f}"
+                   if is_nominal else None),
+            zorder=4 if is_nominal else 2,
+        )
+        if cd0_index in label_indices:
+            label_row = curve.iloc[-1]
+            ax.annotate(
+                f"{cd0 / nominal_cd0:.0%}",
+                (label_row["wing_loading"],
+                 label_row["thrust_to_weight"]),
+                xytext=(5, 0), textcoords="offset points",
+                fontsize=8.5, color="#166534", va="center",
+            )
+
+    middle_ws = float(acceleration_family["wing_loading"].median())
+    low_curve = acceleration_family[np.isclose(
+        acceleration_family["cd_0"], sensitivity_cd0_values[0],
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("wing_loading")
+    high_curve = acceleration_family[np.isclose(
+        acceleration_family["cd_0"], sensitivity_cd0_values[-1],
+        rtol=1.0e-9, atol=1.0e-12,
+    )].sort_values("wing_loading")
+    low_y = np.interp(
+        middle_ws, low_curve["wing_loading"], low_curve["thrust_to_weight"]
+    )
+    high_y = np.interp(
+        middle_ws, high_curve["wing_loading"], high_curve["thrust_to_weight"]
+    )
+    ax.annotate(
+        "Increasing CD₀",
+        xy=(middle_ws, high_y), xytext=(middle_ws, low_y),
+        ha="center", va="bottom", fontsize=9.5, color="#334155",
+        arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
+    )
+
+    vertical_sensitivity_limits = [
+        (gust_ws_limit, "Gust minimum", "#7f7f7f", "-."),
+        (landing_ws_limit, "Landing maximum", "#9467bd", "--"),
+        (stall_ws_limit, "Stall maximum", "#bcbd22", ":"),
+    ]
+    for limit, label, color, linestyle in vertical_sensitivity_limits:
+        if limit is not None:
+            ax.axvline(
+                limit, color=color, linestyle=linestyle, linewidth=1.6,
+                alpha=0.9, label=f"{label} ({limit:.0f})",
+            )
 
     ax.set_title(analysis_title(
-        f"Optimum T/W Sensitivity to CD₀ at Nominal k = {nominal_k:.4f}"
+        f"Acceleration-Constraint Sensitivity to CD₀ "
+        f"at Nominal k = {nominal_k:.4f}"
     ))
-    ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
-    ax.set_ylabel("Optimum Required T/W [-]")
-
-    for row_index, (_, row) in enumerate(sensitivity.iterrows()):
-        if row_index % 2 != 0:
-            continue
-        ax.annotate(
-            f"{row['best_thrust_to_weight']:.3f}",
-            xy=(row["cd_0"], row["best_thrust_to_weight"]),
-            xytext=(0, 8),
-            textcoords="offset points",
-            ha="center",
-            fontsize=9,
-        )
+    ax.set_xlabel("Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
+    ax.text(
+        0.01, 0.02,
+        "Only CD₀ varies (80–120%); k, mission, propulsion and all "
+        "other aircraft parameters remain constant.",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+    )
 
     clean_axes(ax)
-    ax.legend(frameon=False)
+    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
+    fig.subplots_adjust(right=0.79)
     save_plot("03_parameter_sensitivity")
 
 
