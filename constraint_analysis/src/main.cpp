@@ -376,6 +376,19 @@ int main(int argc, char* argv[])
         std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
         std::vector<k_sensitivity_curve_point> k_sensitivity_points;
 
+        // Use the same imported-polar-relative grid for both propulsion
+        // architectures.  The analysis tool selects T/W or P/W equations
+        // from the configured propulsion type; the sweep itself is common.
+        std::vector<double> cd0_carpet_values;
+        std::vector<double> induced_drag_factor_values;
+        for (double factor : sensitivity_factors)
+        {
+            cd0_carpet_values.push_back(
+                input.aircraft.polar.cd_0 * factor);
+            induced_drag_factor_values.push_back(
+                input.aircraft.polar.k * factor);
+        }
+
         if (!is_propeller)
         {
             carpet_plot_study study{atm};
@@ -398,16 +411,6 @@ int main(int argc, char* argv[])
 
             // Use a relative sensitivity band around the authoritative polar
             // rather than replacing it with unrelated absolute assumptions.
-            std::vector<double> cd0_carpet_values;
-            std::vector<double> induced_drag_factor_values;
-            for (double factor : sensitivity_factors)
-            {
-                cd0_carpet_values.push_back(
-                    input.aircraft.polar.cd_0 * factor);
-                induced_drag_factor_values.push_back(
-                    input.aircraft.polar.k * factor);
-            }
-
             jet_aerodynamic_carpet_study aero_carpet{atm};
             jet_aero_carpet_points = aero_carpet.run(
                 input, cd0_carpet_values, induced_drag_factor_values);
@@ -422,6 +425,32 @@ int main(int argc, char* argv[])
                 k_sensitivity_points,
                 (output_directory /
                     "jet_k_sensitivity_curves.csv").string());
+        }
+        else
+        {
+            true_carpet_constraints cd0_sensitivity{atm};
+            true_carpet_points = cd0_sensitivity.run(
+                input, cd0_carpet_values);
+            true_carpet_constraints::write_to_csv(
+                true_carpet_points,
+                (output_directory /
+                    "propeller_cd0_sensitivity_curves.csv").string());
+
+            jet_aerodynamic_carpet_study aero_carpet{atm};
+            jet_aero_carpet_points = aero_carpet.run(
+                input, cd0_carpet_values, induced_drag_factor_values);
+            jet_aerodynamic_carpet_study::write_to_csv(
+                jet_aero_carpet_points,
+                (output_directory /
+                    "propeller_cd0_k_carpet.csv").string());
+
+            k_sensitivity_study k_sensitivity{atm};
+            k_sensitivity_points = k_sensitivity.run(
+                input, induced_drag_factor_values);
+            k_sensitivity_study::write_to_csv(
+                k_sensitivity_points,
+                (output_directory /
+                    "propeller_k_sensitivity_curves.csv").string());
         }
 
         // ============================================================
