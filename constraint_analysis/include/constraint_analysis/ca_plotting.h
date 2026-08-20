@@ -45,6 +45,33 @@ namespace constraint_analysis
 
 namespace constraint_analysis
 {
+    struct jet_aerodynamic_carpet_point
+    {
+        double cd_0 = 0.0;
+        double induced_drag_factor = 0.0;
+        double best_wing_loading = 0.0;
+        double best_thrust_to_weight = 0.0;
+        bool range_feasible = false;
+    };
+
+    class jet_aerodynamic_carpet_study
+    {
+    public:
+        explicit jet_aerodynamic_carpet_study(const atmosphere& atmosphere);
+
+        std::vector<jet_aerodynamic_carpet_point> run(
+            const constraint_input& base_input,
+            const std::vector<double>& cd0_values,
+            const std::vector<double>& induced_drag_factor_values) const;
+
+        static void write_to_csv(
+            const std::vector<jet_aerodynamic_carpet_point>& points,
+            const std::string& file_path);
+
+    private:
+        const atmosphere& atmosphere_;
+    };
+
     struct carpet_study_point
     {
         double cd_0 = 0.0;

@@ -213,6 +213,7 @@ int main(int argc, char* argv[])
             for (const char* stale_file : {
                      "carpet_plot_study.csv", "carpet_plot_full.csv",
                      "true_carpet_constraints.csv",
+                     "jet_cd0_k_carpet.csv",
                      "jet_range_fuel_fraction_constraint.csv",
                      "propeller_model_limitations.csv"})
             {
@@ -367,6 +368,7 @@ int main(int argc, char* argv[])
         std::vector<carpet_study_point> carpet_points;
         std::vector<carpet_full_point> full_carpet_points;
         std::vector<true_carpet_constraint_point> true_carpet_points;
+        std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
 
         if (!is_propeller)
         {
@@ -387,6 +389,27 @@ int main(int argc, char* argv[])
             true_carpet_constraints::write_to_csv(
                 true_carpet_points,
                 (output_directory / "true_carpet_constraints.csv").string());
+
+            // Use a relative sensitivity band around the authoritative polar
+            // rather than replacing it with unrelated absolute assumptions.
+            const std::vector<double> sensitivity_factors = {
+                0.80, 0.90, 1.00, 1.10, 1.20};
+            std::vector<double> cd0_carpet_values;
+            std::vector<double> induced_drag_factor_values;
+            for (double factor : sensitivity_factors)
+            {
+                cd0_carpet_values.push_back(
+                    input.aircraft.polar.cd_0 * factor);
+                induced_drag_factor_values.push_back(
+                    input.aircraft.polar.k * factor);
+            }
+
+            jet_aerodynamic_carpet_study aero_carpet{atm};
+            jet_aero_carpet_points = aero_carpet.run(
+                input, cd0_carpet_values, induced_drag_factor_values);
+            jet_aerodynamic_carpet_study::write_to_csv(
+                jet_aero_carpet_points,
+                (output_directory / "jet_cd0_k_carpet.csv").string());
         }
 
         // ============================================================
@@ -395,6 +418,23 @@ int main(int argc, char* argv[])
         if (is_propeller)
         {
             propeller_constraint_analysis propeller_analysis{atm};
+            const auto map_points =
+                propeller_constraint_analysis::read_performance_map(
+                    input.propeller.deck_path);
+            {
+                std::ofstream map_file(
+                    output_directory / "propeller_performance_map.csv");
+                map_file << "pitch_deg,advance_ratio,thrust_coefficient,"
+                            "power_coefficient,efficiency\n";
+                for (const auto& point : map_points)
+                {
+                    map_file << point.pitch_deg << ","
+                             << point.advance_ratio << ","
+                             << point.thrust_coefficient << ","
+                             << point.power_coefficient << ","
+                             << point.efficiency << "\n";
+                }
+            }
             const std::vector<propeller_operating_point> points = {
                 propeller_analysis.evaluate(
                     input, input.cruise.altitude_m, input.cruise.speed_ms,
@@ -763,6 +803,13 @@ int main(int argc, char* argv[])
         std::cout << "CSV: "
                   << (output_directory / "true_carpet_constraints.csv").string()
                   << "\n";
+
+        std::cout << "\n=== jet_cd0_k_carpet ===\n";
+        std::cout << "Aerodynamic carpet points written: "
+                  << jet_aero_carpet_points.size() << '\n';
+        std::cout << "CSV: "
+                  << (output_directory / "jet_cd0_k_carpet.csv").string()
+                  << "\n";
         }
 
         if (is_propeller)
@@ -784,6 +831,9 @@ int main(int argc, char* argv[])
                       << required_wing_area_m2 << " m^2\n";
             std::cout << "CSV: "
                       << (output_directory / "propeller_operating_points.csv").string()
+                      << "\n";
+            std::cout << "Performance map CSV: "
+                      << (output_directory / "propeller_performance_map.csv").string()
                       << "\n";
         }
 

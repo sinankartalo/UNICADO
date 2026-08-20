@@ -202,6 +202,15 @@ namespace constraint_analysis
         bool tip_mach_feasible = false;
     };
 
+    struct propeller_map_point
+    {
+        double pitch_deg = 0.0;
+        double advance_ratio = 0.0;
+        double thrust_coefficient = 0.0;
+        double power_coefficient = 0.0;
+        double efficiency = 0.0;
+    };
+
     struct propeller_takeoff_step
     {
         double speed_ms = 0.0;
@@ -459,6 +468,9 @@ namespace constraint_analysis
     {
     public:
         explicit propeller_constraint_analysis(const atmosphere& atmosphere);
+
+        static std::vector<propeller_map_point> read_performance_map(
+            const std::string& deck_path);
 
         propeller_operating_point evaluate(
             const constraint_input& input,

@@ -11,6 +11,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <numbers>
+#include <cmath>
 
 namespace constraint_analysis
 {
@@ -81,6 +82,85 @@ namespace constraint_analysis
 
 namespace constraint_analysis
 {
+    jet_aerodynamic_carpet_study::jet_aerodynamic_carpet_study(
+        const atmosphere& atmosphere)
+        : atmosphere_(atmosphere)
+    {
+    }
+
+    std::vector<jet_aerodynamic_carpet_point>
+    jet_aerodynamic_carpet_study::run(
+        const constraint_input& base_input,
+        const std::vector<double>& cd0_values,
+        const std::vector<double>& induced_drag_factor_values) const
+    {
+        std::vector<jet_aerodynamic_carpet_point> results;
+        constraint_analysis_tool tool(atmosphere_);
+
+        for (double cd0 : cd0_values)
+        {
+            for (double induced_drag_factor : induced_drag_factor_values)
+            {
+                constraint_input input = base_input;
+                input.aircraft.polar.cd_0 = cd0;
+                input.aircraft.polar.k = induced_drag_factor;
+
+                const constraint_output output = tool.run(input);
+                const constraint_curve envelope =
+                    constraint_envelope_analyzer::build_envelope(output);
+                const design_point feasible_point =
+                    feasible_design_point_finder::find_feasible_minimum_point(
+                        envelope, output.vertical_constraints);
+
+                bool range_feasible = true;
+                for (const auto& range_result : output.range_constraints)
+                {
+                    bool local_feasible = false;
+                    for (const auto& point : range_result.points)
+                    {
+                        if (std::abs(
+                                point.wing_loading -
+                                feasible_point.wing_loading) < 1.0e-9)
+                        {
+                            local_feasible = point.feasible;
+                            break;
+                        }
+                    }
+                    range_feasible = range_feasible && local_feasible;
+                }
+
+                results.push_back({
+                    cd0,
+                    induced_drag_factor,
+                    feasible_point.wing_loading,
+                    feasible_point.thrust_to_weight,
+                    range_feasible});
+            }
+        }
+        return results;
+    }
+
+    void jet_aerodynamic_carpet_study::write_to_csv(
+        const std::vector<jet_aerodynamic_carpet_point>& points,
+        const std::string& file_path)
+    {
+        std::ofstream file(file_path);
+        if (!file.is_open())
+            throw std::runtime_error(
+                "Could not open jet aerodynamic carpet CSV file: " + file_path);
+
+        file << "cd_0,induced_drag_factor,best_wing_loading,"
+                "best_thrust_to_weight,range_feasible\n";
+        for (const auto& point : points)
+        {
+            file << point.cd_0 << ","
+                 << point.induced_drag_factor << ","
+                 << point.best_wing_loading << ","
+                 << point.best_thrust_to_weight << ","
+                 << point.range_feasible << "\n";
+        }
+    }
+
     carpet_plot_study::carpet_plot_study(const atmosphere& atmosphere)
         : atmosphere_(atmosphere)
     {

@@ -173,6 +173,23 @@ namespace constraint_analysis
     {
     }
 
+    std::vector<propeller_map_point>
+    propeller_constraint_analysis::read_performance_map(
+        const std::string& deck_path)
+    {
+        std::vector<propeller_map_point> points;
+        for (const auto& row : read_propeller_deck(deck_path))
+        {
+            points.push_back({
+                row.pitch_deg,
+                row.advance_ratio,
+                row.thrust_coefficient,
+                row.power_coefficient,
+                row.efficiency});
+        }
+        return points;
+    }
+
     propeller_operating_point propeller_constraint_analysis::evaluate(
         const constraint_input& input,
         double altitude_m,
