@@ -358,12 +358,16 @@ int main(int argc, char* argv[])
         // ============================================================
         // 4. CARPET PLOT PARAMETER STUDY
         // ============================================================
-        const std::vector<double> cd0_values = {
-            0.020,
-            0.025,
-            0.030,
-            0.035
-        };
+        // All single- and two-parameter aerodynamic studies use the same
+        // relative band around the imported aircraft polar.
+        const std::vector<double> sensitivity_factors = {
+            0.80, 0.85, 0.90, 0.95, 1.00,
+            1.05, 1.10, 1.15, 1.20};
+        std::vector<double> cd0_values;
+        for (double factor : sensitivity_factors)
+        {
+            cd0_values.push_back(input.aircraft.polar.cd_0 * factor);
+        }
 
         std::vector<carpet_study_point> carpet_points;
         std::vector<carpet_full_point> full_carpet_points;
@@ -392,9 +396,6 @@ int main(int argc, char* argv[])
 
             // Use a relative sensitivity band around the authoritative polar
             // rather than replacing it with unrelated absolute assumptions.
-            const std::vector<double> sensitivity_factors = {
-                0.80, 0.85, 0.90, 0.95, 1.00,
-                1.05, 1.10, 1.15, 1.20};
             std::vector<double> cd0_carpet_values;
             std::vector<double> induced_drag_factor_values;
             for (double factor : sensitivity_factors)
