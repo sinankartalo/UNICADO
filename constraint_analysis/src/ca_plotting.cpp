@@ -468,4 +468,85 @@ namespace constraint_analysis
                 << point.thrust_to_weight << "\n";
         }
     }
+
+    k_sensitivity_study::k_sensitivity_study(
+        const atmosphere& atmosphere)
+        : atmosphere_(atmosphere)
+    {
+    }
+
+    std::vector<k_sensitivity_curve_point> k_sensitivity_study::run(
+        const constraint_input& base_input,
+        const std::vector<double>& induced_drag_factor_values) const
+    {
+        std::vector<k_sensitivity_curve_point> results;
+        constraint_analysis_tool tool(atmosphere_);
+
+        for (double induced_drag_factor : induced_drag_factor_values)
+        {
+            constraint_input input = base_input;
+            input.aircraft.polar.k = induced_drag_factor;
+            const constraint_output output = tool.run(input);
+
+            const auto gust_limit = std::find_if(
+                output.vertical_constraints.begin(),
+                output.vertical_constraints.end(),
+                [](const vertical_constraint& constraint)
+                {
+                    return constraint.name.find("gust") != std::string::npos;
+                });
+            if (gust_limit == output.vertical_constraints.end())
+            {
+                throw std::runtime_error(
+                    "k sensitivity requires an active gust constraint.");
+            }
+
+            const auto acceleration_curve = std::find_if(
+                output.curves.begin(), output.curves.end(),
+                [](const constraint_curve& curve)
+                {
+                    return curve.name.find("acceleration") !=
+                        std::string::npos;
+                });
+            if (acceleration_curve == output.curves.end())
+            {
+                throw std::runtime_error(
+                    "k sensitivity requires an acceleration constraint curve.");
+            }
+
+            for (const auto& point : acceleration_curve->points)
+            {
+                results.push_back({
+                    induced_drag_factor,
+                    acceleration_curve->name,
+                    point.x,
+                    point.y,
+                    gust_limit->x_limit});
+            }
+        }
+        return results;
+    }
+
+    void k_sensitivity_study::write_to_csv(
+        const std::vector<k_sensitivity_curve_point>& points,
+        const std::string& file_path)
+    {
+        std::ofstream file(file_path);
+        if (!file.is_open())
+        {
+            throw std::runtime_error(
+                "Could not open k sensitivity CSV file: " + file_path);
+        }
+
+        file << "induced_drag_factor,constraint_name,wing_loading,"
+                "thrust_to_weight,gust_wing_loading_limit\n";
+        for (const auto& point : points)
+        {
+            file << point.induced_drag_factor << ","
+                 << point.constraint_name << ","
+                 << point.wing_loading << ","
+                 << point.thrust_to_weight << ","
+                 << point.gust_wing_loading_limit << "\n";
+        }
+    }
 }
