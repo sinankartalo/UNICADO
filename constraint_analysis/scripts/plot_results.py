@@ -173,9 +173,10 @@ if propeller_mode:
     plot_allowlist = {
         "01_matching_chart_professional",
         "02_active_constraint_regions",
-        "03_advance_ratio_sensitivity",
-        "04_pitch_sensitivity",
-        "05_classical_carpet_plot",
+        "03_propeller_performance_map",
+        "04_cd0_parameter_sensitivity",
+        "05_k_parameter_sensitivity",
+        "06_classical_carpet_plot",
     }
 else:
     plot_allowlist = {
@@ -933,9 +934,8 @@ if propeller_mode:
                   frameon=False, title="Constraints and limits")
         fig.subplots_adjust(right=0.79)
         save_plot("05_propeller_constraint_carpet")
-
     # ============================================================
-    # Lecture-style propeller sensitivity and classical carpet
+    # Propeller-deck evidence and aircraft-level aerodynamic studies
     # ============================================================
     performance_map_path = os.path.join(
         output_dir, "propeller_performance_map.csv"
@@ -952,10 +952,8 @@ if propeller_mode:
             )
 
         pitch_values = np.sort(valid_map["pitch_deg"].unique())
-
         best_map_row = valid_map.loc[valid_map["efficiency"].idxmax()]
 
-        # One-parameter sensitivity: vary J on each supplied pitch slice.
         fig, ax = plt.subplots(figsize=(10.0, 6.0))
         pitch_colors = mpl.colormaps["viridis"](
             np.linspace(0.18, 0.82, len(pitch_values))
@@ -984,189 +982,294 @@ if propeller_mode:
             bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
                       edgecolor="#cbd5e1", alpha=0.92),
         )
-        ax.set_title(analysis_title(
-            "Propeller-Efficiency Sensitivity to Advance Ratio"
-        ))
+        ax.set_title(analysis_title("Propeller Performance Map"))
         ax.set_xlabel("Advance Ratio, J [-]")
         ax.set_ylabel("Propeller Efficiency, η [-]")
         ax.set_ylim(0.0, 1.0)
         ax.text(
             0.01, 0.02,
-            "Advance ratio varies along each supplied constant-pitch slice; "
-            "lines connect valid propeller-deck points.",
+            "Lines connect physically valid points supplied by the propeller "
+            "deck; no pitch interpolation is shown.",
             transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
             va="bottom",
         )
         clean_axes(ax)
         ax.legend(frameon=False)
-        save_plot("03_advance_ratio_sensitivity")
+        save_plot("03_propeller_performance_map")
 
-        # Complementary sensitivity: vary pitch at constant interpolated J.
-        minimum_common_j = max(
-            valid_map[valid_map["pitch_deg"] == pitch]["advance_ratio"].min()
-            for pitch in pitch_values
-        )
-        maximum_common_j = min(
-            valid_map[valid_map["pitch_deg"] == pitch]["advance_ratio"].max()
-            for pitch in pitch_values
-        )
-        common_j_values = np.linspace(
-            minimum_common_j, maximum_common_j, 5
+    prop_aero_carpet_path = os.path.join(
+        output_dir, "propeller_cd0_k_carpet.csv"
+    )
+    prop_cd0_path = os.path.join(
+        output_dir, "propeller_cd0_sensitivity_curves.csv"
+    )
+    prop_k_path = os.path.join(
+        output_dir, "propeller_k_sensitivity_curves.csv"
+    )
+    for required_path in (
+        prop_aero_carpet_path, prop_cd0_path, prop_k_path
+    ):
+        if not os.path.exists(required_path):
+            raise FileNotFoundError(
+                f"{os.path.basename(required_path)} not found; "
+                "rerun the C++ application."
+            )
+
+    prop_aero_carpet = pd.read_csv(prop_aero_carpet_path).dropna()
+    prop_cd0_sensitivity = pd.read_csv(prop_cd0_path).dropna()
+    prop_k_sensitivity = pd.read_csv(prop_k_path).dropna()
+
+    cd0_values = np.sort(prop_aero_carpet["cd_0"].unique())
+    k_values = np.sort(
+        prop_aero_carpet["induced_drag_factor"].unique()
+    )
+    if (len(cd0_values) != 9 or len(k_values) != 9 or
+            len(prop_aero_carpet) != 81):
+        raise RuntimeError(
+            "Propeller aerodynamic carpet must be a complete 9x9 grid."
         )
 
-        fig, ax = plt.subplots(figsize=(10.0, 6.0))
-        j_colors = mpl.colormaps["plasma"](
-            np.linspace(0.12, 0.82, len(common_j_values))
+    prop_baseline = prop_aero_carpet[
+        prop_aero_carpet["is_baseline"] == 1
+    ]
+    if len(prop_baseline) != 1:
+        raise RuntimeError(
+            "Propeller aerodynamic carpet must contain one nominal point."
         )
-        pitch_sensitivity_points = []
-        for color, advance_ratio in zip(j_colors, common_j_values):
-            efficiency_values = []
-            for pitch in pitch_values:
-                pitch_slice = valid_map[
-                    valid_map["pitch_deg"] == pitch
-                ].sort_values("advance_ratio")
-                efficiency_values.append(np.interp(
-                    advance_ratio,
-                    pitch_slice["advance_ratio"],
-                    pitch_slice["efficiency"],
-                ))
-            pitch_sensitivity_points.extend(
-                (float(pitch), float(advance_ratio), float(efficiency))
-                for pitch, efficiency in zip(
-                    pitch_values, efficiency_values
-                )
-            )
-            ax.plot(
-                pitch_values, efficiency_values,
-                color=color, marker="o", markersize=4.5, linewidth=2.2,
-                label=f"Constant J = {advance_ratio:.2f}",
-            )
-        best_pitch_point = max(
-            pitch_sensitivity_points, key=lambda point: point[2]
-        )
-        ax.scatter(
-            best_pitch_point[0], best_pitch_point[2],
-            marker="*", s=165, color="#fbbf24", edgecolor="#0f172a",
-            linewidth=0.9, label="Best plotted common-range point", zorder=8,
-        )
-        ax.annotate(
-            f"η = {best_pitch_point[2]:.3f}\n"
-            f"pitch = {best_pitch_point[0]:g}°, "
-            f"J = {best_pitch_point[1]:.3f}",
-            (best_pitch_point[0], best_pitch_point[2]),
-            xytext=(10, 12), textcoords="offset points", fontsize=8.5,
-            color="#334155",
-            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                      edgecolor="#cbd5e1", alpha=0.92),
-        )
-        ax.set_title(analysis_title(
-            "Propeller-Efficiency Sensitivity to Pitch"
-        ))
-        ax.set_xlabel("Blade Pitch [deg]")
-        ax.set_ylabel("Propeller Efficiency, η [-]")
-        ax.set_ylim(0.0, 1.0)
-        ax.text(
-            0.01, 0.02,
-            "Pitch varies across constant-J slices; intermediate values are "
-            "interpolated only inside the common deck range.",
-            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-            va="bottom",
-        )
-        clean_axes(ax)
-        ax.legend(frameon=False)
-        save_plot("04_pitch_sensitivity")
+    prop_baseline_row = prop_baseline.iloc[0]
+    nominal_cd0 = float(prop_baseline_row["cd_0"])
+    nominal_k = float(prop_baseline_row["induced_drag_factor"])
+    label_indices = {0, 2, 4, 6, 8}
 
-        # Classical carpet: green lines are constant pitch, red lines are
-        # constant J.  The plot uses CT and CP as the two configuration outputs.
-        fig, ax = plt.subplots(figsize=(10.0, 7.0))
-        pitch_color = "#10b981"
-        advance_ratio_color = "#ef4444"
-        for pitch in pitch_values:
-            pitch_slice = valid_map[
-                valid_map["pitch_deg"] == pitch
-            ].sort_values("advance_ratio")
-            ax.plot(
-                pitch_slice["thrust_coefficient"],
-                pitch_slice["power_coefficient"],
-                color=pitch_color, linewidth=2.4,
-            )
-            label_row = pitch_slice.iloc[len(pitch_slice) // 2]
+    # CD0 sensitivity: the acceleration P/W family at fixed nominal k.
+    acceleration_cd0 = prop_cd0_sensitivity[
+        prop_cd0_sensitivity["constraint_name"].str.contains(
+            "acceleration", case=False, na=False
+        )
+    ].copy()
+    if len(acceleration_cd0["cd_0"].unique()) != 9:
+        raise RuntimeError(
+            "Propeller CD0 sensitivity must contain nine acceleration curves."
+        )
+
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    cd0_norm = mpl.colors.Normalize(
+        vmin=cd0_values.min(), vmax=cd0_values.max()
+    )
+    cd0_cmap = mpl.colormaps["Greens"]
+    for cd0_index, cd0 in enumerate(cd0_values):
+        curve = acceleration_cd0[np.isclose(
+            acceleration_cd0["cd_0"], cd0,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("wing_loading")
+        is_nominal = np.isclose(
+            cd0, nominal_cd0, rtol=1.0e-9, atol=1.0e-12
+        )
+        ax.plot(
+            curve["wing_loading"], curve["thrust_to_weight"],
+            color="#064e3b" if is_nominal else cd0_cmap(cd0_norm(cd0)),
+            linewidth=3.0 if is_nominal else 1.45,
+            alpha=1.0 if is_nominal else 0.72,
+            label=(f"Nominal CD₀ = {cd0:.5f}" if is_nominal else None),
+            zorder=4 if is_nominal else 2,
+        )
+        if cd0_index in label_indices:
+            label_row = curve.iloc[-1]
             ax.annotate(
-                f"Pitch {pitch:g}°",
-                (label_row["thrust_coefficient"],
-                 label_row["power_coefficient"]),
-                xytext=(5, 5), textcoords="offset points",
-                fontsize=9, color="#047857",
-            )
-
-        for advance_ratio in common_j_values:
-            ct_values = []
-            cp_values = []
-            for pitch in pitch_values:
-                pitch_slice = valid_map[
-                    valid_map["pitch_deg"] == pitch
-                ].sort_values("advance_ratio")
-                ct_values.append(np.interp(
-                    advance_ratio,
-                    pitch_slice["advance_ratio"],
-                    pitch_slice["thrust_coefficient"],
-                ))
-                cp_values.append(np.interp(
-                    advance_ratio,
-                    pitch_slice["advance_ratio"],
-                    pitch_slice["power_coefficient"],
-                ))
-            ax.plot(
-                ct_values, cp_values, color=advance_ratio_color,
-                linewidth=2.2, marker="o", markersize=5.0,
-                markerfacecolor="#0f172a", markeredgecolor="#0f172a",
-            )
-            ax.annotate(
-                f"J = {advance_ratio:.2f}",
-                (ct_values[-1], cp_values[-1]),
+                f"{cd0 / nominal_cd0:.0%}",
+                (label_row["wing_loading"], label_row["thrust_to_weight"]),
                 xytext=(5, 0), textcoords="offset points",
-                fontsize=9, color="#b91c1c", va="center",
+                fontsize=8.5, color="#166534", va="center",
             )
 
-        ax.scatter(
-            best_map_row["thrust_coefficient"],
-            best_map_row["power_coefficient"],
-            marker="*", s=165, color="#fbbf24", edgecolor="#0f172a",
-            linewidth=0.9, label="Best supplied map point", zorder=8,
-        )
-        ax.annotate(
-            f"Maximum η = {best_map_row['efficiency']:.3f}",
-            (best_map_row["thrust_coefficient"],
-             best_map_row["power_coefficient"]),
-            xytext=(10, 10), textcoords="offset points", fontsize=8.5,
-            color="#334155",
-            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                      edgecolor="#cbd5e1", alpha=0.92),
+    ax.set_title(analysis_title(
+        f"Acceleration P/W Sensitivity to CD₀ at Nominal k = {nominal_k:.4f}"
+    ))
+    ax.set_xlabel("Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Required Shaft Power Loading, P/W [W/N]")
+    ax.text(
+        0.01, 0.02,
+        "Only CD₀ varies (80–120%); k, propeller deck, mission and all "
+        "other aircraft parameters remain constant.",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+    )
+    clean_axes(ax)
+    ax.legend(loc="upper right", frameon=False)
+    save_plot("04_cd0_parameter_sensitivity")
+
+    # k sensitivity: acceleration P/W curves and the associated gust limits.
+    required_k_columns = {
+        "induced_drag_factor", "constraint_name", "wing_loading",
+        "thrust_to_weight", "gust_wing_loading_limit",
+    }
+    if not required_k_columns.issubset(prop_k_sensitivity.columns):
+        raise RuntimeError("Propeller k sensitivity CSV schema is outdated.")
+    sensitivity_k_values = np.sort(
+        prop_k_sensitivity["induced_drag_factor"].unique()
+    )
+    if len(sensitivity_k_values) != 9:
+        raise RuntimeError(
+            "Propeller k sensitivity must contain nine parameter levels."
         )
 
-        family_handles = [
-            Line2D([0], [0], color=pitch_color, linewidth=2.4,
-                   label="Constant pitch"),
-            Line2D([0], [0], color=advance_ratio_color, linewidth=2.2,
-                   label="Constant advance ratio J"),
-            Line2D([0], [0], marker="*", color="#fbbf24",
-                   markeredgecolor="#0f172a", linestyle="None",
-                   markersize=11, label="Best supplied map point"),
-        ]
-        ax.set_title(analysis_title("Classical Propeller Carpet Plot"))
-        ax.set_xlabel("Thrust Coefficient, Cₜ [-]")
-        ax.set_ylabel("Power Coefficient, Cₚ [-]")
-        clean_axes(ax)
-        ax.legend(handles=family_handles, frameon=False)
-        ax.text(
-            0.01, 0.02,
-            "Constant-pitch lines use supplied deck points; constant-J lines "
-            "are interpolated only across their common valid range.",
-            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-            va="bottom",
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    k_norm = mpl.colors.Normalize(
+        vmin=sensitivity_k_values.min(), vmax=sensitivity_k_values.max()
+    )
+    k_cmap = mpl.colormaps["Blues"]
+    gust_cmap = mpl.colormaps["Oranges"]
+    for k_index, induced_drag_factor in enumerate(sensitivity_k_values):
+        curve = prop_k_sensitivity[np.isclose(
+            prop_k_sensitivity["induced_drag_factor"],
+            induced_drag_factor, rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("wing_loading")
+        is_nominal = np.isclose(
+            induced_drag_factor, nominal_k,
+            rtol=1.0e-9, atol=1.0e-12,
         )
-        save_plot("05_classical_carpet_plot")
+        ax.plot(
+            curve["wing_loading"], curve["thrust_to_weight"],
+            color="#1e3a8a" if is_nominal
+            else k_cmap(k_norm(induced_drag_factor)),
+            linewidth=3.0 if is_nominal else 1.45,
+            alpha=1.0 if is_nominal else 0.72,
+            label=(f"Nominal k = {induced_drag_factor:.5f}"
+                   if is_nominal else None),
+            zorder=4 if is_nominal else 2,
+        )
+        gust_limit = float(curve["gust_wing_loading_limit"].iloc[0])
+        ax.axvline(
+            gust_limit,
+            color="#9a3412" if is_nominal
+            else gust_cmap(k_norm(induced_drag_factor)),
+            linewidth=2.2 if is_nominal else 0.9,
+            alpha=0.95 if is_nominal else 0.42,
+            linestyle="--" if is_nominal else "-",
+            label=(f"Nominal gust limit = {gust_limit:.0f} N/m²"
+                   if is_nominal else None),
+            zorder=3,
+        )
+        if k_index in label_indices:
+            label_row = curve.iloc[-1]
+            ax.annotate(
+                f"{induced_drag_factor / nominal_k:.0%}",
+                (label_row["wing_loading"], label_row["thrust_to_weight"]),
+                xytext=(5, 0), textcoords="offset points",
+                fontsize=8.5, color="#1d4ed8", va="center",
+            )
 
+    ax.set_title(analysis_title(
+        f"Acceleration and Gust-Limit P/W Sensitivity to k "
+        f"at Nominal CD₀ = {nominal_cd0:.5f}"
+    ))
+    ax.set_xlabel("Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Required Shaft Power Loading, P/W [W/N]")
+    ax.text(
+        0.01, 0.02,
+        "Only k varies (80–120%); CD₀, propeller deck, mission and all "
+        "other aircraft parameters remain constant.",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+    )
+    clean_axes(ax)
+    ax.legend(loc="upper right", frameon=False)
+    save_plot("05_k_parameter_sensitivity")
+
+    # Classical aircraft-level carpet: optimum W/S and P/W responses.
+    fig, ax = plt.subplots(figsize=(10.0, 7.0))
+    cd0_color = "#10b981"
+    k_color = "#ef4444"
+    for cd0_index, cd0 in enumerate(cd0_values):
+        family = prop_aero_carpet[np.isclose(
+            prop_aero_carpet["cd_0"], cd0,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("induced_drag_factor")
+        ax.plot(
+            family["best_wing_loading"],
+            family["best_thrust_to_weight"],
+            color=cd0_color,
+            linewidth=2.4 if cd0_index in label_indices else 1.25,
+            alpha=1.0 if cd0_index in label_indices else 0.42,
+        )
+        if cd0_index in label_indices:
+            label_row = family.iloc[-1]
+            ax.annotate(
+                f"CD₀ = {cd0:.4f}",
+                (label_row["best_wing_loading"],
+                 label_row["best_thrust_to_weight"]),
+                xytext=(7, 5), textcoords="offset points",
+                fontsize=8.5, color="#047857",
+            )
+
+    for k_index, induced_drag_factor in enumerate(k_values):
+        family = prop_aero_carpet[np.isclose(
+            prop_aero_carpet["induced_drag_factor"],
+            induced_drag_factor, rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("cd_0")
+        ax.plot(
+            family["best_wing_loading"],
+            family["best_thrust_to_weight"],
+            color=k_color,
+            linewidth=2.2 if k_index in label_indices else 1.2,
+            alpha=1.0 if k_index in label_indices else 0.38,
+            marker="o", markersize=4.2,
+            markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+        )
+        if k_index in label_indices:
+            label_row = family.iloc[-1]
+            ax.annotate(
+                f"k = {induced_drag_factor:.4f}",
+                (label_row["best_wing_loading"],
+                 label_row["best_thrust_to_weight"]),
+                xytext=(7, -7), textcoords="offset points",
+                fontsize=8.5, color="#b91c1c",
+            )
+
+    baseline_active = str(
+        prop_baseline_row["active_constraint_name"]
+    )
+    ax.scatter(
+        prop_baseline_row["best_wing_loading"],
+        prop_baseline_row["best_thrust_to_weight"],
+        marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
+        linewidth=0.9, zorder=9,
+    )
+    ax.annotate(
+        f"Nominal polar\nActive: {baseline_active}",
+        (prop_baseline_row["best_wing_loading"],
+         prop_baseline_row["best_thrust_to_weight"]),
+        xytext=(12, 14), textcoords="offset points", fontsize=8.5,
+        color="#334155",
+        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                  edgecolor="#cbd5e1", alpha=0.92),
+    )
+
+    family_handles = [
+        Line2D([0], [0], color=cd0_color, linewidth=2.4,
+               label="Constant CD₀"),
+        Line2D([0], [0], color=k_color, linewidth=2.2,
+               marker="o", markerfacecolor="#0f172a",
+               markeredgecolor="#0f172a", label="Constant k"),
+        Line2D([0], [0], color="#fbbf24", marker="*",
+               markeredgecolor="#0f172a", linestyle="None",
+               markersize=11, label="Imported nominal polar"),
+    ]
+    ax.set_title(analysis_title(
+        "Classical Aerodynamic Power-Loading Carpet Plot"
+    ))
+    ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Optimum Required P/W [W/N]")
+    clean_axes(ax)
+    ax.legend(handles=family_handles, frameon=False)
+    ax.text(
+        0.01, 0.02,
+        "81 propeller constraint solutions; labels show every other CD₀ "
+        "and k level (80–120% of the imported polar).",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+    )
+    save_plot("06_classical_carpet_plot")
 
 # ============================================================
 # Plot 3: CD0 carpet plot
