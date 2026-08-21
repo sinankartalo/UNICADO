@@ -418,6 +418,54 @@ int main(int argc, char* argv[])
                 jet_aero_carpet_points,
                 (output_directory / "jet_cd0_k_carpet.csv").string());
 
+            const auto scaled_values = [&sensitivity_factors](double nominal)
+            {
+                std::vector<double> values;
+                values.reserve(sensitivity_factors.size());
+                for (double factor : sensitivity_factors)
+                    values.push_back(nominal * factor);
+                return values;
+            };
+            const auto takeoff_distance_values =
+                scaled_values(input.takeoff.runway_m);
+            const auto acceleration_requirement_values =
+                scaled_values(input.acceleration.acceleration_ms2);
+            const std::vector<double> thrust_lapse_scale_values =
+                sensitivity_factors;
+
+            jet_two_parameter_carpet_study paired_carpet{atm};
+            const auto cd0_takeoff_points = paired_carpet.run(
+                input,
+                jet_carpet_parameter::cd0, cd0_carpet_values,
+                jet_carpet_parameter::takeoff_distance_m,
+                takeoff_distance_values);
+            jet_two_parameter_carpet_study::write_to_csv(
+                cd0_takeoff_points, "cd_0", "takeoff_distance_m",
+                (output_directory /
+                    "jet_cd0_takeoff_distance_carpet.csv").string());
+
+            const auto k_acceleration_points = paired_carpet.run(
+                input,
+                jet_carpet_parameter::induced_drag_factor,
+                induced_drag_factor_values,
+                jet_carpet_parameter::acceleration_requirement_ms2,
+                acceleration_requirement_values);
+            jet_two_parameter_carpet_study::write_to_csv(
+                k_acceleration_points, "induced_drag_factor",
+                "acceleration_requirement_ms2",
+                (output_directory /
+                    "jet_k_acceleration_carpet.csv").string());
+
+            const auto cd0_lapse_points = paired_carpet.run(
+                input,
+                jet_carpet_parameter::cd0, cd0_carpet_values,
+                jet_carpet_parameter::thrust_lapse_scale,
+                thrust_lapse_scale_values);
+            jet_two_parameter_carpet_study::write_to_csv(
+                cd0_lapse_points, "cd_0", "thrust_lapse_scale",
+                (output_directory /
+                    "jet_cd0_thrust_lapse_carpet.csv").string());
+
             k_sensitivity_study k_sensitivity{atm};
             k_sensitivity_points = k_sensitivity.run(
                 input, induced_drag_factor_values);

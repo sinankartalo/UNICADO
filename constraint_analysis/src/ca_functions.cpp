@@ -803,11 +803,19 @@ namespace constraint_analysis
         {
             require_engine(input);
 
-            return input.engine->get_thrust_lapse(
-                thrust_rating,
-                atm,
-                mach,
-                altitude_m);
+            if (!std::isfinite(input.installed_thrust_lapse_scale) ||
+                input.installed_thrust_lapse_scale <= 0.0)
+            {
+                throw std::runtime_error(
+                    "Installed thrust-lapse scale must be positive and finite.");
+            }
+
+            return input.installed_thrust_lapse_scale *
+                input.engine->get_thrust_lapse(
+                    thrust_rating,
+                    atm,
+                    mach,
+                    altitude_m);
         }
 
         double engine_tsfc_1_per_s(

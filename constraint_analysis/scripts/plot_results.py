@@ -168,7 +168,7 @@ analysis_label = case_labels.get(
 
 # Keep the deliverable aligned with the lecture workflow.  The existing
 # matching chart and active-constraint figure remain part of the output; the
-# added work is limited to sensitivity plots and one classical carpet.
+# added work is limited to sensitivity plots and classical carpet studies.
 if propeller_mode:
     plot_allowlist = {
         "01_matching_chart_professional",
@@ -185,6 +185,9 @@ else:
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
         "05_classical_carpet_plot",
+        "06_cd0_takeoff_distance_carpet",
+        "07_k_acceleration_carpet",
+        "08_cd0_thrust_lapse_carpet",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -195,6 +198,124 @@ for existing_plot in os.listdir(save_dir):
 
 def analysis_title(title):
     return f"{analysis_label}: {title}"
+
+
+def plot_two_parameter_classical_carpet(
+        carpet, parameter_a, parameter_b, parameter_a_label,
+        parameter_b_label, parameter_a_formatter, parameter_b_formatter,
+        title, plot_name):
+    required = {
+        parameter_a, parameter_b, "best_wing_loading",
+        "best_thrust_to_weight", "is_baseline",
+        "active_constraint_name", "second_constraint_name",
+        "constraint_margin",
+    }
+    if not required.issubset(carpet.columns):
+        raise RuntimeError(
+            f"{plot_name} CSV schema is incomplete; rerun the C++ application."
+        )
+    values_a = np.sort(carpet[parameter_a].unique())
+    values_b = np.sort(carpet[parameter_b].unique())
+    if len(values_a) != 9 or len(values_b) != 9 or len(carpet) != 81:
+        raise RuntimeError(f"{plot_name} must contain a complete 9x9 grid.")
+
+    fig, ax = plt.subplots(figsize=(10.0, 7.0))
+    color_a = "#10b981"
+    color_b = "#ef4444"
+    label_indices = {0, 2, 4, 6, 8}
+
+    # First family: parameter A is constant while parameter B varies.
+    for index, value_a in enumerate(values_a):
+        family = carpet[np.isclose(
+            carpet[parameter_a], value_a,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values(parameter_b)
+        ax.plot(
+            family["best_wing_loading"],
+            family["best_thrust_to_weight"],
+            color=color_a,
+            linewidth=2.4 if index in label_indices else 1.25,
+            alpha=1.0 if index in label_indices else 0.42,
+        )
+        if index in label_indices:
+            row = family.iloc[-1]
+            ax.annotate(
+                parameter_a_formatter(value_a),
+                (row["best_wing_loading"], row["best_thrust_to_weight"]),
+                xytext=(7, 5), textcoords="offset points",
+                fontsize=8.2, color="#047857",
+            )
+
+    # Second family: parameter B is constant while parameter A varies.
+    for index, value_b in enumerate(values_b):
+        family = carpet[np.isclose(
+            carpet[parameter_b], value_b,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values(parameter_a)
+        ax.plot(
+            family["best_wing_loading"],
+            family["best_thrust_to_weight"],
+            color=color_b,
+            linewidth=2.2 if index in label_indices else 1.2,
+            alpha=1.0 if index in label_indices else 0.38,
+            marker="o", markersize=4.0,
+            markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+        )
+        if index in label_indices:
+            row = family.iloc[-1]
+            ax.annotate(
+                parameter_b_formatter(value_b),
+                (row["best_wing_loading"], row["best_thrust_to_weight"]),
+                xytext=(7, -7), textcoords="offset points",
+                fontsize=8.2, color="#b91c1c",
+            )
+
+    baseline = carpet[carpet["is_baseline"] == 1]
+    if len(baseline) != 1:
+        raise RuntimeError(f"{plot_name} must contain one nominal point.")
+    baseline_row = baseline.iloc[0]
+    ax.scatter(
+        baseline_row["best_wing_loading"],
+        baseline_row["best_thrust_to_weight"],
+        marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
+        linewidth=0.9, zorder=9,
+    )
+    ax.annotate(
+        "Nominal inputs\n"
+        f"Control: {baseline_row['active_constraint_name']} / "
+        f"{baseline_row['second_constraint_name']}\n"
+        f"Margin: {float(baseline_row['constraint_margin']):.3g}",
+        (baseline_row["best_wing_loading"],
+         baseline_row["best_thrust_to_weight"]),
+        xytext=(12, 14), textcoords="offset points", fontsize=8.3,
+        color="#334155",
+        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                  edgecolor="#cbd5e1", alpha=0.92),
+    )
+
+    handles = [
+        Line2D([0], [0], color=color_a, linewidth=2.4,
+               label=f"Constant {parameter_a_label}"),
+        Line2D([0], [0], color=color_b, linewidth=2.2, marker="o",
+               markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+               label=f"Constant {parameter_b_label}"),
+        Line2D([0], [0], color="#fbbf24", marker="*",
+               markeredgecolor="#0f172a", linestyle="None",
+               markersize=11, label="Nominal inputs"),
+    ]
+    ax.set_title(analysis_title(title))
+    ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
+    ax.set_ylabel("Optimum Required T/W [-]")
+    clean_axes(ax)
+    ax.legend(handles=handles, frameon=False)
+    ax.text(
+        0.01, 0.02,
+        "81 feasible envelope optima; both inputs are swept from 80% to "
+        "120% of the case-specific nominal value.",
+        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+        va="bottom",
+    )
+    save_plot(plot_name)
 
 if propeller_mode:
     constraint_files = {
@@ -1813,6 +1934,53 @@ if (not propeller_mode and os.path.exists(carpet_path)
             va="bottom",
         )
         save_plot("05_classical_carpet_plot")
+
+    # ============================================================
+    # Additional case-specific, two-parameter classical carpets
+    # ============================================================
+    additional_carpet_studies = [
+        (
+            "jet_cd0_takeoff_distance_carpet.csv",
+            "cd_0", "takeoff_distance_m", "CD₀", "take-off distance",
+            lambda value: f"CD₀ = {value:.4f}",
+            lambda value: f"s_TO = {value:.0f} m",
+            "CD₀–Take-off-Distance Carpet Plot",
+            "06_cd0_takeoff_distance_carpet",
+        ),
+        (
+            "jet_k_acceleration_carpet.csv",
+            "induced_drag_factor", "acceleration_requirement_ms2",
+            "k", "acceleration requirement",
+            lambda value: f"k = {value:.4f}",
+            lambda value: f"a_x = {value:.2f} m/s²",
+            "k–Acceleration-Requirement Carpet Plot",
+            "07_k_acceleration_carpet",
+        ),
+        (
+            "jet_cd0_thrust_lapse_carpet.csv",
+            "cd_0", "thrust_lapse_scale", "CD₀", "thrust-lapse scale",
+            lambda value: f"CD₀ = {value:.4f}",
+            lambda value: f"α_lapse = {value:.0%}",
+            "CD₀–Installed-Thrust-Lapse Carpet Plot",
+            "08_cd0_thrust_lapse_carpet",
+        ),
+    ]
+    for (
+            csv_name, parameter_a, parameter_b, parameter_a_label,
+            parameter_b_label, parameter_a_formatter,
+            parameter_b_formatter, title, plot_name,
+    ) in additional_carpet_studies:
+        carpet_path = os.path.join(output_dir, csv_name)
+        if not os.path.exists(carpet_path):
+            raise FileNotFoundError(
+                f"{csv_name} not found; rerun the C++ application."
+            )
+        plot_two_parameter_classical_carpet(
+            pd.read_csv(carpet_path).dropna(),
+            parameter_a, parameter_b, parameter_a_label,
+            parameter_b_label, parameter_a_formatter,
+            parameter_b_formatter, title, plot_name,
+        )
 
 print()
 print("Plot generation completed.")

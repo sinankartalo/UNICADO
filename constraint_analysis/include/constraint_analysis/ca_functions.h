@@ -163,6 +163,9 @@ namespace constraint_analysis
         // This must point to a valid Engine object. The solver reads
         // thrust lapse and TSFC directly from the UNICADO engine library.
         Engine* engine = nullptr;
+        // Multiplicative study factor applied after the engine library returns
+        // the installed thrust lapse. Nominal analyses keep this at 1.0.
+        double installed_thrust_lapse_scale = 1.0;
         propeller_data propeller;
 
         takeoff_constraint takeoff;
