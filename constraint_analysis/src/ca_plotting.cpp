@@ -113,8 +113,8 @@ namespace constraint_analysis
                         output, output.vertical_constraints);
 
                 std::string active_constraint_name;
-                double active_constraint_value =
-                    -std::numeric_limits<double>::infinity();
+                std::vector<std::pair<double, std::string>>
+                    constraint_values;
                 for (const auto& curve : output.curves)
                 {
                     if (curve.points.empty())
@@ -149,12 +149,33 @@ namespace constraint_analysis
                         value = left.y + fraction * (right.y - left.y);
                     }
 
-                    if (value > active_constraint_value)
-                    {
-                        active_constraint_value = value;
-                        active_constraint_name = curve.name;
-                    }
+                    constraint_values.emplace_back(value, curve.name);
                 }
+
+                if (constraint_values.empty())
+                {
+                    throw std::runtime_error(
+                        "Aerodynamic carpet point has no constraint values.");
+                }
+                std::sort(
+                    constraint_values.begin(), constraint_values.end(),
+                    [](const auto& left, const auto& right)
+                    {
+                        return left.first > right.first;
+                    });
+                active_constraint_name = constraint_values.front().second;
+                const double active_constraint_value =
+                    constraint_values.front().first;
+                const std::string second_constraint_name =
+                    constraint_values.size() > 1
+                        ? constraint_values[1].second
+                        : std::string{};
+                const double second_constraint_value =
+                    constraint_values.size() > 1
+                        ? constraint_values[1].first
+                        : active_constraint_value;
+                const double constraint_margin =
+                    active_constraint_value - second_constraint_value;
 
                 bool range_feasible = true;
                 for (const auto& range_result : output.range_constraints)
@@ -218,7 +239,11 @@ namespace constraint_analysis
                     feasible_point.thrust_to_weight,
                     range_feasible,
                     is_baseline,
-                    active_constraint_name});
+                    active_constraint_name,
+                    active_constraint_value,
+                    second_constraint_name,
+                    second_constraint_value,
+                    constraint_margin});
             }
         }
         return results;
@@ -235,7 +260,9 @@ namespace constraint_analysis
 
         file << "cd_0,induced_drag_factor,best_wing_loading,"
                 "best_thrust_to_weight,range_feasible,is_baseline,"
-                "active_constraint_name\n";
+                "active_constraint_name,active_constraint_value,"
+                "second_constraint_name,second_constraint_value,"
+                "constraint_margin\n";
         for (const auto& point : points)
         {
             file << point.cd_0 << ","
@@ -244,7 +271,11 @@ namespace constraint_analysis
                  << point.best_thrust_to_weight << ","
                  << point.range_feasible << ","
                  << point.is_baseline << ","
-                 << point.active_constraint_name << "\n";
+                 << point.active_constraint_name << ","
+                 << point.active_constraint_value << ","
+                 << point.second_constraint_name << ","
+                 << point.second_constraint_value << ","
+                 << point.constraint_margin << "\n";
         }
     }
 

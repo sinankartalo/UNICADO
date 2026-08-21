@@ -54,6 +54,10 @@ namespace constraint_analysis
         bool range_feasible = false;
         bool is_baseline = false;
         std::string active_constraint_name;
+        double active_constraint_value = 0.0;
+        std::string second_constraint_name;
+        double second_constraint_value = 0.0;
+        double constraint_margin = 0.0;
     };
 
     class jet_aerodynamic_carpet_study

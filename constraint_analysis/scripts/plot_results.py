@@ -120,6 +120,106 @@ def clean_axes(ax):
     ax.grid(axis="y", alpha=0.24)
 
 
+def carpet_projection_rank_ratio(carpet):
+    """Return 0 for a line and 1 for an equally spread 2-D projection."""
+    coordinates = carpet[
+        ["best_wing_loading", "best_thrust_to_weight"]
+    ].to_numpy(dtype=float)
+    spans = np.ptp(coordinates, axis=0)
+    if np.any(~np.isfinite(spans)) or np.any(spans <= 0.0):
+        return 0.0
+    normalized = (coordinates - coordinates.mean(axis=0)) / spans
+    singular_values = np.linalg.svd(normalized, compute_uv=False)
+    if len(singular_values) < 2 or singular_values[0] <= 0.0:
+        return 0.0
+    return float(singular_values[1] / singular_values[0])
+
+
+def carpet_projection_is_degenerate(carpet):
+    rank_ratio = carpet_projection_rank_ratio(carpet)
+    wing_loading = carpet["best_wing_loading"].to_numpy(dtype=float)
+    typical_wing_loading = max(abs(float(np.median(wing_loading))), 1.0)
+    relative_wing_loading_span = (
+        float(np.ptp(wing_loading)) / typical_wing_loading
+    )
+    return rank_ratio < 0.18 or relative_wing_loading_span < 0.08
+
+
+def plot_response_contour_carpet(carpet, plot_name, loading_symbol):
+    """Render a robust parameter-space carpet when the classical projection
+    collapses onto a near-line.
+    """
+    cd0_values = np.sort(carpet["cd_0"].unique())
+    k_values = np.sort(carpet["induced_drag_factor"].unique())
+    cd0_mesh, k_mesh = np.meshgrid(cd0_values, k_values)
+
+    wing_loading_grid = carpet.pivot(
+        index="induced_drag_factor", columns="cd_0",
+        values="best_wing_loading",
+    ).reindex(index=k_values, columns=cd0_values).to_numpy(dtype=float)
+    loading_grid = carpet.pivot(
+        index="induced_drag_factor", columns="cd_0",
+        values="best_thrust_to_weight",
+    ).reindex(index=k_values, columns=cd0_values).to_numpy(dtype=float)
+    if (not np.all(np.isfinite(wing_loading_grid)) or
+            not np.all(np.isfinite(loading_grid))):
+        raise RuntimeError("Aerodynamic response carpet contains gaps.")
+
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 5.7))
+    response_specs = [
+        (wing_loading_grid, "Optimum W/S [N/m²]", "viridis"),
+        (loading_grid, f"Optimum {loading_symbol}", "plasma"),
+    ]
+    for ax, (response, title, color_map) in zip(axes, response_specs):
+        contour = ax.contour(
+            cd0_mesh, k_mesh, response, levels=7,
+            cmap=color_map, linewidths=1.8,
+        )
+        ax.clabel(contour, inline=True, fontsize=8, fmt="%.4g")
+        ax.scatter(
+            cd0_mesh, k_mesh, s=10, color="#0f172a", alpha=0.38,
+            zorder=3,
+        )
+        ax.set_title(title)
+        ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
+        ax.set_ylabel("Induced Drag Factor, k [-]")
+        clean_axes(ax)
+
+    baseline = carpet[carpet["is_baseline"] == 1]
+    if len(baseline) != 1:
+        raise RuntimeError("Response carpet must contain one nominal point.")
+    baseline_row = baseline.iloc[0]
+    for ax in axes:
+        ax.scatter(
+            baseline_row["cd_0"], baseline_row["induced_drag_factor"],
+            marker="*", s=145, color="#fbbf24", edgecolor="#0f172a",
+            linewidth=0.9, zorder=6,
+        )
+
+    margin = float(baseline_row.get("constraint_margin", np.nan))
+    second_name = str(
+        baseline_row.get("second_constraint_name", "not exported")
+    )
+    diagnostic = (
+        f"Nominal active: {baseline_row['active_constraint_name']}; "
+        f"second: {second_name}"
+    )
+    if np.isfinite(margin):
+        diagnostic += f"; margin = {margin:.3g}"
+    rank_ratio = carpet_projection_rank_ratio(carpet)
+    fig.suptitle(
+        analysis_title("Aerodynamic Carpet Response Map"), fontsize=15,
+    )
+    fig.text(
+        0.5, 0.02,
+        "Classical optimum-plane projection was near-degenerate "
+        f"(rank ratio {rank_ratio:.3f}); {diagnostic}.",
+        ha="center", fontsize=8.8, color="#4d4d4d",
+    )
+    fig.subplots_adjust(top=0.86, bottom=0.16, wspace=0.24)
+    save_plot(plot_name, tight=False)
+
+
 def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
     point = ax.scatter(
         x, y, marker="*", s=165, color="#007f5f", edgecolor="white",
@@ -1018,6 +1118,14 @@ if propeller_mode:
     prop_aero_carpet = pd.read_csv(prop_aero_carpet_path).dropna()
     prop_cd0_sensitivity = pd.read_csv(prop_cd0_path).dropna()
     prop_k_sensitivity = pd.read_csv(prop_k_path).dropna()
+    required_diagnostic_columns = {
+        "active_constraint_value", "second_constraint_name",
+        "second_constraint_value", "constraint_margin",
+    }
+    if not required_diagnostic_columns.issubset(prop_aero_carpet.columns):
+        raise RuntimeError(
+            "Rerun the C++ application: carpet diagnostic schema is outdated."
+        )
 
     cd0_values = np.sort(prop_aero_carpet["cd_0"].unique())
     k_values = np.sort(
@@ -1269,7 +1377,13 @@ if propeller_mode:
         transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
         va="bottom",
     )
-    save_plot("06_classical_carpet_plot")
+    if carpet_projection_is_degenerate(prop_aero_carpet):
+        plt.close(fig)
+        plot_response_contour_carpet(
+            prop_aero_carpet, "06_classical_carpet_plot", "P/W [W/N]"
+        )
+    else:
+        save_plot("06_classical_carpet_plot")
 
 # ============================================================
 # Plot 3: CD0 carpet plot
@@ -1735,7 +1849,11 @@ if (not propeller_mode and os.path.exists(carpet_path)
                     fontsize=8.5, color="#b91c1c",
                 )
 
-        required_columns = {"is_baseline", "active_constraint_name"}
+        required_columns = {
+            "is_baseline", "active_constraint_name",
+            "active_constraint_value", "second_constraint_name",
+            "second_constraint_value", "constraint_margin",
+        }
         if not required_columns.issubset(aero_carpet.columns):
             raise RuntimeError(
                 "Rerun the C++ application: carpet CSV schema is outdated."
@@ -1800,7 +1918,13 @@ if (not propeller_mode and os.path.exists(carpet_path)
             transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
             va="bottom",
         )
-        save_plot("05_classical_carpet_plot")
+        if carpet_projection_is_degenerate(aero_carpet):
+            plt.close(fig)
+            plot_response_contour_carpet(
+                aero_carpet, "05_classical_carpet_plot", "T/W [-]"
+            )
+        else:
+            save_plot("05_classical_carpet_plot")
 
 print()
 print("Plot generation completed.")
