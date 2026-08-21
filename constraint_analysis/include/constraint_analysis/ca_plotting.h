@@ -53,8 +53,6 @@ namespace constraint_analysis
         double best_thrust_to_weight = 0.0;
         bool range_feasible = false;
         bool is_baseline = false;
-        double boundary_relaxation_fraction = 0.0;
-        bool original_boundaries_feasible = false;
         std::string active_constraint_name;
     };
 
@@ -66,8 +64,7 @@ namespace constraint_analysis
         std::vector<jet_aerodynamic_carpet_point> run(
             const constraint_input& base_input,
             const std::vector<double>& cd0_values,
-            const std::vector<double>& induced_drag_factor_values,
-            double boundary_relaxation_fraction = 0.0) const;
+            const std::vector<double>& induced_drag_factor_values) const;
 
         static void write_to_csv(
             const std::vector<jet_aerodynamic_carpet_point>& points,

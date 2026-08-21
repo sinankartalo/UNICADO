@@ -177,7 +177,6 @@ if propeller_mode:
         "04_cd0_parameter_sensitivity",
         "05_k_parameter_sensitivity",
         "06_classical_carpet_plot",
-        "07_boundary_relaxation_comparison",
     }
 else:
     plot_allowlist = {
@@ -186,7 +185,6 @@ else:
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
         "05_classical_carpet_plot",
-        "06_boundary_relaxation_comparison",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -1030,13 +1028,6 @@ if propeller_mode:
         raise RuntimeError(
             "Propeller aerodynamic carpet must be a complete 9x9 grid."
         )
-    required_relaxation_columns = {
-        "boundary_relaxation_fraction", "original_boundaries_feasible"
-    }
-    if not required_relaxation_columns.issubset(prop_aero_carpet.columns):
-        raise RuntimeError(
-            "Rerun the C++ application: relaxed carpet schema is outdated."
-        )
 
     prop_baseline = prop_aero_carpet[
         prop_aero_carpet["is_baseline"] == 1
@@ -1244,15 +1235,6 @@ if propeller_mode:
         marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
         linewidth=0.9, zorder=9,
     )
-    original_boundary_violations = prop_aero_carpet[
-        prop_aero_carpet["original_boundaries_feasible"] == 0
-    ]
-    if not original_boundary_violations.empty:
-        ax.scatter(
-            original_boundary_violations["best_wing_loading"],
-            original_boundary_violations["best_thrust_to_weight"],
-            marker="x", s=62, linewidth=1.6, color="#d97706", zorder=8,
-        )
     ax.annotate(
         f"Nominal polar\nActive: {baseline_active}",
         (prop_baseline_row["best_wing_loading"],
@@ -1273,11 +1255,6 @@ if propeller_mode:
                markeredgecolor="#0f172a", linestyle="None",
                markersize=11, label="Imported nominal polar"),
     ]
-    if not original_boundary_violations.empty:
-        family_handles.append(Line2D(
-            [0], [0], color="#d97706", marker="x", linestyle="None",
-            markersize=7, label="Outside original W/S boundaries",
-        ))
     ax.set_title(analysis_title(
         "Classical Aerodynamic Power-Loading Carpet Plot"
     ))
@@ -1287,8 +1264,8 @@ if propeller_mode:
     ax.legend(handles=family_handles, frameon=False)
     ax.text(
         0.01, 0.02,
-        "Primary study: gust, landing and stall W/S boundaries relaxed "
-        "by 10%; labels show every other CD₀ and k level.",
+        "81 propeller constraint solutions; labels show every other CD₀ "
+        "and k level (80–120% of the imported polar).",
         transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
         va="bottom",
     )
@@ -1758,10 +1735,7 @@ if (not propeller_mode and os.path.exists(carpet_path)
                     fontsize=8.5, color="#b91c1c",
                 )
 
-        required_columns = {
-            "is_baseline", "active_constraint_name",
-            "boundary_relaxation_fraction", "original_boundaries_feasible",
-        }
+        required_columns = {"is_baseline", "active_constraint_name"}
         if not required_columns.issubset(aero_carpet.columns):
             raise RuntimeError(
                 "Rerun the C++ application: carpet CSV schema is outdated."
@@ -1797,16 +1771,6 @@ if (not propeller_mode and os.path.exists(carpet_path)
                 marker="x", s=65, linewidth=1.8, color="#D55E00",
                 label="Range infeasible", zorder=8,
             )
-        original_boundary_violations = aero_carpet[
-            aero_carpet["original_boundaries_feasible"] == 0
-        ]
-        if not original_boundary_violations.empty:
-            ax.scatter(
-                original_boundary_violations["best_wing_loading"],
-                original_boundary_violations["best_thrust_to_weight"],
-                marker="x", s=62, linewidth=1.6, color="#d97706",
-                zorder=8,
-            )
 
         family_handles = [
             Line2D([0], [0], color=cd0_color, linewidth=2.4,
@@ -1823,11 +1787,6 @@ if (not propeller_mode and os.path.exists(carpet_path)
                 [0], [0], color="#D55E00", marker="x", linestyle="None",
                 markersize=7, label="Range infeasible",
             ))
-        if not original_boundary_violations.empty:
-            family_handles.append(Line2D(
-                [0], [0], color="#d97706", marker="x", linestyle="None",
-                markersize=7, label="Outside original W/S boundaries",
-            ))
 
         ax.set_title(analysis_title("Classical Aerodynamic Carpet Plot"))
         ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
@@ -1836,166 +1795,12 @@ if (not propeller_mode and os.path.exists(carpet_path)
         ax.legend(handles=family_handles, frameon=False)
         ax.text(
             0.01, 0.02,
-            "Primary study: gust, landing and stall W/S boundaries relaxed "
-            "by 10%; labels show every other CD₀ and k level.",
+            "81 interpolated feasible optima; labels show every other "
+            "CD₀ and k level (80–120% of the imported polar).",
             transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
             va="bottom",
         )
         save_plot("05_classical_carpet_plot")
-
-# ============================================================
-# Boundary-relaxation comparison for the aerodynamic carpet only
-# ============================================================
-relaxation_study_name = (
-    "propeller_boundary_relaxation_study.csv" if propeller_mode
-    else "jet_boundary_relaxation_study.csv"
-)
-relaxation_study_path = os.path.join(output_dir, relaxation_study_name)
-if not os.path.exists(relaxation_study_path):
-    raise FileNotFoundError(
-        f"{relaxation_study_name} not found; rerun the C++ application."
-    )
-
-relaxation_study = pd.read_csv(relaxation_study_path).dropna()
-relaxation_columns = {
-    "cd_0", "induced_drag_factor", "best_wing_loading",
-    "best_thrust_to_weight", "is_baseline",
-    "boundary_relaxation_fraction", "original_boundaries_feasible",
-}
-if not relaxation_columns.issubset(relaxation_study.columns):
-    raise RuntimeError(
-        "Rerun the C++ application: boundary-relaxation CSV schema is "
-        "outdated."
-    )
-
-expected_relaxation_levels = np.array([0.00, 0.05, 0.10, 0.20])
-actual_relaxation_levels = np.sort(
-    relaxation_study["boundary_relaxation_fraction"].unique()
-)
-if (len(actual_relaxation_levels) != 4 or
-        not np.allclose(actual_relaxation_levels,
-                        expected_relaxation_levels)):
-    raise RuntimeError(
-        "Boundary-relaxation study must contain 0%, 5%, 10% and 20%."
-    )
-
-cd0_relaxation_values = np.sort(relaxation_study["cd_0"].unique())
-k_relaxation_values = np.sort(
-    relaxation_study["induced_drag_factor"].unique()
-)
-expected_level_size = (
-    len(cd0_relaxation_values) * len(k_relaxation_values)
-)
-if (len(cd0_relaxation_values) != 9 or
-        len(k_relaxation_values) != 9):
-    raise RuntimeError(
-        "Boundary-relaxation study must use the complete 9x9 polar grid."
-    )
-
-fig, axes = plt.subplots(2, 2, figsize=(11.0, 8.2), sharex=True, sharey=True)
-cd0_color = "#10b981"
-k_color = "#ef4444"
-for ax, relaxation in zip(axes.flat, expected_relaxation_levels):
-    level = relaxation_study[np.isclose(
-        relaxation_study["boundary_relaxation_fraction"], relaxation,
-        rtol=1.0e-9, atol=1.0e-12,
-    )]
-    if len(level) != expected_level_size:
-        raise RuntimeError(
-            f"Relaxation level {relaxation:.0%} is not a complete 9x9 grid."
-        )
-
-    for cd0 in cd0_relaxation_values:
-        family = level[np.isclose(
-            level["cd_0"], cd0, rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("induced_drag_factor")
-        ax.plot(
-            family["best_wing_loading"],
-            family["best_thrust_to_weight"],
-            color=cd0_color, linewidth=1.15, alpha=0.68,
-        )
-
-    for induced_drag_factor in k_relaxation_values:
-        family = level[np.isclose(
-            level["induced_drag_factor"], induced_drag_factor,
-            rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("cd_0")
-        ax.plot(
-            family["best_wing_loading"],
-            family["best_thrust_to_weight"],
-            color=k_color, linewidth=1.05, alpha=0.62,
-        )
-
-    baseline = level[level["is_baseline"] == 1]
-    if len(baseline) != 1:
-        raise RuntimeError(
-            f"Relaxation level {relaxation:.0%} must have one nominal point."
-        )
-    ax.scatter(
-        baseline.iloc[0]["best_wing_loading"],
-        baseline.iloc[0]["best_thrust_to_weight"],
-        marker="*", s=115, color="#fbbf24", edgecolor="#0f172a",
-        linewidth=0.8, zorder=7,
-    )
-    violations = level[level["original_boundaries_feasible"] == 0]
-    if not violations.empty:
-        ax.scatter(
-            violations["best_wing_loading"],
-            violations["best_thrust_to_weight"],
-            marker="x", s=30, linewidth=1.1, color="#d97706", zorder=6,
-        )
-    ax.set_title(
-        f"{relaxation:.0%} relaxation"
-        + (" — primary" if np.isclose(relaxation, 0.10) else ""),
-        fontsize=11,
-    )
-    clean_axes(ax)
-
-x_values = relaxation_study["best_wing_loading"].to_numpy(dtype=float)
-y_values = relaxation_study["best_thrust_to_weight"].to_numpy(dtype=float)
-x_padding = max(0.04 * np.ptp(x_values), 1.0)
-y_padding = max(0.06 * np.ptp(y_values), 1.0e-4)
-for ax in axes.flat:
-    ax.set_xlim(x_values.min() - x_padding, x_values.max() + x_padding)
-    ax.set_ylim(y_values.min() - y_padding, y_values.max() + y_padding)
-for ax in axes[-1, :]:
-    ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
-for ax in axes[:, 0]:
-    ax.set_ylabel(
-        "Optimum Required P/W [W/N]" if propeller_mode
-        else "Optimum Required T/W [-]"
-    )
-
-comparison_handles = [
-    Line2D([0], [0], color=cd0_color, linewidth=1.8,
-           label="Constant CD₀"),
-    Line2D([0], [0], color=k_color, linewidth=1.8,
-           label="Constant k"),
-    Line2D([0], [0], color="#fbbf24", marker="*",
-           markeredgecolor="#0f172a", linestyle="None", markersize=9,
-           label="Imported nominal polar"),
-    Line2D([0], [0], color="#d97706", marker="x", linestyle="None",
-           markersize=6, label="Outside original W/S boundaries"),
-]
-fig.legend(
-    handles=comparison_handles, loc="upper center", ncol=4,
-    frameon=False, bbox_to_anchor=(0.5, 0.955),
-)
-fig.suptitle(
-    analysis_title("Aerodynamic Carpet Boundary-Relaxation Comparison"),
-    fontsize=15, y=0.995,
-)
-fig.text(
-    0.5, 0.012,
-    "Only gust, landing and stall wing-loading boundaries are relaxed; "
-    "the 10% case is the primary carpet result.",
-    ha="center", fontsize=9, color="#4d4d4d",
-)
-fig.subplots_adjust(top=0.89, bottom=0.09, hspace=0.22, wspace=0.14)
-save_plot(
-    "07_boundary_relaxation_comparison" if propeller_mode
-    else "06_boundary_relaxation_comparison"
-)
 
 print()
 print("Plot generation completed.")
