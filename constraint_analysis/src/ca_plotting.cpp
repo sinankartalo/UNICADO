@@ -49,35 +49,6 @@ namespace constraint_analysis
 
 
 // ============================================================
-// merged from: src/carpet_plot_generator.cpp
-// ============================================================
-namespace constraint_analysis
-{
-    std::vector<carpet_point> carpet_plot_generator::generate(
-        const std::vector<double>& parameter_a_values,
-        const std::vector<double>& parameter_b_values) const
-    {
-        std::vector<carpet_point> points;
-
-        for (double a : parameter_a_values)
-        {
-            for (double b : parameter_b_values)
-            {
-                carpet_point point;
-                point.parameter_a = a;
-                point.parameter_b = b;
-                point.x = a;
-                point.y = b;
-                points.push_back(point);
-            }
-        }
-
-        return points;
-    }
-}
-
-
-// ============================================================
 // merged from: src/carpet_plot_study.cpp
 // ============================================================
 #include <fstream>
@@ -554,75 +525,6 @@ namespace constraint_analysis
                 << point.best_wing_loading << ","
                 << point.best_thrust_to_weight << ","
                 << point.range_feasible << "\n";
-        }
-    }
-}
-
-
-// ============================================================
-// merged from: src/carpet_plot_full.cpp
-// ============================================================
-#include <fstream>
-#include <stdexcept>
-
-namespace constraint_analysis
-{
-    carpet_plot_full::carpet_plot_full(const atmosphere& atmosphere)
-        : atmosphere_(atmosphere)
-    {
-    }
-
-    std::vector<carpet_full_point> carpet_plot_full::run(
-        const constraint_input& base_input,
-        const std::vector<double>& cd0_values) const
-    {
-        std::vector<carpet_full_point> results;
-
-        constraint_analysis_tool tool(atmosphere_);
-
-        for (double cd0 : cd0_values)
-        {
-            constraint_input input = base_input;
-
-            input.aircraft.polar.cd_0 = cd0;
-
-            const constraint_output output = tool.run(input);
-
-            const constraint_curve envelope =
-                constraint_envelope_analyzer::build_envelope(output);
-
-            for (const auto& point : envelope.points)
-            {
-                results.push_back({
-                    cd0,
-                    point.x,
-                    point.y
-                });
-            }
-        }
-
-        return results;
-    }
-
-    void carpet_plot_full::write_to_csv(
-        const std::vector<carpet_full_point>& points,
-        const std::string& file_path)
-    {
-        std::ofstream file(file_path);
-
-        if (!file.is_open())
-        {
-            throw std::runtime_error("Could not open full carpet plot CSV file: " + file_path);
-        }
-
-        file << "cd_0,wing_loading,thrust_to_weight\n";
-
-        for (const auto& point : points)
-        {
-            file
-                << point.cd_0 << ","
-                << point.wing_loading << ","
-                << point.thrust_to_weight << "\n";
         }
     }
 }

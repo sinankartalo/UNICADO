@@ -154,6 +154,8 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_directory =
             output_root / active_case_id;
         std::filesystem::create_directories(output_directory);
+        std::filesystem::remove(
+            output_directory / "carpet_plot_full.csv");
 
         std::cout << "Using XML configuration: " << config_path << '\n';
         std::cout << "Using constraint case ID: " << active_case_id << '\n';
@@ -211,8 +213,7 @@ int main(int argc, char* argv[])
             // Do not let files from an earlier jet run masquerade as propeller
             // evidence when the plotting script is run in the same directory.
             for (const char* stale_file : {
-                     "carpet_plot_study.csv", "carpet_plot_full.csv",
-                     "true_carpet_constraints.csv",
+                     "carpet_plot_study.csv", "true_carpet_constraints.csv",
                      "jet_cd0_k_carpet.csv",
                      "jet_k_sensitivity_curves.csv",
                      "jet_range_fuel_fraction_constraint.csv",
@@ -371,7 +372,6 @@ int main(int argc, char* argv[])
         }
 
         std::vector<carpet_study_point> carpet_points;
-        std::vector<carpet_full_point> full_carpet_points;
         std::vector<true_carpet_constraint_point> true_carpet_points;
         std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
         std::vector<k_sensitivity_curve_point> k_sensitivity_points;
@@ -396,12 +396,6 @@ int main(int argc, char* argv[])
             carpet_plot_study::write_to_csv(
                 carpet_points,
                 (output_directory / "carpet_plot_study.csv").string());
-
-            carpet_plot_full full_carpet{atm};
-            full_carpet_points = full_carpet.run(input, cd0_values);
-            carpet_plot_full::write_to_csv(
-                full_carpet_points,
-                (output_directory / "carpet_plot_full.csv").string());
 
             true_carpet_constraints true_carpet{atm};
             true_carpet_points = true_carpet.run(input, cd0_values);
@@ -874,15 +868,6 @@ int main(int argc, char* argv[])
                 << "  range feasible = " << (point.range_feasible ? "yes" : "no")
                 << '\n';
         }
-
-        std::cout << "\n=== full_carpet_plot ===\n";
-        std::cout
-            << "Full carpet plot points written: "
-            << full_carpet_points.size()
-            << '\n';
-        std::cout << "CSV: "
-                  << (output_directory / "carpet_plot_full.csv").string()
-                  << "\n";
 
         std::cout << "\n=== true_carpet_constraints ===\n";
         std::cout

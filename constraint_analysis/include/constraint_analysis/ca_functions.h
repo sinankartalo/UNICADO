@@ -257,14 +257,6 @@ namespace constraint_analysis
         std::vector<curve_point> points;
     };
 
-    struct carpet_point
-    {
-        double x = 0.0;
-        double y = 0.0;
-        double parameter_a = 0.0;
-        double parameter_b = 0.0;
-    };
-
     struct vertical_constraint
     {
         std::string name;
@@ -295,7 +287,6 @@ namespace constraint_analysis
         std::vector<constraint_curve> curves;
         std::vector<vertical_constraint> vertical_constraints;
         std::vector<range_constraint_result> range_constraints;
-        std::vector<carpet_point> carpet_points;
     };
 }
 

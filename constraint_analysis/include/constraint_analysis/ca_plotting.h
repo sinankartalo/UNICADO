@@ -21,21 +21,7 @@ namespace constraint_analysis
     };
 }
 
-// ============================================================
-// merged from: carpet_plot_generator.h
-// ============================================================
 #include <vector>
-
-namespace constraint_analysis
-{
-    class carpet_plot_generator
-    {
-    public:
-        std::vector<carpet_point> generate(
-            const std::vector<double>& parameter_a_values,
-            const std::vector<double>& parameter_b_values) const;
-    };
-}
 
 // ============================================================
 // merged from: carpet_plot_study.h
@@ -141,39 +127,6 @@ namespace constraint_analysis
 
         static void write_to_csv(
             const std::vector<carpet_study_point>& points,
-            const std::string& file_path);
-
-    private:
-        const atmosphere& atmosphere_;
-    };
-}
-
-// ============================================================
-// merged from: carpet_plot_full.h
-// ============================================================
-#include <string>
-#include <vector>
-
-namespace constraint_analysis
-{
-    struct carpet_full_point
-    {
-        double cd_0 = 0.0;
-        double wing_loading = 0.0;
-        double thrust_to_weight = 0.0;
-    };
-
-    class carpet_plot_full
-    {
-    public:
-        explicit carpet_plot_full(const atmosphere& atmosphere);
-
-        std::vector<carpet_full_point> run(
-            const constraint_input& base_input,
-            const std::vector<double>& cd0_values) const;
-
-        static void write_to_csv(
-            const std::vector<carpet_full_point>& points,
             const std::string& file_path);
 
     private:

@@ -56,7 +56,6 @@ add_library(constraint_analysis_lib
     src/io/aerodynamics_xml.cpp
     src/ca_parser.cpp
     src/energy_based/energy_based.cpp
-    src/energy_based/energy_based_report.cpp
 
     ${ATMOSPHERE_SOURCES}
     ${UNITCONVERSION_SOURCES}

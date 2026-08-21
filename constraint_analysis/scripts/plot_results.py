@@ -1401,15 +1401,12 @@ if propeller_mode:
     save_plot("06_classical_carpet_plot")
 
 # ============================================================
-# Plot 3: CD0 carpet plot
+# Jet CD₀ sensitivity plots
 # ============================================================
-carpet_path = os.path.join(output_dir, "carpet_plot_full.csv")
 study_path = os.path.join(output_dir, "carpet_plot_study.csv")
 
-if (not propeller_mode and os.path.exists(carpet_path)
-        and os.path.exists(study_path)):
+if not propeller_mode and os.path.exists(study_path):
 
-    carpet = pd.read_csv(carpet_path)
     study = pd.read_csv(study_path)
 
     # ========================================================
