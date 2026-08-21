@@ -374,7 +374,12 @@ int main(int argc, char* argv[])
         std::vector<carpet_full_point> full_carpet_points;
         std::vector<true_carpet_constraint_point> true_carpet_points;
         std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
+        std::vector<jet_aerodynamic_carpet_point>
+            boundary_relaxation_carpet_points;
         std::vector<k_sensitivity_curve_point> k_sensitivity_points;
+        const std::vector<double> boundary_relaxation_levels = {
+            0.00, 0.05, 0.10, 0.20};
+        constexpr double primary_boundary_relaxation = 0.10;
 
         // Use the same imported-polar-relative grid for both propulsion
         // architectures.  The analysis tool selects T/W or P/W equations
@@ -413,10 +418,25 @@ int main(int argc, char* argv[])
             // rather than replacing it with unrelated absolute assumptions.
             jet_aerodynamic_carpet_study aero_carpet{atm};
             jet_aero_carpet_points = aero_carpet.run(
-                input, cd0_carpet_values, induced_drag_factor_values);
+                input, cd0_carpet_values, induced_drag_factor_values,
+                primary_boundary_relaxation);
             jet_aerodynamic_carpet_study::write_to_csv(
                 jet_aero_carpet_points,
                 (output_directory / "jet_cd0_k_carpet.csv").string());
+
+            for (double relaxation : boundary_relaxation_levels)
+            {
+                auto level_points = aero_carpet.run(
+                    input, cd0_carpet_values, induced_drag_factor_values,
+                    relaxation);
+                boundary_relaxation_carpet_points.insert(
+                    boundary_relaxation_carpet_points.end(),
+                    level_points.begin(), level_points.end());
+            }
+            jet_aerodynamic_carpet_study::write_to_csv(
+                boundary_relaxation_carpet_points,
+                (output_directory /
+                    "jet_boundary_relaxation_study.csv").string());
 
             k_sensitivity_study k_sensitivity{atm};
             k_sensitivity_points = k_sensitivity.run(
@@ -438,11 +458,26 @@ int main(int argc, char* argv[])
 
             jet_aerodynamic_carpet_study aero_carpet{atm};
             jet_aero_carpet_points = aero_carpet.run(
-                input, cd0_carpet_values, induced_drag_factor_values);
+                input, cd0_carpet_values, induced_drag_factor_values,
+                primary_boundary_relaxation);
             jet_aerodynamic_carpet_study::write_to_csv(
                 jet_aero_carpet_points,
                 (output_directory /
                     "propeller_cd0_k_carpet.csv").string());
+
+            for (double relaxation : boundary_relaxation_levels)
+            {
+                auto level_points = aero_carpet.run(
+                    input, cd0_carpet_values, induced_drag_factor_values,
+                    relaxation);
+                boundary_relaxation_carpet_points.insert(
+                    boundary_relaxation_carpet_points.end(),
+                    level_points.begin(), level_points.end());
+            }
+            jet_aerodynamic_carpet_study::write_to_csv(
+                boundary_relaxation_carpet_points,
+                (output_directory /
+                    "propeller_boundary_relaxation_study.csv").string());
 
             k_sensitivity_study k_sensitivity{atm};
             k_sensitivity_points = k_sensitivity.run(

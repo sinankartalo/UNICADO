@@ -94,8 +94,17 @@ namespace constraint_analysis
     jet_aerodynamic_carpet_study::run(
         const constraint_input& base_input,
         const std::vector<double>& cd0_values,
-        const std::vector<double>& induced_drag_factor_values) const
+        const std::vector<double>& induced_drag_factor_values,
+        double boundary_relaxation_fraction) const
     {
+        if (boundary_relaxation_fraction < 0.0 ||
+            boundary_relaxation_fraction >= 1.0)
+        {
+            throw std::invalid_argument(
+                "Boundary relaxation fraction must be in [0, 1)."
+            );
+        }
+
         std::vector<jet_aerodynamic_carpet_point> results;
         constraint_analysis_tool tool(atmosphere_);
 
@@ -108,9 +117,31 @@ namespace constraint_analysis
                 input.aircraft.polar.k = induced_drag_factor;
 
                 const constraint_output output = tool.run(input);
+                std::vector<vertical_constraint> relaxed_boundaries =
+                    output.vertical_constraints;
+                for (auto& boundary : relaxed_boundaries)
+                {
+                    boundary.x_limit *= boundary.is_upper_limit
+                        ? (1.0 + boundary_relaxation_fraction)
+                        : (1.0 - boundary_relaxation_fraction);
+                }
                 const design_point feasible_point =
                     design_point_finder::find_interpolated_feasible_minimum_point(
-                        output, output.vertical_constraints);
+                        output, relaxed_boundaries);
+
+                bool original_boundaries_feasible = true;
+                for (const auto& boundary : output.vertical_constraints)
+                {
+                    const double tolerance = std::max(
+                        1.0e-9, std::abs(boundary.x_limit) * 1.0e-9);
+                    const bool satisfies_boundary = boundary.is_upper_limit
+                        ? feasible_point.wing_loading <=
+                            boundary.x_limit + tolerance
+                        : feasible_point.wing_loading >=
+                            boundary.x_limit - tolerance;
+                    original_boundaries_feasible =
+                        original_boundaries_feasible && satisfies_boundary;
+                }
 
                 std::string active_constraint_name;
                 double active_constraint_value =
@@ -218,6 +249,8 @@ namespace constraint_analysis
                     feasible_point.thrust_to_weight,
                     range_feasible,
                     is_baseline,
+                    boundary_relaxation_fraction,
+                    original_boundaries_feasible,
                     active_constraint_name});
             }
         }
@@ -235,7 +268,8 @@ namespace constraint_analysis
 
         file << "cd_0,induced_drag_factor,best_wing_loading,"
                 "best_thrust_to_weight,range_feasible,is_baseline,"
-                "active_constraint_name\n";
+                "boundary_relaxation_fraction,"
+                "original_boundaries_feasible,active_constraint_name\n";
         for (const auto& point : points)
         {
             file << point.cd_0 << ","
@@ -244,6 +278,8 @@ namespace constraint_analysis
                  << point.best_thrust_to_weight << ","
                  << point.range_feasible << ","
                  << point.is_baseline << ","
+                 << point.boundary_relaxation_fraction << ","
+                 << point.original_boundaries_feasible << ","
                  << point.active_constraint_name << "\n";
         }
     }
