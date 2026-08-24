@@ -288,7 +288,6 @@
             <count><value>2</value></count>
             <takeoff>
               <RPM><value>1200.0</value></RPM>
-              <pitch><value>15.0</value></pitch>
             </takeoff>
             <continuous>
               <RPM><value>1200.0</value></RPM>
