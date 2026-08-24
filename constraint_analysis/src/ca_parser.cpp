@@ -195,9 +195,6 @@ namespace constraint_analysis
                 "propeller_takeoff_rpm",
                 "engine/propeller/takeoff/RPM");
             xml_map_value(config, *selected_case,
-                "propeller_takeoff_pitch_deg",
-                "engine/propeller/takeoff/pitch");
-            xml_map_value(config, *selected_case,
                 "propeller_continuous_rpm",
                 "engine/propeller/continuous/RPM");
             xml_map_value(config, *selected_case,
@@ -402,8 +399,6 @@ namespace constraint_analysis
                 xml_double(config, "propeller_count"));
             input.propeller.takeoff.rpm =
                 xml_double(config, "propeller_takeoff_rpm");
-            input.propeller.takeoff.pitch_deg =
-                xml_double(config, "propeller_takeoff_pitch_deg");
             input.propeller.continuous.rpm =
                 xml_double(config, "propeller_continuous_rpm");
             input.propeller.continuous.pitch_deg =
