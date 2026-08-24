@@ -160,8 +160,10 @@ namespace constraint_analysis
                     "Propeller deck returned non-positive thrust or power.");
             }
 
-            // P/W = (T/W)*(P/T).  P/T is taken from the same CT/CP
-            // interpolation used by aerodynamics::Propeller.
+            // Exact loading identity:
+            //   P/W = (T/W)*(P/T) = (T/W)*nD*(C_P/C_T).
+            // C_T and C_P come from the same (pitch, J) deck interpolation.
+            // See docs/propeller_equation_references.md.
             return thrust_to_weight *
                 operating_point.shaft_power_W / operating_point.thrust_N;
         }
@@ -215,6 +217,11 @@ namespace constraint_analysis
         point.rpm = setting.rpm;
         point.pitch_deg = setting.pitch_deg;
 
+        // Propeller equations and source traceability:
+        // docs/propeller_equation_references.md
+        //
+        // Mattingly, Aircraft Engine Design, 2nd ed., Appendix L,
+        // Eq. (L.20): J = V/(nD), with n in revolutions per second.
         const double rotations_per_second = setting.rpm / 60.0;
         const double rotational_tip_speed_ms =
             std::numbers::pi * input.propeller.diameter_m * rotations_per_second;
@@ -267,6 +274,11 @@ namespace constraint_analysis
         point.efficiency = deck_row.efficiency;
 
         const double diameter = input.propeller.diameter_m;
+
+        // Standard real-propeller coefficient relations, equivalent to
+        // Mattingly Appendix L, Eqs. (L.17)-(L.18), in SI form:
+        //   T = C_T rho n^2 D^4
+        //   P = C_P rho n^3 D^5
         point.thrust_N =
             point.thrust_coefficient * point.density_kg_m3 *
             std::pow(rotations_per_second, 2.0) * std::pow(diameter, 4.0);
