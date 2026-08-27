@@ -165,6 +165,17 @@ namespace constraint_analysis
             return thrust_to_weight *
                 operating_point.shaft_power_W / operating_point.thrust_N;
         }
+
+        bool is_propeller_deck_coverage_error(const std::exception& error)
+        {
+            const std::string message = error.what();
+            return message.find(
+                       "outside the selected pitch slice in deck") !=
+                       std::string::npos ||
+                   message.find(
+                       "Propeller deck produced an invalid operating point") !=
+                       std::string::npos;
+        }
     }
 
     propeller_constraint_analysis::propeller_constraint_analysis(
@@ -534,16 +545,30 @@ namespace constraint_analysis
         for (const auto& mission_point : input.climb.mission_points)
         {
             const double rho = atmosphere_.getDensity(mission_point.altitude_m);
-            prepared_points.push_back({
-                &mission_point,
-                constraint_utilities::compute_dynamic_pressure(
-                    rho, mission_point.speed_ms),
-                evaluate(
-                    input,
-                    mission_point.altitude_m,
-                    mission_point.speed_ms,
-                    input.propeller.continuous)
-            });
+            try
+            {
+                prepared_points.push_back({
+                    &mission_point,
+                    constraint_utilities::compute_dynamic_pressure(
+                        rho, mission_point.speed_ms),
+                    evaluate(
+                        input,
+                        mission_point.altitude_m,
+                        mission_point.speed_ms,
+                        input.propeller.continuous)
+                });
+            }
+            catch (const std::exception& error)
+            {
+                if (!is_propeller_deck_coverage_error(error))
+                    throw;
+            }
+        }
+
+        if (prepared_points.empty())
+        {
+            throw std::runtime_error(
+                "Propeller deck covers none of the mission climb points.");
         }
 
         for (double ws = input.wing_loading_min;
@@ -589,6 +614,48 @@ namespace constraint_analysis
         }
 
         return curve;
+    }
+
+    propeller_climb_coverage
+    propeller_constraint_analysis::assess_climb_coverage(
+        const constraint_input& input) const
+    {
+        propeller_climb_coverage coverage;
+        coverage.total_mission_points = input.climb.mission_points.size();
+
+        const double rotations_per_second =
+            input.propeller.continuous.rpm / 60.0;
+        for (const auto& mission_point : input.climb.mission_points)
+        {
+            try
+            {
+                (void)evaluate(
+                    input,
+                    mission_point.altitude_m,
+                    mission_point.speed_ms,
+                    input.propeller.continuous);
+                ++coverage.valid_deck_points;
+            }
+            catch (const std::exception& error)
+            {
+                if (!is_propeller_deck_coverage_error(error))
+                    throw;
+
+                ++coverage.invalid_deck_points;
+                if (coverage.invalid_deck_points == 1)
+                {
+                    coverage.first_invalid_altitude_m =
+                        mission_point.altitude_m;
+                    coverage.first_invalid_speed_ms = mission_point.speed_ms;
+                    coverage.first_invalid_advance_ratio =
+                        mission_point.speed_ms /
+                        (rotations_per_second * input.propeller.diameter_m);
+                    coverage.first_invalid_reason = error.what();
+                }
+            }
+        }
+
+        return coverage;
     }
 
     constraint_curve propeller_constraint_analysis::compute_turn_constraint(
