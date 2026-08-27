@@ -54,6 +54,11 @@ def prop_row(pitch_deg: float, advance_ratio: float) -> tuple[float, float, floa
 
     for left, right in zip(rows, rows[1:]):
         if left[0] <= advance_ratio <= right[0]:
+            if any(value <= 0.0 for value in (*left[1:], *right[1:])):
+                raise ValueError(
+                    f"J={advance_ratio} crosses a non-positive "
+                    f"pitch={pitch_deg} deck segment"
+                )
             ratio = (advance_ratio - left[0]) / (right[0] - left[0])
             values = [
                 left[index] + ratio * (right[index] - left[index])
@@ -143,6 +148,71 @@ def airborne_power_loading(
     return thrust_to_weight * power_to_thrust, advance_ratio, eta, cl
 
 
+def mission_climb_power_loading() -> tuple[float, int, int]:
+    with MISSION_CSV.open(encoding="utf-8-sig") as stream:
+        rows = list(csv.reader(stream, delimiter=";"))
+    header = [cell.strip() for cell in rows[0]]
+    data = rows[1:]
+    time_index = header.index("Time [s]")
+    altitude_index = header.index("Altitude [m]")
+    mode_index = header.index("Mode name [-]")
+    mass_index = header.index("Total mass [kg]")
+    speed_index = header.index("TAS [m/s]")
+    roc_index = header.index("ROC [fpm]")
+    initial_mass = float(data[0][mass_index])
+
+    worst_power_loading = -math.inf
+    valid_points = 0
+    invalid_points = 0
+    for index, row in enumerate(data):
+        mode = row[mode_index].strip()
+        roc_ms = float(row[roc_index]) * 0.00508
+        if mode in {"takeoff", "landing"} or roc_ms <= 0.0:
+            continue
+
+        lower = index - 1 if (
+            index > 0 and data[index - 1][mode_index].strip() == mode
+        ) else index
+        upper = index + 1 if (
+            index + 1 < len(data) and
+            data[index + 1][mode_index].strip() == mode
+        ) else index
+        if lower == upper:
+            continue
+        time_delta = (
+            float(data[upper][time_index]) -
+            float(data[lower][time_index])
+        )
+        if time_delta <= 0.0:
+            continue
+
+        altitude_m = float(row[altitude_index])
+        speed_ms = float(row[speed_index])
+        beta = float(row[mass_index]) / initial_mass
+        acceleration_ms2 = (
+            float(data[upper][speed_index]) -
+            float(data[lower][speed_index])
+        ) / time_delta
+        try:
+            power_loading = airborne_power_loading(
+                altitude_m,
+                speed_ms,
+                beta,
+                roc_ms=roc_ms,
+                acceleration_ms2=acceleration_ms2,
+            )[0]
+        except ValueError:
+            invalid_points += 1
+            continue
+
+        valid_points += 1
+        worst_power_loading = max(worst_power_loading, power_loading)
+
+    if not math.isfinite(worst_power_loading):
+        raise AssertionError("Mission climb has no deck-covered points")
+    return worst_power_loading, valid_points, invalid_points
+
+
 def takeoff_distance(power_loading: float, beta: float) -> float:
     rho = isa_density(0.0)
     stall_speed = math.sqrt(2.0 * beta * WS / (rho * CLMAX_TO))
@@ -186,6 +256,9 @@ def takeoff_power_loading(beta: float) -> float:
 
 def main() -> None:
     beta = mission_betas()
+    climb_power_loading, climb_valid, climb_invalid = (
+        mission_climb_power_loading()
+    )
     checks = {
         "propeller_takeoff_constraint": takeoff_power_loading(beta["takeoff"]),
         "propeller_acceleration_constraint": airborne_power_loading(
@@ -194,15 +267,17 @@ def main() -> None:
         "propeller_cruise_constraint": airborne_power_loading(
             6000.0, 180.0, beta["cruise"]
         )[0],
-        "propeller_climb_constraint": airborne_power_loading(
-            3000.0, 120.0, beta["climb"], roc_ms=5.0
-        )[0],
+        "propeller_climb_constraint": climb_power_loading,
         "propeller_turn_constraint": airborne_power_loading(
             3000.0, 120.0, beta["cruise_end"], load_factor=2.5
         )[0],
     }
 
     print(f"Independent hand checks at W/S = {WS:.0f} N/m^2")
+    print(
+        "Mission climb deck coverage: "
+        f"valid={climb_valid}, invalid={climb_invalid}"
+    )
     for name, expected in checks.items():
         output_path = OUTPUT / f"{name}.csv"
         status = "program output not present"
