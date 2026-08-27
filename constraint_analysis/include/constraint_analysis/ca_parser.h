@@ -31,15 +31,6 @@ namespace constraint_analysis
         const text_config& config,
         Engine* engine);
 
-    struct mission_climb_condition
-    {
-        double altitude_m = 0.0;
-        double speed_ms = 0.0;
-        double climb_rate_ms = 0.0;
-        double acceleration_ms2 = 0.0;
-        double beta = 1.0;
-    };
-
     class readMission
     {
     public:
@@ -55,8 +46,7 @@ namespace constraint_analysis
         double get_total_range() const;
         double get_range_weighted_altitude() const;
         double get_range_weighted_tas() const;
-        mission_climb_condition get_climb_condition(
-            double altitude_m) const;
+        std::vector<climb_mission_point> get_climb_conditions() const;
 
         readMission(const std::filesystem::path missionCSV) : missionCSV(missionCSV)
         {
