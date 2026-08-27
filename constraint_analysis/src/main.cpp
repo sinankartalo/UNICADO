@@ -236,6 +236,51 @@ int main(int argc, char* argv[])
 
         const constraint_output output = tool.run(input);
 
+        if (is_propeller)
+        {
+            propeller_constraint_analysis propeller_analysis{atm};
+            const propeller_climb_coverage coverage =
+                propeller_analysis.assess_climb_coverage(input);
+
+            std::ofstream coverage_file(
+                output_directory / "propeller_climb_mission_coverage.csv");
+            coverage_file <<
+                "coverage_status,total_mission_points,valid_deck_points,"
+                "invalid_deck_points,coverage_fraction,"
+                "first_invalid_altitude_m,first_invalid_speed_ms,"
+                "first_invalid_advance_ratio,first_invalid_reason\n";
+            const double coverage_fraction =
+                coverage.total_mission_points == 0
+                    ? 0.0
+                    : static_cast<double>(coverage.valid_deck_points) /
+                        static_cast<double>(coverage.total_mission_points);
+            coverage_file
+                << (coverage.invalid_deck_points == 0
+                        ? "full_mission_coverage"
+                        : "partial_mission_coverage") << ","
+                << coverage.total_mission_points << ","
+                << coverage.valid_deck_points << ","
+                << coverage.invalid_deck_points << ","
+                << coverage_fraction << ","
+                << coverage.first_invalid_altitude_m << ","
+                << coverage.first_invalid_speed_ms << ","
+                << coverage.first_invalid_advance_ratio << ",\""
+                << coverage.first_invalid_reason << "\"\n";
+
+            if (coverage.invalid_deck_points > 0)
+            {
+                std::cout
+                    << "WARNING: Propeller climb uses partial mission coverage: "
+                    << coverage.valid_deck_points << "/"
+                    << coverage.total_mission_points
+                    << " points are inside the supplied deck. First invalid: "
+                    << "altitude=" << coverage.first_invalid_altitude_m
+                    << " m, V=" << coverage.first_invalid_speed_ms
+                    << " m/s, J=" << coverage.first_invalid_advance_ratio
+                    << ". See propeller_climb_mission_coverage.csv.\n";
+            }
+        }
+
         // ============================================================
         // 2. POST-PROCESSING
         // ============================================================
@@ -711,8 +756,9 @@ int main(int argc, char* argv[])
                      "supplied_UNICADO_propeller_deck\n"
                      "takeoff_ground_roll,implemented,"
                      "speed_integrated_ground_roll_with_deck_CT_and_CP\n"
-                     "airborne_constraints,implemented,"
-                     "cruise_climb_turn_and_acceleration_power_loading\n"
+                     "airborne_constraints,implemented_with_coverage_flag,"
+                     "climb_uses_only_supplied_deck_covered_mission_points;"
+                     "see_propeller_climb_mission_coverage.csv\n"
                      "vertical_constraints,implemented,"
                      "landing_stall_and_gust_wing_loading_limits\n"
                      "propeller_tip_mach,implemented,"
