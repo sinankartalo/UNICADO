@@ -94,6 +94,7 @@ namespace constraint_analysis
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double roc_ms = 0.0;
+        double acceleration_ms2 = 0.0;
 
         double beta_climb = 1.0;
     };
