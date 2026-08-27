@@ -195,12 +195,6 @@ namespace constraint_analysis
             xml_map_value(config, *selected_case,
                 "propeller_takeoff_rpm",
                 "engine/propeller/takeoff/RPM");
-            xml_map_value(config, *selected_case,
-                "propeller_continuous_rpm",
-                "engine/propeller/continuous/RPM");
-            xml_map_value(config, *selected_case,
-                "propeller_continuous_pitch_deg",
-                "engine/propeller/continuous/pitch");
         }
         else
         {
@@ -390,10 +384,6 @@ namespace constraint_analysis
                 xml_double(config, "propeller_count"));
             input.propeller.takeoff.rpm =
                 xml_double(config, "propeller_takeoff_rpm");
-            input.propeller.continuous.rpm =
-                xml_double(config, "propeller_continuous_rpm");
-            input.propeller.continuous.pitch_deg =
-                xml_double(config, "propeller_continuous_pitch_deg");
         }
         else if (propulsion == "jet")
         {
