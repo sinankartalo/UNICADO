@@ -522,7 +522,8 @@ namespace constraint_analysis
         return compute_airborne_constraint(
             input, "propeller_climb_constraint",
             input.climb.altitude_m, input.climb.speed_ms,
-            input.climb.beta_climb, 1.0, input.climb.roc_ms, 0.0);
+            input.climb.beta_climb, 1.0, input.climb.roc_ms,
+            input.climb.acceleration_ms2);
     }
 
     constraint_curve propeller_constraint_analysis::compute_turn_constraint(
@@ -1379,7 +1380,7 @@ namespace constraint_analysis
             case_input.load_factor = 1.0;
             case_input.climb_rate = roc;
             case_input.velocity = v;
-            case_input.acceleration = 0.0;
+            case_input.acceleration = input.climb.acceleration_ms2;
 
             const auto result = mattingly_airborne_case::compute(case_input);
 
