@@ -71,6 +71,30 @@ def prop_row(pitch_deg: float, advance_ratio: float) -> tuple[float, float, floa
     raise ValueError(f"J={advance_ratio} lies outside pitch={pitch_deg} deck data")
 
 
+def best_airborne_prop_row(
+    altitude_m: float, speed_ms: float
+) -> tuple[float, float, float, float, float, float]:
+    candidates = []
+    with PROP_CSV.open(encoding="utf-8-sig") as stream:
+        for row in csv.reader(stream):
+            pitch, advance_ratio, ct, cp, eta = map(float, row[:5])
+            if advance_ratio <= 0.0 or min(ct, cp, eta) <= 0.0:
+                continue
+            rpm = 60.0 * speed_ms / (advance_ratio * DIAMETER_M)
+            candidate_tip_mach = tip_mach(altitude_m, speed_ms, rpm)
+            if candidate_tip_mach <= TIP_MACH_LIMIT:
+                candidates.append(
+                    (cp / ct * rpm / 60.0 * DIAMETER_M,
+                     ct, cp, eta, rpm, pitch, advance_ratio)
+                )
+    if not candidates:
+        raise ValueError(
+            "No tip-Mach-feasible positive propeller deck point"
+        )
+    _, ct, cp, eta, rpm, pitch, advance_ratio = min(candidates)
+    return ct, cp, eta, rpm, pitch, advance_ratio
+
+
 def best_takeoff_prop_row(
     advance_ratio: float,
 ) -> tuple[float, float, float]:
@@ -144,9 +168,10 @@ def airborne_power_loading(
     thrust_to_weight = beta * (
         drag_to_weight + roc_ms / speed_ms + acceleration_ms2 / G0
     )
-    n = RPM / 60.0
-    advance_ratio = speed_ms / (n * DIAMETER_M)
-    ct, cp, eta = prop_row(45.0, advance_ratio)
+    ct, cp, eta, rpm, _, advance_ratio = best_airborne_prop_row(
+        altitude_m, speed_ms
+    )
+    n = rpm / 60.0
     power_to_thrust = (cp / ct) * n * DIAMETER_M
     return thrust_to_weight * power_to_thrust, advance_ratio, eta, cl
 
