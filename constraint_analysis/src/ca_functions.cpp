@@ -170,7 +170,7 @@ namespace constraint_analysis
         {
             const std::string message = error.what();
             return message.find(
-                       "outside the selected pitch slice in deck") !=
+                       "outside the selected pitch slice") !=
                        std::string::npos ||
                    message.find(
                        "Propeller deck produced an invalid operating point") !=
