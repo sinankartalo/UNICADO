@@ -35,7 +35,6 @@ namespace constraint_analysis
         double tip_mach_limit = 0.95;
         int count = 1;
         propeller_setting takeoff;
-        propeller_setting continuous;
     };
 
 
@@ -492,6 +491,11 @@ namespace constraint_analysis
             double altitude_m,
             double speed_ms,
             const propeller_setting& setting) const;
+
+        propeller_operating_point select_best_airborne_operating_point(
+            const constraint_input& input,
+            double altitude_m,
+            double speed_ms) const;
 
         propeller_takeoff_result solve_takeoff_ground_roll(
             const constraint_input& input,
