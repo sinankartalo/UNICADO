@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 
 # ============================================================
@@ -118,6 +119,64 @@ def clean_axes(ax):
     ax.spines["right"].set_visible(False)
     ax.grid(axis="x", alpha=0.16)
     ax.grid(axis="y", alpha=0.24)
+
+
+# Output-space tolerance assigned to each matching-chart constraint. The two
+# values are the fractional distances below and above the nominal boundary.
+# Keeping them separate allows asymmetric uncertainty intervals later without
+# changing the plotting implementation.
+constraint_tolerances = {
+    "Acceleration": (0.10, 0.10),
+    "Climb": (0.10, 0.10),
+    "Cruise": (0.10, 0.10),
+    "Max Mach": (0.10, 0.10),
+    "Supercruise": (0.10, 0.10),
+    "Takeoff": (0.10, 0.10),
+    "Turn": (0.10, 0.10),
+    "Landing": (0.10, 0.10),
+    "Stall speed": (0.10, 0.10),
+    "Gust": (0.10, 0.10),
+}
+
+
+def add_gradient_curve_band(
+        ax, x, nominal_y, color, lower_fraction, upper_fraction,
+        layers=14):
+    """Shade a curve tolerance band darkest at its nominal centreline."""
+    x = np.asarray(x, dtype=float)
+    nominal_y = np.asarray(nominal_y, dtype=float)
+
+    # The widest layer reaches the tolerance limits and is seen only at the
+    # edges. Progressively narrower translucent layers overlap near the
+    # nominal curve, creating a centre-dark/edge-light uncertainty band.
+    for scale in np.linspace(1.0, 1.0 / layers, layers):
+        lower_y = nominal_y * (1.0 - lower_fraction * scale)
+        upper_y = nominal_y * (1.0 + upper_fraction * scale)
+        ax.fill_between(
+            x,
+            lower_y,
+            upper_y,
+            color=color,
+            alpha=0.025,
+            linewidth=0.0,
+            zorder=1,
+        )
+
+
+def add_gradient_vertical_band(
+        ax, nominal_x, color, lower_fraction, upper_fraction, layers=14):
+    """Shade a vertical-limit tolerance band darkest at its nominal value."""
+    for scale in np.linspace(1.0, 1.0 / layers, layers):
+        lower_x = nominal_x * (1.0 - lower_fraction * scale)
+        upper_x = nominal_x * (1.0 + upper_fraction * scale)
+        ax.axvspan(
+            lower_x,
+            upper_x,
+            color=color,
+            alpha=0.025,
+            linewidth=0.0,
+            zorder=1,
+        )
 
 
 def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
@@ -497,13 +556,28 @@ vertical_limits = [
 ]
 
 x_data_max = envelope["wing_loading"].max()
-x_limit_max = max(vertical_limits, default=x_data_max)
+x_limit_max = max(
+    [
+        value * (1.0 + constraint_tolerances[name][1])
+        for name, value in (
+            ("Landing", landing_ws_limit),
+            ("Stall speed", stall_ws_limit),
+            ("Gust", gust_ws_limit),
+        )
+        if value is not None
+    ],
+    default=x_data_max,
+)
 x_max = max(x_data_max, x_limit_max) * 1.05
 
 y_min = 0.0
 y_max = max(
     envelope["thrust_to_weight"].max(),
-    max(df["thrust_to_weight"].max() for df in constraints.values())
+    max(
+        df["thrust_to_weight"].max()
+        * (1.0 + constraint_tolerances[name][1])
+        for name, df in constraints.items()
+    )
 )
 y_max *= 1.15
 
@@ -528,6 +602,15 @@ color_map = {
 }
 
 for name, df in constraints.items():
+    lower_fraction, upper_fraction = constraint_tolerances[name]
+    add_gradient_curve_band(
+        ax,
+        df["wing_loading"],
+        df["thrust_to_weight"],
+        color_map.get(name, "#7f7f7f"),
+        lower_fraction,
+        upper_fraction,
+    )
     ax.plot(
         df["wing_loading"],
         df["thrust_to_weight"],
@@ -647,6 +730,12 @@ ax.annotate(
 )
 
 if landing_ws_limit is not None:
+    add_gradient_vertical_band(
+        ax,
+        landing_ws_limit,
+        color_map["Landing"],
+        *constraint_tolerances["Landing"],
+    )
     ax.axvline(
         landing_ws_limit,
         color="#7b3294",
@@ -658,6 +747,12 @@ if landing_ws_limit is not None:
     )
 
 if stall_ws_limit is not None:
+    add_gradient_vertical_band(
+        ax,
+        stall_ws_limit,
+        color_map["Stall speed"],
+        *constraint_tolerances["Stall speed"],
+    )
     ax.axvline(
         stall_ws_limit,
         color=color_map["Stall speed"],
@@ -669,6 +764,12 @@ if stall_ws_limit is not None:
     )
 
 if gust_ws_limit is not None:
+    add_gradient_vertical_band(
+        ax,
+        gust_ws_limit,
+        color_map["Gust"],
+        *constraint_tolerances["Gust"],
+    )
     ax.axvline(
         gust_ws_limit,
         color=color_map["Gust"],
@@ -695,7 +796,16 @@ ax.spines["right"].set_visible(False)
 ax.grid(axis="x", alpha=0.18)
 ax.grid(axis="y", alpha=0.25)
 
+legend_handles, legend_labels = ax.get_legend_handles_labels()
+legend_handles.append(Patch(
+    facecolor="#7f7f7f",
+    edgecolor="none",
+    alpha=0.22,
+    label="Constraint tolerance bands (default ±10%)",
+))
+
 ax.legend(
+    handles=legend_handles,
     loc="upper left",
     bbox_to_anchor=(1.015, 1.0),
     borderaxespad=0.0,
