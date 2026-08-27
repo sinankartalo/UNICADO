@@ -123,6 +123,21 @@ namespace constraint_analysis
                     previous->advance_ratio <= advance_ratio &&
                     advance_ratio <= row.advance_ratio)
                 {
+                    // Do not interpolate across the transition from the
+                    // propulsive branch into windmilling/negative-thrust data.
+                    // Both tabulated endpoints must describe a positive,
+                    // power-consuming propulsive operating segment.
+                    if (previous->thrust_coefficient <= 0.0 ||
+                        previous->power_coefficient <= 0.0 ||
+                        previous->efficiency <= 0.0 ||
+                        row.thrust_coefficient <= 0.0 ||
+                        row.power_coefficient <= 0.0 ||
+                        row.efficiency <= 0.0)
+                    {
+                        throw std::runtime_error(
+                            "Propeller operating point crosses a non-positive "
+                            "deck segment.");
+                    }
                     const double fraction =
                         (advance_ratio - previous->advance_ratio) /
                         (row.advance_ratio - previous->advance_ratio);
@@ -174,6 +189,9 @@ namespace constraint_analysis
                        std::string::npos ||
                    message.find(
                        "Propeller deck produced an invalid operating point") !=
+                       std::string::npos ||
+                   message.find(
+                       "crosses a non-positive deck segment") !=
                        std::string::npos;
         }
     }
@@ -287,7 +305,8 @@ namespace constraint_analysis
 
         if (!std::isfinite(point.thrust_N) ||
             !std::isfinite(point.shaft_power_W) ||
-            point.thrust_N <= 0.0 || point.shaft_power_W <= 0.0)
+            point.thrust_N <= 0.0 || point.shaft_power_W <= 0.0 ||
+            !std::isfinite(point.efficiency) || point.efficiency <= 0.0)
         {
             throw std::runtime_error(
                 "Propeller deck produced an invalid operating point.");
