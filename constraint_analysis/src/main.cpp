@@ -267,6 +267,46 @@ int main(int argc, char* argv[])
                 << coverage.first_invalid_advance_ratio << ",\""
                 << coverage.first_invalid_reason << "\"\n";
 
+            std::ofstream climb_points_file(
+                output_directory / "propeller_climb_operating_points.csv");
+            climb_points_file <<
+                "altitude_m,speed_ms,roc_ms,acceleration_ms2,beta_climb,"
+                "rpm,pitch_deg,advance_ratio,CT,CP,eta,tip_mach,"
+                "tip_mach_limit,status\n";
+            for (const auto& mission_point : input.climb.mission_points)
+            {
+                try
+                {
+                    const auto point =
+                        propeller_analysis.select_best_airborne_operating_point(
+                            input,
+                            mission_point.altitude_m,
+                            mission_point.speed_ms);
+                    climb_points_file
+                        << mission_point.altitude_m << ","
+                        << mission_point.speed_ms << ","
+                        << mission_point.roc_ms << ","
+                        << mission_point.acceleration_ms2 << ","
+                        << mission_point.beta_climb << ","
+                        << point.rpm << "," << point.pitch_deg << ","
+                        << point.advance_ratio << ","
+                        << point.thrust_coefficient << ","
+                        << point.power_coefficient << ","
+                        << point.efficiency << "," << point.tip_mach << ","
+                        << point.tip_mach_limit << ",selected\n";
+                }
+                catch (const std::exception&)
+                {
+                    climb_points_file
+                        << mission_point.altitude_m << ","
+                        << mission_point.speed_ms << ","
+                        << mission_point.roc_ms << ","
+                        << mission_point.acceleration_ms2 << ","
+                        << mission_point.beta_climb
+                        << ",,,,,,,,,outside_automatic_selection_domain\n";
+                }
+            }
+
             if (coverage.invalid_deck_points > 0)
             {
                 std::cout
@@ -564,20 +604,17 @@ int main(int argc, char* argv[])
                 }
             }
             const std::vector<propeller_operating_point> points = {
-                propeller_analysis.evaluate(
-                    input, input.cruise.altitude_m, input.cruise.speed_ms,
-                    input.propeller.continuous),
-                propeller_analysis.evaluate(
+                propeller_analysis.select_best_airborne_operating_point(
+                    input, input.cruise.altitude_m, input.cruise.speed_ms),
+                propeller_analysis.select_best_airborne_operating_point(
                     input,
                     input.climb.representative_point.altitude_m,
-                    input.climb.representative_point.speed_ms,
-                    input.propeller.continuous),
-                propeller_analysis.evaluate(
-                    input, input.turn.altitude_m, input.turn.speed_ms,
-                    input.propeller.continuous),
-                propeller_analysis.evaluate(
+                    input.climb.representative_point.speed_ms),
+                propeller_analysis.select_best_airborne_operating_point(
+                    input, input.turn.altitude_m, input.turn.speed_ms),
+                propeller_analysis.select_best_airborne_operating_point(
                     input, input.acceleration.altitude_m,
-                    input.acceleration.speed_ms, input.propeller.continuous)
+                    input.acceleration.speed_ms)
             };
 
             std::ofstream file(
@@ -645,22 +682,17 @@ int main(int argc, char* argv[])
                 const char* curve;
                 double altitude_m;
                 double speed_ms;
-                propeller_setting setting;
             };
             const std::vector<capacity_case> capacity_cases = {
                 {"acceleration", "propeller_acceleration_constraint",
-                 input.acceleration.altitude_m, input.acceleration.speed_ms,
-                 input.propeller.continuous},
+                 input.acceleration.altitude_m, input.acceleration.speed_ms},
                 {"cruise", "propeller_cruise_constraint",
-                 input.cruise.altitude_m, input.cruise.speed_ms,
-                 input.propeller.continuous},
+                 input.cruise.altitude_m, input.cruise.speed_ms},
                 {"climb", "propeller_climb_constraint",
                  input.climb.representative_point.altitude_m,
-                 input.climb.representative_point.speed_ms,
-                 input.propeller.continuous},
+                 input.climb.representative_point.speed_ms},
                 {"turn", "propeller_turn_constraint",
-                 input.turn.altitude_m, input.turn.speed_ms,
-                 input.propeller.continuous},
+                 input.turn.altitude_m, input.turn.speed_ms},
             };
 
             std::ofstream capacity(
@@ -721,8 +753,9 @@ int main(int argc, char* argv[])
 
             for (const auto& item : capacity_cases)
             {
-                const auto point = propeller_analysis.evaluate(
-                    input, item.altitude_m, item.speed_ms, item.setting);
+                const auto point =
+                    propeller_analysis.select_best_airborne_operating_point(
+                        input, item.altitude_m, item.speed_ms);
                 const double required_W_N =
                     interpolate_envelope_thrust_to_weight(
                         find_curve(output, item.curve),
