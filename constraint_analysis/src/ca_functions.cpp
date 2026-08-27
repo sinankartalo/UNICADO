@@ -519,11 +519,76 @@ namespace constraint_analysis
     constraint_curve propeller_constraint_analysis::compute_climb_constraint(
         const constraint_input& input) const
     {
-        return compute_airborne_constraint(
-            input, "propeller_climb_constraint",
-            input.climb.altitude_m, input.climb.speed_ms,
-            input.climb.beta_climb, 1.0, input.climb.roc_ms,
-            input.climb.acceleration_ms2);
+        constraint_curve curve;
+        curve.name = "propeller_climb_constraint";
+
+        struct prepared_climb_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            propeller_operating_point propeller;
+        };
+
+        std::vector<prepared_climb_point> prepared_points;
+        prepared_points.reserve(input.climb.mission_points.size());
+        for (const auto& mission_point : input.climb.mission_points)
+        {
+            const double rho = atmosphere_.getDensity(mission_point.altitude_m);
+            prepared_points.push_back({
+                &mission_point,
+                constraint_utilities::compute_dynamic_pressure(
+                    rho, mission_point.speed_ms),
+                evaluate(
+                    input,
+                    mission_point.altitude_m,
+                    mission_point.speed_ms,
+                    input.propeller.continuous)
+            });
+        }
+
+        for (double ws = input.wing_loading_min;
+             ws <= input.wing_loading_max;
+             ws += input.wing_loading_step)
+        {
+            double worst_power_to_weight =
+                -std::numeric_limits<double>::infinity();
+
+            for (const auto& prepared : prepared_points)
+            {
+                const auto& mission_point = *prepared.mission;
+                mattingly_airborne_case_input airborne;
+                airborne.wing_loading = ws;
+                airborne.dynamic_pressure = prepared.dynamic_pressure;
+                airborne.alpha = 1.0;
+                airborne.beta = mission_point.beta_climb;
+                airborne.k1 = input.aircraft.polar.k;
+                airborne.k2 = 0.0;
+                airborne.cd0 = input.aircraft.polar.cd_0;
+                airborne.cdr = 0.0;
+                airborne.load_factor = 1.0;
+                airborne.climb_rate = mission_point.roc_ms;
+                airborne.velocity = mission_point.speed_ms;
+                airborne.acceleration = mission_point.acceleration_ms2;
+
+                const auto thrust_result =
+                    mattingly_airborne_case::compute(airborne);
+                const double power_to_weight =
+                    power_loading_from_thrust_loading(
+                        thrust_result.thrust_to_weight_sl,
+                        prepared.propeller);
+                worst_power_to_weight =
+                    std::max(worst_power_to_weight, power_to_weight);
+            }
+
+            if (!std::isfinite(worst_power_to_weight))
+            {
+                throw std::runtime_error(
+                    "Propeller climb mission scan produced no finite result.");
+            }
+            curve.points.push_back({ws, worst_power_to_weight});
+        }
+
+        return curve;
     }
 
     constraint_curve propeller_constraint_analysis::compute_turn_constraint(
@@ -1346,45 +1411,70 @@ namespace constraint_analysis
         constraint_curve curve;
         curve.name = "jet_climb_constraint";
 
-        const double h = input.climb.altitude_m;
-        const double v = input.climb.speed_ms;
-        const double roc = input.climb.roc_ms;
-        const double beta = input.climb.beta_climb;
+        struct prepared_climb_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            double thrust_lapse = 1.0;
+        };
 
-        const double rho = atmosphere_.getDensity(h);
-        const double q = constraint_utilities::compute_dynamic_pressure(rho, v);
-        const double mach = v / atmosphere_.getSpeedOfSound(h);
-
-        const double alpha = installed_thrust_lapse(
-            input,
-            atmosphere_,
-            mach,
-            h,
-            "maximum_continuous");
+        std::vector<prepared_climb_point> prepared_points;
+        prepared_points.reserve(input.climb.mission_points.size());
+        for (const auto& mission_point : input.climb.mission_points)
+        {
+            const double rho = atmosphere_.getDensity(mission_point.altitude_m);
+            const double mach = mission_point.speed_ms /
+                atmosphere_.getSpeedOfSound(mission_point.altitude_m);
+            prepared_points.push_back({
+                &mission_point,
+                constraint_utilities::compute_dynamic_pressure(
+                    rho, mission_point.speed_ms),
+                installed_thrust_lapse(
+                    input,
+                    atmosphere_,
+                    mach,
+                    mission_point.altitude_m,
+                    "maximum_continuous")
+            });
+        }
 
         for (double ws = input.wing_loading_min;
             ws <= input.wing_loading_max;
             ws += input.wing_loading_step)
         {
-            mattingly_airborne_case_input case_input;
-            case_input.wing_loading = ws;
-            case_input.dynamic_pressure = q;
-            case_input.alpha = alpha;
-            case_input.beta = beta;
+            double worst_thrust_to_weight =
+                -std::numeric_limits<double>::infinity();
 
-            case_input.k1 = input.aircraft.polar.k;
-            case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
-            case_input.cdr = 0.0;
+            for (const auto& prepared : prepared_points)
+            {
+                const auto& mission_point = *prepared.mission;
+                mattingly_airborne_case_input case_input;
+                case_input.wing_loading = ws;
+                case_input.dynamic_pressure = prepared.dynamic_pressure;
+                case_input.alpha = prepared.thrust_lapse;
+                case_input.beta = mission_point.beta_climb;
+                case_input.k1 = input.aircraft.polar.k;
+                case_input.k2 = 0.0;
+                case_input.cd0 = input.aircraft.polar.cd_0;
+                case_input.cdr = 0.0;
+                case_input.load_factor = 1.0;
+                case_input.climb_rate = mission_point.roc_ms;
+                case_input.velocity = mission_point.speed_ms;
+                case_input.acceleration = mission_point.acceleration_ms2;
 
-            case_input.load_factor = 1.0;
-            case_input.climb_rate = roc;
-            case_input.velocity = v;
-            case_input.acceleration = input.climb.acceleration_ms2;
+                const auto result =
+                    mattingly_airborne_case::compute(case_input);
+                worst_thrust_to_weight = std::max(
+                    worst_thrust_to_weight,
+                    result.thrust_to_weight_sl);
+            }
 
-            const auto result = mattingly_airborne_case::compute(case_input);
-
-            curve.points.push_back({ws, result.thrust_to_weight_sl});
+            if (!std::isfinite(worst_thrust_to_weight))
+            {
+                throw std::runtime_error(
+                    "Jet climb mission scan produced no finite result.");
+            }
+            curve.points.push_back({ws, worst_thrust_to_weight});
         }
 
         return curve;
