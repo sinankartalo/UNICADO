@@ -190,6 +190,9 @@ namespace constraint_analysis
                        std::string::npos ||
                    message.find(
                        "crosses a non-positive deck segment") !=
+                       std::string::npos ||
+                   message.find(
+                       "No tip-Mach-feasible positive propeller deck point") !=
                        std::string::npos;
         }
     }
@@ -311,6 +314,60 @@ namespace constraint_analysis
         }
 
         return point;
+    }
+
+    propeller_operating_point
+    propeller_constraint_analysis::select_best_airborne_operating_point(
+        const constraint_input& input,
+        double altitude_m,
+        double speed_ms) const
+    {
+        if (speed_ms <= 0.0 || input.propeller.diameter_m <= 0.0)
+            throw std::runtime_error(
+                "Automatic propeller selection requires positive speed and diameter.");
+
+        propeller_operating_point best;
+        double best_power_per_thrust =
+            std::numeric_limits<double>::infinity();
+
+        // Each positive deck row supplies J and pitch. With mission TAS and
+        // diameter known, n = V/(J D), hence RPM = 60 V/(J D). This removes
+        // the manually prescribed continuous-flight RPM and pitch.
+        for (const auto& row : read_propeller_deck(input.propeller.deck_path))
+        {
+            if (row.advance_ratio <= 0.0 ||
+                row.thrust_coefficient <= 0.0 ||
+                row.power_coefficient <= 0.0 ||
+                row.efficiency <= 0.0)
+                continue;
+
+            propeller_setting candidate;
+            candidate.pitch_deg = row.pitch_deg;
+            candidate.rpm =
+                60.0 * speed_ms /
+                (row.advance_ratio * input.propeller.diameter_m);
+
+            const auto point = evaluate(
+                input, altitude_m, speed_ms, candidate);
+            if (!point.tip_mach_feasible)
+                continue;
+
+            const double power_per_thrust =
+                point.shaft_power_W / point.thrust_N;
+            if (power_per_thrust < best_power_per_thrust)
+            {
+                best_power_per_thrust = power_per_thrust;
+                best = point;
+            }
+        }
+
+        if (!std::isfinite(best_power_per_thrust))
+        {
+            throw std::runtime_error(
+                "No tip-Mach-feasible positive propeller deck point for "
+                "automatic RPM/pitch selection.");
+        }
+        return best;
     }
 
     constraint_curve propeller_constraint_analysis::compute_takeoff_constraint(
@@ -492,8 +549,8 @@ namespace constraint_analysis
         const double rho = atmosphere_.getDensity(altitude_m);
         const double q =
             constraint_utilities::compute_dynamic_pressure(rho, speed_ms);
-        const auto operating_point = evaluate(
-            input, altitude_m, speed_ms, input.propeller.continuous);
+        const auto operating_point = select_best_airborne_operating_point(
+            input, altitude_m, speed_ms);
 
         for (double ws = input.wing_loading_min;
              ws <= input.wing_loading_max;
@@ -568,11 +625,10 @@ namespace constraint_analysis
                     &mission_point,
                     constraint_utilities::compute_dynamic_pressure(
                         rho, mission_point.speed_ms),
-                    evaluate(
+                    select_best_airborne_operating_point(
                         input,
                         mission_point.altitude_m,
-                        mission_point.speed_ms,
-                        input.propeller.continuous)
+                        mission_point.speed_ms)
                 });
             }
             catch (const std::exception& error)
@@ -640,17 +696,14 @@ namespace constraint_analysis
         propeller_climb_coverage coverage;
         coverage.total_mission_points = input.climb.mission_points.size();
 
-        const double rotations_per_second =
-            input.propeller.continuous.rpm / 60.0;
         for (const auto& mission_point : input.climb.mission_points)
         {
             try
             {
-                (void)evaluate(
+                (void)select_best_airborne_operating_point(
                     input,
                     mission_point.altitude_m,
-                    mission_point.speed_ms,
-                    input.propeller.continuous);
+                    mission_point.speed_ms);
                 ++coverage.valid_deck_points;
             }
             catch (const std::exception& error)
@@ -664,9 +717,7 @@ namespace constraint_analysis
                     coverage.first_invalid_altitude_m =
                         mission_point.altitude_m;
                     coverage.first_invalid_speed_ms = mission_point.speed_ms;
-                    coverage.first_invalid_advance_ratio =
-                        mission_point.speed_ms /
-                        (rotations_per_second * input.propeller.diameter_m);
+                    coverage.first_invalid_advance_ratio = 0.0;
                     coverage.first_invalid_reason = error.what();
                 }
             }
