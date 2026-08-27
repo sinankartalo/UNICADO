@@ -77,8 +77,7 @@
 
         <climb ID="CL_BASELINE">
           <active><value>true</value></active>
-          <!-- TAS, ROC, acceleration and beta are interpolated from mission data. -->
-          <altitude><value>3000.0</value></altitude>
+          <!-- The complete mission climb segment defines this constraint. -->
         </climb>
 
         <constant_speed_turn ID="TURN_BASELINE">
@@ -154,8 +153,7 @@
 
         <climb ID="CL_SHORT">
           <active><value>true</value></active>
-          <!-- TAS, ROC, acceleration and beta are interpolated from mission data. -->
-          <altitude><value>3000.0</value></altitude>
+          <!-- The complete mission climb segment defines this constraint. -->
         </climb>
 
         <constant_speed_turn ID="TURN_SHORT">
