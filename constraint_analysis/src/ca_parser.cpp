@@ -325,13 +325,6 @@ namespace constraint_analysis
             "climb_altitude_m",
             standard_set + "climb/altitude");
         xml_map_value(config, *standard_set_node,
-            "climb_speed_ms",
-            standard_set + "climb/speed");
-        xml_map_value(config, *standard_set_node,
-            "climb_roc_ms",
-            standard_set + "climb/climb_rate");
-
-        xml_map_value(config, *standard_set_node,
             "turn_altitude_m",
             standard_set + "constant_speed_turn/altitude");
         xml_map_value(config, *standard_set_node,
@@ -464,9 +457,12 @@ namespace constraint_analysis
         input.gust.beta_gust = input.cruise.beta_cruise;
 
         input.climb.altitude_m = xml_double(config, "climb_altitude_m");
-        input.climb.speed_ms = xml_double(config, "climb_speed_ms");
-        input.climb.roc_ms = xml_double(config, "climb_roc_ms");
-        input.climb.beta_climb = mission_data.get_beta("climb", input.climb.altitude_m);
+        const mission_climb_condition climb_condition =
+            mission_data.get_climb_condition(input.climb.altitude_m);
+        input.climb.speed_ms = climb_condition.speed_ms;
+        input.climb.roc_ms = climb_condition.climb_rate_ms;
+        input.climb.acceleration_ms2 = climb_condition.acceleration_ms2;
+        input.climb.beta_climb = climb_condition.beta;
 
         input.turn.altitude_m = xml_double(config, "turn_altitude_m");
         input.turn.speed_ms = xml_double(config, "turn_speed_ms");
@@ -510,6 +506,12 @@ namespace constraint_analysis
                 << "V = " << input.gust.speed_ms << " m/s, altitude = "
                 << input.gust.altitude_m << " m, beta = "
                 << input.gust.beta_gust << '\n';
+        std::cout << "Climb constraint flight condition interpolated from mission: "
+                  << "V = " << input.climb.speed_ms << " m/s, ROC = "
+                  << input.climb.roc_ms << " m/s, dV/dt = "
+                  << input.climb.acceleration_ms2 << " m/s^2, altitude = "
+                  << input.climb.altitude_m << " m, beta = "
+                  << input.climb.beta_climb << '\n';
         std::cout << "Mission range from CSV = "
                 << input.range.range_m << " m\n";
         std::cout << "Range-weighted altitude from mission CSV = "
@@ -543,6 +545,8 @@ namespace constraint_analysis
         int mode_index = -1;
         int range_index = -1;
         int tas_index = -1;
+        int time_index = -1;
+        int roc_index = -1;
         int index = 0;
 
         while (std::getline(header_stream, column, ';'))
@@ -569,6 +573,14 @@ namespace constraint_analysis
             {
                 tas_index = index;
             }
+            else if (column == "Time [s]")
+            {
+                time_index = index;
+            }
+            else if (column == "ROC [fpm]")
+            {
+                roc_index = index;
+            }
 
             ++index;
         }
@@ -577,10 +589,13 @@ namespace constraint_analysis
             mass_index < 0 ||
             mode_index < 0 ||
             range_index < 0 ||
-            tas_index < 0)
+            tas_index < 0 ||
+            time_index < 0 ||
+            roc_index < 0)
         {
             throw std::runtime_error(
-                "Mission CSV must contain Range [m], Altitude [m], TAS [m/s], Total mass [kg], and Mode name [-].");
+                "Mission CSV must contain Time [s], Range [m], Altitude [m], "
+                "TAS [m/s], ROC [fpm], Total mass [kg], and Mode name [-].");
         }
 
         while (std::getline(file, line))
@@ -595,7 +610,8 @@ namespace constraint_analysis
             }
 
             const int required_size =
-                std::max({range_index, altitude_index, tas_index, mass_index, mode_index}) + 1;
+                std::max({range_index, altitude_index, tas_index, mass_index,
+                          mode_index, time_index, roc_index}) + 1;
 
             if (static_cast<int>(row.size()) < required_size)
             {
@@ -608,6 +624,9 @@ namespace constraint_analysis
                 this->total_mass.push_back(std::stod(row[mass_index]));
                 this->range.push_back(std::stod(row[range_index]));
                 this->tas.push_back(std::stod(row[tas_index]));
+                this->time_s.push_back(std::stod(row[time_index]));
+                this->climb_rate_ms.push_back(
+                    std::stod(row[roc_index]) * 0.00508);
                 this->mode_name.push_back(row[mode_index]);
             }
             catch (...)
@@ -620,6 +639,77 @@ namespace constraint_analysis
         {
             throw std::runtime_error("Mission CSV contains no valid data rows.");
         }
+    }
+
+    mission_climb_condition readMission::get_climb_condition(
+        double requested_altitude_m) const
+    {
+        std::size_t lower = this->altitude.size();
+        std::size_t upper = this->altitude.size();
+
+        for (std::size_t i = 1; i < this->altitude.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i - 1]) != "climb" ||
+                trim_copy(this->mode_name[i]) != "climb")
+            {
+                continue;
+            }
+
+            const double h0 = this->altitude[i - 1];
+            const double h1 = this->altitude[i];
+            if (h0 <= requested_altitude_m && requested_altitude_m <= h1)
+            {
+                lower = i - 1;
+                upper = i;
+                break;
+            }
+        }
+
+        if (lower == this->altitude.size())
+        {
+            throw std::runtime_error(
+                "Mission climb data do not bracket requested altitude: " +
+                std::to_string(requested_altitude_m) + " m.");
+        }
+
+        const double altitude_delta =
+            this->altitude[upper] - this->altitude[lower];
+        const double time_delta = this->time_s[upper] - this->time_s[lower];
+        if (altitude_delta <= 0.0 || time_delta <= 0.0)
+        {
+            throw std::runtime_error(
+                "Mission climb data must increase in altitude and time.");
+        }
+
+        const double fraction =
+            (requested_altitude_m - this->altitude[lower]) / altitude_delta;
+        const auto interpolate = [fraction](double low, double high)
+        {
+            return low + fraction * (high - low);
+        };
+
+        mission_climb_condition result;
+        result.altitude_m = requested_altitude_m;
+        result.speed_ms = interpolate(this->tas[lower], this->tas[upper]);
+        result.climb_rate_ms = interpolate(
+            this->climb_rate_ms[lower], this->climb_rate_ms[upper]);
+        result.acceleration_ms2 =
+            (this->tas[upper] - this->tas[lower]) / time_delta;
+        result.beta = interpolate(
+            this->total_mass[lower], this->total_mass[upper]) /
+            this->total_mass.front();
+
+        if (!std::isfinite(result.speed_ms) || result.speed_ms <= 0.0 ||
+            !std::isfinite(result.climb_rate_ms) ||
+            result.climb_rate_ms <= 0.0 ||
+            !std::isfinite(result.acceleration_ms2) ||
+            !std::isfinite(result.beta) || result.beta <= 0.0)
+        {
+            throw std::runtime_error(
+                "Mission climb interpolation produced an invalid condition.");
+        }
+
+        return result;
     }
 
     auto readMission::get_beta(
