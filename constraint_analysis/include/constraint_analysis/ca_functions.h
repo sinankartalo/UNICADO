@@ -475,9 +475,6 @@ namespace constraint_analysis
         constraint_curve compute_climb_constraint(const constraint_input& input) const;
         constraint_curve compute_turn_constraint(const constraint_input& input) const;
 
-        propeller_climb_coverage assess_climb_coverage(
-            const constraint_input& input) const;
-
     private:
         const atmosphere& atmosphere_;
     };
@@ -506,6 +503,9 @@ namespace constraint_analysis
         constraint_curve compute_cruise_constraint(const constraint_input& input) const;
         constraint_curve compute_climb_constraint(const constraint_input& input) const;
         constraint_curve compute_turn_constraint(const constraint_input& input) const;
+
+        propeller_climb_coverage assess_climb_coverage(
+            const constraint_input& input) const;
 
     private:
         constraint_curve compute_airborne_constraint(
