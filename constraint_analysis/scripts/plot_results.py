@@ -225,6 +225,21 @@ analysis_label = case_labels.get(
     f"{'Propeller' if propeller_mode else 'Jet'} — {case_id}",
 )
 
+propeller_climb_coverage_note = None
+if propeller_mode:
+    coverage_path = os.path.join(
+        output_dir, "propeller_climb_mission_coverage.csv"
+    )
+    if os.path.exists(coverage_path):
+        coverage = pd.read_csv(coverage_path).iloc[0]
+        if coverage["coverage_status"] == "partial_mission_coverage":
+            propeller_climb_coverage_note = (
+                "Climb constraint uses partial mission coverage: "
+                f"{int(coverage['valid_deck_points'])}/"
+                f"{int(coverage['total_mission_points'])} points "
+                "inside supplied propeller deck"
+            )
+
 # Keep the deliverable aligned with the lecture workflow.  The existing
 # matching chart and active-constraint figure remain part of the output; the
 # added work is limited to sensitivity plots and classical carpet studies.
@@ -772,6 +787,24 @@ ax.set_title(
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
 
+if propeller_climb_coverage_note:
+    ax.text(
+        0.01,
+        0.02,
+        propeller_climb_coverage_note,
+        transform=ax.transAxes,
+        fontsize=8.8,
+        color="#7c2d12",
+        va="bottom",
+        bbox=dict(
+            boxstyle="round,pad=0.3",
+            facecolor="#fff7ed",
+            edgecolor="#fdba74",
+            alpha=0.94,
+        ),
+        zorder=10,
+    )
+
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
 
@@ -884,6 +917,23 @@ ax.set_title(
 )
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
+if propeller_climb_coverage_note:
+    ax.text(
+        0.01,
+        0.02,
+        propeller_climb_coverage_note,
+        transform=ax.transAxes,
+        fontsize=8.8,
+        color="#7c2d12",
+        va="bottom",
+        bbox=dict(
+            boxstyle="round,pad=0.3",
+            facecolor="#fff7ed",
+            edgecolor="#fdba74",
+            alpha=0.94,
+        ),
+        zorder=10,
+    )
 ax.set_xlim(x_min, tolerance_x_max)
 ax.set_ylim(y_min, tolerance_y_max)
 ax.spines["top"].set_visible(False)
