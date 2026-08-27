@@ -245,6 +245,17 @@ namespace constraint_analysis
         double integrated_ground_roll_m = 0.0;
         std::vector<propeller_takeoff_step> steps;
     };
+
+    struct propeller_climb_coverage
+    {
+        std::size_t total_mission_points = 0;
+        std::size_t valid_deck_points = 0;
+        std::size_t invalid_deck_points = 0;
+        double first_invalid_altitude_m = 0.0;
+        double first_invalid_speed_ms = 0.0;
+        double first_invalid_advance_ratio = 0.0;
+        std::string first_invalid_reason;
+    };
 }
 
 // ============================================================
@@ -463,6 +474,9 @@ namespace constraint_analysis
         constraint_curve compute_cruise_constraint(const constraint_input& input) const;
         constraint_curve compute_climb_constraint(const constraint_input& input) const;
         constraint_curve compute_turn_constraint(const constraint_input& input) const;
+
+        propeller_climb_coverage assess_climb_coverage(
+            const constraint_input& input) const;
 
     private:
         const atmosphere& atmosphere_;
