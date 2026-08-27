@@ -255,39 +255,9 @@ namespace constraint_analysis
         point.advance_ratio =
             speed_ms / (rotations_per_second * input.propeller.diameter_m);
 
-        // The three pitch slices in the supplied deck do not share the same
-        // J range.  Keep test operation on an actual slice and inside that
-        // slice instead of silently extrapolating.
-        double minimum_j = 0.0;
-        double maximum_j = 0.0;
-        if (std::abs(setting.pitch_deg - 15.0) < 1.0e-9)
-        {
-            minimum_j = 0.0;
-            maximum_j = 1.05;
-        }
-        else if (std::abs(setting.pitch_deg - 30.0) < 1.0e-9)
-        {
-            minimum_j = 0.5;
-            maximum_j = 1.5;
-        }
-        else if (std::abs(setting.pitch_deg - 45.0) < 1.0e-9)
-        {
-            minimum_j = 0.75;
-            maximum_j = 2.8;
-        }
-        else
-        {
-            throw std::runtime_error(
-                "Test propeller deck supports pitch 15, 30, or 45 deg.");
-        }
-
-        if (point.advance_ratio < minimum_j ||
-            point.advance_ratio > maximum_j)
-        {
-            throw std::runtime_error(
-                "Propeller operating point is outside the selected pitch slice.");
-        }
-
+        // The deck itself is the authority for the available pitch/J domain.
+        // Avoid duplicated hard-coded slice limits, which can disagree with
+        // exact deck rows selected by the automatic RPM calculation.
         const auto deck_row = interpolate_propeller_pitch_slice(
             input.propeller.deck_path,
             setting.pitch_deg,
