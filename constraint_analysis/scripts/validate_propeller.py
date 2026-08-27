@@ -294,9 +294,9 @@ def main() -> None:
 
     if not all(math.isfinite(value) and value > 0.0 for value in checks.values()):
         raise AssertionError("All propeller power-loading checks must be finite and positive")
-    if not (checks["propeller_acceleration_constraint"] >
+    if not (checks["propeller_climb_constraint"] >
+            checks["propeller_acceleration_constraint"] >
             checks["propeller_turn_constraint"] >
-            checks["propeller_climb_constraint"] >
             checks["propeller_cruise_constraint"]):
         raise AssertionError("Airborne constraint ordering is physically inconsistent")
 
