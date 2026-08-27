@@ -157,7 +157,7 @@ def add_gradient_curve_band(
             lower_y,
             upper_y,
             color=color,
-            alpha=0.025,
+            alpha=0.050,
             linewidth=0.0,
             zorder=1,
         )
@@ -173,7 +173,7 @@ def add_gradient_vertical_band(
             lower_x,
             upper_x,
             color=color,
-            alpha=0.025,
+            alpha=0.050,
             linewidth=0.0,
             zorder=1,
         )
@@ -231,6 +231,7 @@ analysis_label = case_labels.get(
 if propeller_mode:
     plot_allowlist = {
         "01_matching_chart_professional",
+        "01_matching_chart_with_tolerance_bands",
         "02_active_constraint_regions",
         "03_propeller_performance_map",
         "04_cd0_parameter_sensitivity",
@@ -240,6 +241,7 @@ if propeller_mode:
 else:
     plot_allowlist = {
         "01_matching_chart_professional",
+        "01_matching_chart_with_tolerance_bands",
         "02_active_constraint_regions",
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
@@ -556,7 +558,10 @@ vertical_limits = [
 ]
 
 x_data_max = envelope["wing_loading"].max()
-x_limit_max = max(
+x_limit_max = max(vertical_limits, default=x_data_max)
+x_max = max(x_data_max, x_limit_max) * 1.05
+
+tolerance_x_limit_max = max(
     [
         value * (1.0 + constraint_tolerances[name][1])
         for name, value in (
@@ -568,10 +573,16 @@ x_limit_max = max(
     ],
     default=x_data_max,
 )
-x_max = max(x_data_max, x_limit_max) * 1.05
+tolerance_x_max = max(x_data_max, tolerance_x_limit_max) * 1.05
 
 y_min = 0.0
 y_max = max(
+    envelope["thrust_to_weight"].max(),
+    max(df["thrust_to_weight"].max() for df in constraints.values())
+)
+y_max *= 1.15
+
+tolerance_y_max = max(
     envelope["thrust_to_weight"].max(),
     max(
         df["thrust_to_weight"].max()
@@ -579,7 +590,7 @@ y_max = max(
         for name, df in constraints.items()
     )
 )
-y_max *= 1.15
+tolerance_y_max *= 1.15
 
 
 # ============================================================
@@ -602,15 +613,6 @@ color_map = {
 }
 
 for name, df in constraints.items():
-    lower_fraction, upper_fraction = constraint_tolerances[name]
-    add_gradient_curve_band(
-        ax,
-        df["wing_loading"],
-        df["thrust_to_weight"],
-        color_map.get(name, "#7f7f7f"),
-        lower_fraction,
-        upper_fraction,
-    )
     ax.plot(
         df["wing_loading"],
         df["thrust_to_weight"],
@@ -730,12 +732,6 @@ ax.annotate(
 )
 
 if landing_ws_limit is not None:
-    add_gradient_vertical_band(
-        ax,
-        landing_ws_limit,
-        color_map["Landing"],
-        *constraint_tolerances["Landing"],
-    )
     ax.axvline(
         landing_ws_limit,
         color="#7b3294",
@@ -747,12 +743,6 @@ if landing_ws_limit is not None:
     )
 
 if stall_ws_limit is not None:
-    add_gradient_vertical_band(
-        ax,
-        stall_ws_limit,
-        color_map["Stall speed"],
-        *constraint_tolerances["Stall speed"],
-    )
     ax.axvline(
         stall_ws_limit,
         color=color_map["Stall speed"],
@@ -764,12 +754,6 @@ if stall_ws_limit is not None:
     )
 
 if gust_ws_limit is not None:
-    add_gradient_vertical_band(
-        ax,
-        gust_ws_limit,
-        color_map["Gust"],
-        *constraint_tolerances["Gust"],
-    )
     ax.axvline(
         gust_ws_limit,
         color=color_map["Gust"],
@@ -796,16 +780,7 @@ ax.spines["right"].set_visible(False)
 ax.grid(axis="x", alpha=0.18)
 ax.grid(axis="y", alpha=0.25)
 
-legend_handles, legend_labels = ax.get_legend_handles_labels()
-legend_handles.append(Patch(
-    facecolor="#7f7f7f",
-    edgecolor="none",
-    alpha=0.22,
-    label="Constraint tolerance bands (default ±10%)",
-))
-
 ax.legend(
-    handles=legend_handles,
     loc="upper left",
     bbox_to_anchor=(1.015, 1.0),
     borderaxespad=0.0,
@@ -816,6 +791,125 @@ ax.legend(
 
 fig.subplots_adjust(right=0.79)
 save_plot("01_matching_chart_professional")
+
+
+# ============================================================
+# Plot 1b: Matching chart with gradient tolerance bands
+# ============================================================
+fig, ax = plt.subplots(figsize=(13.5, 6.8))
+
+for name, df in constraints.items():
+    color = color_map.get(name, "#7f7f7f")
+    lower_fraction, upper_fraction = constraint_tolerances[name]
+    add_gradient_curve_band(
+        ax,
+        df["wing_loading"],
+        df["thrust_to_weight"],
+        color,
+        lower_fraction,
+        upper_fraction,
+    )
+    ax.plot(
+        df["wing_loading"],
+        df["thrust_to_weight"],
+        label=name,
+        color=color,
+        alpha=0.95,
+        linewidth=1.8,
+        zorder=3,
+    )
+
+shade_feasible_design_region(ax, tolerance_y_max)
+
+ax.plot(
+    envelope["wing_loading"],
+    envelope["thrust_to_weight"],
+    color="black",
+    linewidth=3.2,
+    label="Nominal envelope",
+    zorder=5,
+)
+
+ax.scatter(
+    aircraft_ws,
+    aircraft_tw,
+    s=85,
+    color="#d62728",
+    edgecolor="white",
+    linewidth=1.4,
+    zorder=6,
+    label="Aircraft point from aero Sref",
+)
+ax.scatter(
+    best_ws,
+    best_tw,
+    s=115,
+    marker="*",
+    color="#2ca02c",
+    edgecolor="white",
+    linewidth=1.2,
+    zorder=7,
+    label="Best nominal design point",
+)
+
+vertical_band_specs = (
+    ("Landing", landing_ws_limit, "--", 1.7, "Landing max"),
+    ("Stall speed", stall_ws_limit, ":", 2.0, "Stall max"),
+    ("Gust", gust_ws_limit, "-.", 1.7, "Gust min"),
+)
+for name, limit, linestyle, linewidth, label in vertical_band_specs:
+    if limit is None:
+        continue
+    color = color_map[name]
+    add_gradient_vertical_band(
+        ax,
+        limit,
+        color,
+        *constraint_tolerances[name],
+    )
+    ax.axvline(
+        limit,
+        color=color,
+        linestyle=linestyle,
+        linewidth=linewidth,
+        alpha=0.95,
+        label=f"{label} ({limit:.0f})",
+        zorder=4,
+    )
+
+ax.set_title(
+    analysis_title("Constraint Analysis Matching Chart — Tolerance Bands"),
+    pad=12,
+    fontweight="semibold",
+)
+ax.set_xlabel("Wing Loading, W/S [N/m²]")
+ax.set_ylabel(y_axis_label)
+ax.set_xlim(x_min, tolerance_x_max)
+ax.set_ylim(y_min, tolerance_y_max)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.grid(axis="x", alpha=0.18)
+ax.grid(axis="y", alpha=0.25)
+
+tolerance_handles, tolerance_labels = ax.get_legend_handles_labels()
+tolerance_handles.append(Patch(
+    facecolor="#7f7f7f",
+    edgecolor="none",
+    alpha=0.42,
+    label="Gradient tolerance bands (default ±10%)",
+))
+ax.legend(
+    handles=tolerance_handles,
+    loc="upper left",
+    bbox_to_anchor=(1.015, 1.0),
+    borderaxespad=0.0,
+    frameon=False,
+    handlelength=2.4,
+    labelspacing=0.7,
+)
+
+fig.subplots_adjust(right=0.79)
+save_plot("01_matching_chart_with_tolerance_bands")
 
 
 # ============================================================
