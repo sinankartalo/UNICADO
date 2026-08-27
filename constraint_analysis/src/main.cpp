@@ -523,7 +523,9 @@ int main(int argc, char* argv[])
                     input, input.cruise.altitude_m, input.cruise.speed_ms,
                     input.propeller.continuous),
                 propeller_analysis.evaluate(
-                    input, input.climb.altitude_m, input.climb.speed_ms,
+                    input,
+                    input.climb.representative_point.altitude_m,
+                    input.climb.representative_point.speed_ms,
                     input.propeller.continuous),
                 propeller_analysis.evaluate(
                     input, input.turn.altitude_m, input.turn.speed_ms,
@@ -608,7 +610,8 @@ int main(int argc, char* argv[])
                  input.cruise.altitude_m, input.cruise.speed_ms,
                  input.propeller.continuous},
                 {"climb", "propeller_climb_constraint",
-                 input.climb.altitude_m, input.climb.speed_ms,
+                 input.climb.representative_point.altitude_m,
+                 input.climb.representative_point.speed_ms,
                  input.propeller.continuous},
                 {"turn", "propeller_turn_constraint",
                  input.turn.altitude_m, input.turn.speed_ms,
