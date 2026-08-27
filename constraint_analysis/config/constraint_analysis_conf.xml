@@ -77,9 +77,8 @@
 
         <climb ID="CL_BASELINE">
           <active><value>true</value></active>
+          <!-- TAS, ROC, acceleration and beta are interpolated from mission data. -->
           <altitude><value>3000.0</value></altitude>
-          <speed><value>120.0</value></speed>
-          <climb_rate><value>5.0</value></climb_rate>
         </climb>
 
         <constant_speed_turn ID="TURN_BASELINE">
@@ -155,9 +154,8 @@
 
         <climb ID="CL_SHORT">
           <active><value>true</value></active>
+          <!-- TAS, ROC, acceleration and beta are interpolated from mission data. -->
           <altitude><value>3000.0</value></altitude>
-          <speed><value>120.0</value></speed>
-          <climb_rate><value>5.0</value></climb_rate>
         </climb>
 
         <constant_speed_turn ID="TURN_SHORT">
