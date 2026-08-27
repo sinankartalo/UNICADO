@@ -129,10 +129,8 @@ namespace constraint_analysis
                     // power-consuming propulsive operating segment.
                     if (previous->thrust_coefficient <= 0.0 ||
                         previous->power_coefficient <= 0.0 ||
-                        previous->efficiency <= 0.0 ||
                         row.thrust_coefficient <= 0.0 ||
-                        row.power_coefficient <= 0.0 ||
-                        row.efficiency <= 0.0)
+                        row.power_coefficient <= 0.0)
                     {
                         throw std::runtime_error(
                             "Propeller operating point crosses a non-positive "
