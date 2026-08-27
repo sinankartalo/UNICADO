@@ -285,10 +285,6 @@
             <takeoff>
               <RPM><value>1200.0</value></RPM>
             </takeoff>
-            <continuous>
-              <RPM><value>1200.0</value></RPM>
-              <pitch><value>45.0</value></pitch>
-            </continuous>
           </propeller>
         </engine>
 
