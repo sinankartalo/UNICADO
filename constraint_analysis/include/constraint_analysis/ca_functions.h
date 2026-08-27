@@ -89,14 +89,23 @@ namespace constraint_analysis
         double beta_supercruise = 1.0;
     };
 
-    struct climb_constraint
+    struct climb_mission_point
     {
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double roc_ms = 0.0;
         double acceleration_ms2 = 0.0;
-
         double beta_climb = 1.0;
+    };
+
+    struct climb_constraint
+    {
+        // Complete mission climb history used to build a worst-case envelope.
+        std::vector<climb_mission_point> mission_points;
+
+        // Point with the largest kinematic energy demand. Retained only for
+        // diagnostics that need one representative climb operating condition.
+        climb_mission_point representative_point;
     };
 
     struct cruise_constraint
