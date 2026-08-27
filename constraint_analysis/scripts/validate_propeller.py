@@ -54,7 +54,10 @@ def prop_row(pitch_deg: float, advance_ratio: float) -> tuple[float, float, floa
 
     for left, right in zip(rows, rows[1:]):
         if left[0] <= advance_ratio <= right[0]:
-            if any(value <= 0.0 for value in (*left[1:], *right[1:])):
+            if any(
+                value <= 0.0
+                for value in (left[1], left[2], right[1], right[2])
+            ):
                 raise ValueError(
                     f"J={advance_ratio} crosses a non-positive "
                     f"pitch={pitch_deg} deck segment"
