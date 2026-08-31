@@ -5,7 +5,7 @@
   <!-- Default selection                                      -->
   <!-- ====================================================== -->
   <control_settings>
-    <active_constraint_case_ID><value>UNICADO_TEST_ENGINE</value></active_constraint_case_ID>
+    <active_constraint_case_ID><value>JET_V2527A5_BASELINE</value></active_constraint_case_ID>
   </control_settings>
 
   <program_settings>
@@ -15,7 +15,7 @@
     <!-- ==================================================== -->
     <constraint_sets>
 
-      <!-- Used by both UNICADO_TEST_ENGINE and UNICADO_REAL_ENGINE -->
+      <!-- Baseline requirements shared by all non-specialized cases. -->
       <standard_set ID="BASELINE_STANDARD_SET">
 
         <!-- Ground performance -->
@@ -239,9 +239,9 @@
     <!-- ==================================================== -->
     <!-- Analysis cases                                       -->
     <!-- ==================================================== -->
-    <constraint_cases active_case_ID="UNICADO_TEST_ENGINE">
+    <constraint_cases active_case_ID="JET_V2527A5_BASELINE">
 
-      <constraint_case ID="UNICADO_TEST_ENGINE"
+      <constraint_case ID="JET_V2527A5_BASELINE"
                        description="SMR-01 analysis with the V2527-A5 test engine deck">
         <aircraft>
           <aerodynamics>
@@ -269,7 +269,7 @@
         </constraints>
       </constraint_case>
 
-      <constraint_case ID="UNICADO_REAL_ENGINE"
+      <constraint_case ID="JET_PW1127GJM_BASELINE"
                        description="SMR-01 analysis with the PW1127G-JM mission engine deck">
         <aircraft>
           <aerodynamics>
@@ -297,7 +297,7 @@
         </constraints>
       </constraint_case>
 
-      <constraint_case ID="SHORT_FIELD_DEMO"
+      <constraint_case ID="JET_PW1127GJM_SHORT_FIELD"
                        description="PW1127G-JM real-engine short-field ground-roll sizing case">
         <aircraft>
           <aerodynamics>
@@ -325,7 +325,7 @@
         </constraints>
       </constraint_case>
 
-      <constraint_case ID="LONG_FIELD_DEMO"
+      <constraint_case ID="JET_PW1127GJM_LONG_FIELD"
                        description="PW1127G-JM real-engine long-field ground-roll sizing case">
         <aircraft>
           <aerodynamics>
@@ -353,7 +353,7 @@
         </constraints>
       </constraint_case>
 
-      <constraint_case ID="UNICADO_PROPELLER"
+      <constraint_case ID="PROPELLER_UNICADO_BASELINE"
                        description="Propeller power-loading constraint analysis using the supplied UNICADO data">
         <aircraft>
           <aerodynamics>
