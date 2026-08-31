@@ -262,8 +262,7 @@ else:
         "04_k_parameter_sensitivity",
         "05_classical_carpet_plot",
         "06_cd0_takeoff_distance_carpet",
-        "07_k_acceleration_carpet",
-        "08_cd0_thrust_lapse_carpet",
+        "07_cd0_thrust_lapse_carpet",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -420,7 +419,6 @@ else:
         "Climb": "jet_climb_constraint.csv",
         "Cruise": "jet_cruise_constraint.csv",
         "Max Mach": "jet_max_mach_constraint.csv",
-        "Supercruise": "jet_supercruise_constraint.csv",
         "Takeoff": "jet_takeoff_constraint.csv",
         "Turn": "jet_turn_constraint.csv",
     }
@@ -2199,21 +2197,12 @@ if not propeller_mode and os.path.exists(study_path):
             "06_cd0_takeoff_distance_carpet",
         ),
         (
-            "jet_k_acceleration_carpet.csv",
-            "induced_drag_factor", "acceleration_requirement_ms2",
-            "k", "acceleration requirement",
-            lambda value: f"k = {value:.4f}",
-            lambda value: f"a_x = {value:.2f} m/s²",
-            "k–Acceleration-Requirement Carpet Plot",
-            "07_k_acceleration_carpet",
-        ),
-        (
             "jet_cd0_thrust_lapse_carpet.csv",
             "cd_0", "thrust_lapse_scale", "CD₀", "thrust-lapse scale",
             lambda value: f"CD₀ = {value:.4f}",
             lambda value: f"α_lapse = {value:.0%}",
             "CD₀–Installed-Thrust-Lapse Carpet Plot",
-            "08_cd0_thrust_lapse_carpet",
+            "07_cd0_thrust_lapse_carpet",
         ),
     ]
     for (
