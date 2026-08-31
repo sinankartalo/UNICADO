@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import math
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +18,7 @@ MISSION_CSV = (
 OUTPUT_ROOT = ROOT / "constraint_analysis/output"
 CASE_OUTPUT = OUTPUT_ROOT / "UNICADO_PROPELLER"
 OUTPUT = CASE_OUTPUT if CASE_OUTPUT.exists() else OUTPUT_ROOT
+CONFIG_XML = ROOT / "constraint_analysis/config/constraint_analysis_conf.xml"
 
 CD0 = 0.00455002
 K = 0.0217487
@@ -26,6 +28,30 @@ RPM = 1200.0
 WS = 4000.0
 G0 = 9.80665
 TIP_MACH_LIMIT = 0.95
+
+
+def case_ground_roll_requirement_m(case_id: str) -> float:
+    """Read the selected case's takeoff ground-roll requirement from XML."""
+    root = ET.parse(CONFIG_XML).getroot()
+    case = root.find(
+        f".//constraint_case[@ID='{case_id}']"
+    )
+    if case is None:
+        raise ValueError(f"Constraint case not found: {case_id}")
+    set_ref = case.findtext("./constraints/constraint_set_ref/value")
+    standard_set = root.find(
+        f".//standard_set[@ID='{set_ref}']"
+    )
+    if standard_set is None:
+        raise ValueError(f"Constraint set not found: {set_ref}")
+    value = standard_set.findtext(
+        "./takeoff_ground_roll/takeoff_ground_roll_m/value"
+    )
+    if value is None:
+        raise ValueError(
+            f"Takeoff ground-roll requirement missing from set: {set_ref}"
+        )
+    return float(value)
 
 
 def isa_density(altitude_m: float) -> float:
@@ -268,14 +294,14 @@ def takeoff_distance(power_loading: float, beta: float) -> float:
     return distance
 
 
-def takeoff_power_loading(beta: float) -> float:
+def takeoff_power_loading(beta: float, required_ground_roll_m: float) -> float:
     lower = 0.0
     upper = 1.0
-    while takeoff_distance(upper, beta) > 500.0:
+    while takeoff_distance(upper, beta) > required_ground_roll_m:
         upper *= 2.0
     for _ in range(70):
         trial = 0.5 * (lower + upper)
-        if takeoff_distance(trial, beta) > 500.0:
+        if takeoff_distance(trial, beta) > required_ground_roll_m:
             lower = trial
         else:
             upper = trial
@@ -284,11 +310,14 @@ def takeoff_power_loading(beta: float) -> float:
 
 def main() -> None:
     beta = mission_betas()
+    takeoff_ground_roll_m = case_ground_roll_requirement_m("UNICADO_PROPELLER")
     climb_power_loading, climb_valid, climb_invalid = (
         mission_climb_power_loading()
     )
     checks = {
-        "propeller_takeoff_constraint": takeoff_power_loading(beta["takeoff"]),
+        "propeller_takeoff_constraint": takeoff_power_loading(
+            beta["takeoff"], takeoff_ground_roll_m
+        ),
         "propeller_acceleration_constraint": airborne_power_loading(
             8000.0, 180.0, beta["cruise_end"], acceleration_ms2=1.5
         )[0],
