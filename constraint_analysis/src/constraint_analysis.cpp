@@ -25,7 +25,6 @@ namespace constraint_analysis
         {
             output.curves.push_back(jet_analysis.compute_takeoff_constraint(input));
             output.curves.push_back(jet_analysis.compute_max_mach_constraint(input));
-            output.curves.push_back(jet_analysis.compute_supercruise_constraint(input));
             output.curves.push_back(jet_analysis.compute_acceleration_constraint(input));
             output.curves.push_back(jet_analysis.compute_cruise_constraint(input));
             output.curves.push_back(jet_analysis.compute_climb_constraint(input));
