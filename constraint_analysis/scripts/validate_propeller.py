@@ -16,7 +16,7 @@ MISSION_CSV = (
     / "UNICADO-SMR-01_design_mission_R2450_PL19300_out.csv"
 )
 OUTPUT_ROOT = ROOT / "constraint_analysis/output"
-CASE_OUTPUT = OUTPUT_ROOT / "UNICADO_PROPELLER"
+CASE_OUTPUT = OUTPUT_ROOT / "PROPELLER_UNICADO_BASELINE"
 OUTPUT = CASE_OUTPUT if CASE_OUTPUT.exists() else OUTPUT_ROOT
 CONFIG_XML = ROOT / "constraint_analysis/config/constraint_analysis_conf.xml"
 
@@ -310,7 +310,9 @@ def takeoff_power_loading(beta: float, required_ground_roll_m: float) -> float:
 
 def main() -> None:
     beta = mission_betas()
-    takeoff_ground_roll_m = case_ground_roll_requirement_m("UNICADO_PROPELLER")
+    takeoff_ground_roll_m = case_ground_roll_requirement_m(
+        "PROPELLER_UNICADO_BASELINE"
+    )
     climb_power_loading, climb_valid, climb_invalid = (
         mission_climb_power_loading()
     )
