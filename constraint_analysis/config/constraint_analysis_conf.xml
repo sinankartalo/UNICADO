@@ -298,7 +298,7 @@
       </constraint_case>
 
       <constraint_case ID="SHORT_FIELD_DEMO"
-                       description="Project-defined short-field ground-roll sizing case">
+                       description="PW1127G-JM real-engine short-field ground-roll sizing case">
         <aircraft>
           <aerodynamics>
             <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
@@ -311,7 +311,7 @@
         </mission>
 
         <engine>
-          <engine_directory_path><value>../libraries/engine/test/stubs/V2527-A5</value></engine_directory_path>
+          <engine_directory_path><value>../UNICADO-SMR-01/clean_sheet_design/engine_data/PW1127G-JM</value></engine_directory_path>
         </engine>
 
         <design_space>
@@ -326,7 +326,7 @@
       </constraint_case>
 
       <constraint_case ID="LONG_FIELD_DEMO"
-                       description="Project-defined long-field ground-roll sizing case">
+                       description="PW1127G-JM real-engine long-field ground-roll sizing case">
         <aircraft>
           <aerodynamics>
             <polar_xml_path><value>../libraries/aerodynamics/test/stubs/PEF-v2/polar (4).xml</value></polar_xml_path>
@@ -339,7 +339,7 @@
         </mission>
 
         <engine>
-          <engine_directory_path><value>../libraries/engine/test/stubs/V2527-A5</value></engine_directory_path>
+          <engine_directory_path><value>../UNICADO-SMR-01/clean_sheet_design/engine_data/PW1127G-JM</value></engine_directory_path>
         </engine>
 
         <design_space>
