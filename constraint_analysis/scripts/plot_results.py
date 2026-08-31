@@ -218,6 +218,7 @@ case_labels = {
     "UNICADO_TEST_ENGINE": "Jet — V2527-A5 Test Engine",
     "UNICADO_REAL_ENGINE": "Jet — PW1127G-JM Real Engine",
     "SHORT_FIELD_DEMO": "Jet — Short-Field Demo",
+    "LONG_FIELD_DEMO": "Jet — Long-Field Demo",
     "UNICADO_PROPELLER": "Propeller — UNICADO",
 }
 analysis_label = case_labels.get(
