@@ -43,16 +43,30 @@ namespace constraint_analysis
         double k = 0.0;
     };
 
+    struct aerodynamic_polar_sample
+    {
+        double mach = 0.0;
+        double altitude_m = 0.0;
+        double cd_0 = 0.0;
+        double k = 0.0;
+        double cl_max = 0.0;
+        std::string configuration_id;
+    };
+
     struct aircraft_data
     {
+        std::string aerodynamic_polar_xml_path;
+        std::string reference_wing_id;
         double wing_area_m2 = 0.0;
         double takeoff_weight_N = 0.0;
         double aspect_ratio = 0.0;
+        double mean_aerodynamic_chord_m = 0.0;
         double cl_max_takeoff = 0.0;
         double cl_max_landing = 0.0;
         double aerodynamic_minimum_mach = 0.0;
         double aerodynamic_maximum_mach = 0.0;
         drag_polar polar;
+        std::vector<aerodynamic_polar_sample> polar_samples;
     };
 
     struct takeoff_constraint

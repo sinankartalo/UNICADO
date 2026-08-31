@@ -332,14 +332,20 @@ namespace constraint_analysis
         readMission mission_data(mission_csv_path);
 
         input.aircraft.wing_area_m2 = aero_values.wing_area_m2;
+        input.aircraft.aerodynamic_polar_xml_path =
+            aerodynamic_polar_xml_path.string();
+        input.aircraft.reference_wing_id = reference_wing_id;
         input.aircraft.takeoff_weight_N = mission_data.total_mass.front() * 9.80665;
         input.aircraft.aspect_ratio = aero_values.aspect_ratio;
+        input.aircraft.mean_aerodynamic_chord_m =
+            aero_values.mean_aerodynamic_chord_m;
         input.aircraft.polar.cd_0 = aero_values.cd0;
         input.aircraft.polar.k = aero_values.k;
         input.aircraft.cl_max_takeoff = aero_values.cl_max_takeoff;
         input.aircraft.cl_max_landing = aero_values.cl_max_landing;
         input.aircraft.aerodynamic_minimum_mach = aero_values.minimum_mach;
         input.aircraft.aerodynamic_maximum_mach = aero_values.maximum_mach;
+        input.aircraft.polar_samples = aero_values.polar_samples;
 
         input.engine = engine;
         const std::string propulsion = xml_string(config, "propulsion_type");
@@ -472,10 +478,12 @@ namespace constraint_analysis
         input.turn.beta_turn = mission_data.get_beta(
             "cruise", input.turn.altitude_m);
 
-        input.range.altitude_m = mission_data.get_range_weighted_altitude();
-        input.range.speed_ms = mission_data.get_range_weighted_tas();
-        input.range.range_m = mission_data.get_total_range();
-        input.range.beta_start = mission_data.get_beta("cruise", input.range.altitude_m);
+        input.range.altitude_m =
+            mission_data.get_cruise_range_weighted_altitude();
+        input.range.speed_ms = mission_data.get_cruise_range_weighted_tas();
+        input.range.range_m = mission_data.get_cruise_range();
+        input.range.beta_start =
+            mission_data.get_segment_start_beta("cruise");
         input.range.available_fuel_fraction = xml_double(config, "range_available_fuel_fraction");
 
         std::cout << "Using UNICADO aerodynamics library.\n";
@@ -495,6 +503,21 @@ namespace constraint_analysis
                 << aero_values.cl_max_takeoff << '\n';
         std::cout << "Landing CLmax from aerodynamics = "
                 << aero_values.cl_max_landing << '\n';
+        const auto has_configuration = [&](const std::string& id)
+        {
+            return std::find(
+                aero_values.configuration_ids.begin(),
+                aero_values.configuration_ids.end(), id) !=
+                aero_values.configuration_ids.end();
+        };
+        if (!has_configuration("takeoff") ||
+            !has_configuration("landing"))
+        {
+            std::cout
+                << "WARNING: Aerodynamic XML has no takeoff/landing high-lift "
+                   "configurations. CLmax constraints retain the global "
+                   "dataset maximum and remain provisional.\n";
+        }
         std::cout << "Using mission CSV: "
                 << mission_csv_path.string() << '\n';
         std::cout << "Mission beta takeoff = "
@@ -548,11 +571,11 @@ namespace constraint_analysis
                   << representative_climb.altitude_m
                   << " m, beta = "
                   << representative_climb.beta_climb << '\n';
-        std::cout << "Mission range from CSV = "
+        std::cout << "Cruise-segment range from mission CSV = "
                 << input.range.range_m << " m\n";
-        std::cout << "Range-weighted altitude from mission CSV = "
+        std::cout << "Cruise range-weighted altitude from mission CSV = "
                 << input.range.altitude_m << " m\n";
-        std::cout << "Range-weighted TAS from mission CSV = "
+        std::cout << "Cruise range-weighted TAS from mission CSV = "
                 << input.range.speed_ms << " m/s\n";
                         
         return input;
@@ -932,6 +955,75 @@ namespace constraint_analysis
         }
 
         return total_range;
+    }
+
+    double readMission::get_segment_start_beta(
+        const std::string& segment) const
+    {
+        const std::string wanted = trim_copy(segment);
+        for (std::size_t i = 0; i < this->mode_name.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i]) == wanted)
+                return this->total_mass[i] / this->total_mass.front();
+        }
+        throw std::runtime_error(
+            "Mission CSV contains no segment: " + wanted);
+    }
+
+    double readMission::get_cruise_range() const
+    {
+        double total = 0.0;
+        for (std::size_t i = 1; i < this->range.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i - 1]) != "cruise" ||
+                trim_copy(this->mode_name[i]) != "cruise")
+                continue;
+            total += std::max(0.0, this->range[i] - this->range[i - 1]);
+        }
+        if (total <= 0.0)
+            throw std::runtime_error(
+                "Mission CSV contains no positive cruise-segment range.");
+        return total;
+    }
+
+    double readMission::get_cruise_range_weighted_altitude() const
+    {
+        double weighted = 0.0;
+        double total = 0.0;
+        for (std::size_t i = 1; i < this->range.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i - 1]) != "cruise" ||
+                trim_copy(this->mode_name[i]) != "cruise")
+                continue;
+            const double delta =
+                std::max(0.0, this->range[i] - this->range[i - 1]);
+            weighted += 0.5 * (this->altitude[i - 1] + this->altitude[i]) * delta;
+            total += delta;
+        }
+        if (total <= 0.0)
+            throw std::runtime_error(
+                "Mission CSV contains no cruise range for altitude weighting.");
+        return weighted / total;
+    }
+
+    double readMission::get_cruise_range_weighted_tas() const
+    {
+        double weighted = 0.0;
+        double total = 0.0;
+        for (std::size_t i = 1; i < this->range.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i - 1]) != "cruise" ||
+                trim_copy(this->mode_name[i]) != "cruise")
+                continue;
+            const double delta =
+                std::max(0.0, this->range[i] - this->range[i - 1]);
+            weighted += 0.5 * (this->tas[i - 1] + this->tas[i]) * delta;
+            total += delta;
+        }
+        if (total <= 0.0)
+            throw std::runtime_error(
+                "Mission CSV contains no cruise range for TAS weighting.");
+        return weighted / total;
     }
 
     double readMission::get_range_weighted_altitude() const
