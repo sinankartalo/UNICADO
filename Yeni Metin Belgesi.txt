@@ -11,13 +11,27 @@ cmake --build build
 .\build\constraint_analysis_app.exe 
 .\build\constraint_analysis_app.exe JET_V2527A5_BASELINE
 .\build\constraint_analysis_app.exe JET_PW1127GJM_BASELINE
-.\build\constraint_analysis_app.exe "JET_PW1127GJM_SHORT_FIELD"
+.\build\constraint_analysis_app.exe JET_PW1127GJM_SHORT_FIELD
+.\build\constraint_analysis_app.exe JET_PW1127GJM_LONG_FIELD
+.\build\constraint_analysis_app.exe PROPELLER_UNICADO_BASELINE
 
 
 .\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml"
 .\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml" "JET_PW1127GJM_SHORT_FIELD"
 
+cd C:\Users\Sinan\Desktop\UNICADO
+
+git fetch origin
+git switch agent/constraint-tolerance-bands
+git pull origin agent/constraint-tolerance-bands
+
 
 python scripts/plot_results.py
 
-Copy-Item .\output .\output_test_engine -Recurse -Force
+
+cd C:\Users\Sinan\Desktop\UNICADO
+
+git status
+git add .
+git commit -m "Yaptığım değişikliklerin kısa açıklaması"
+git push origin agent/constraint-tolerance-bands
