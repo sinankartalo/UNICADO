@@ -69,7 +69,6 @@ namespace constraint_analysis
         cd0,
         induced_drag_factor,
         takeoff_distance_m,
-        acceleration_requirement_ms2,
         thrust_lapse_scale
     };
 
