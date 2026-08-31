@@ -9,13 +9,13 @@ cmake --build build
 
 
 .\build\constraint_analysis_app.exe 
-.\build\constraint_analysis_app.exe UNICADO_TEST_ENGINE
-.\build\constraint_analysis_app.exe UNICADO_REAL_ENGINE
-.\build\constraint_analysis_app.exe "SHORT_FIELD_DEMO"
+.\build\constraint_analysis_app.exe JET_V2527A5_BASELINE
+.\build\constraint_analysis_app.exe JET_PW1127GJM_BASELINE
+.\build\constraint_analysis_app.exe "JET_PW1127GJM_SHORT_FIELD"
 
 
 .\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml"
-.\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml" "SHORT_FIELD_DEMO"
+.\build\constraint_analysis_app.exe "config\constraint_analysis_conf.xml" "JET_PW1127GJM_SHORT_FIELD"
 
 
 python scripts/plot_results.py
