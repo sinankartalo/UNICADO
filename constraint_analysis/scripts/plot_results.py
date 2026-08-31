@@ -212,14 +212,14 @@ else:
     propeller_mode = os.path.exists(
         os.path.join(output_dir, "propeller_takeoff_constraint.csv")
     )
-    case_id = "UNICADO_PROPELLER" if propeller_mode else "JET_CASE"
+    case_id = "PROPELLER_UNICADO_BASELINE" if propeller_mode else "JET_CASE"
 
 case_labels = {
-    "UNICADO_TEST_ENGINE": "Jet — V2527-A5 Test Engine",
-    "UNICADO_REAL_ENGINE": "Jet — PW1127G-JM Real Engine",
-    "SHORT_FIELD_DEMO": "Jet — PW1127G-JM Short-Field Case",
-    "LONG_FIELD_DEMO": "Jet — PW1127G-JM Long-Field Case",
-    "UNICADO_PROPELLER": "Propeller — UNICADO",
+    "JET_V2527A5_BASELINE": "Jet — V2527-A5 Test Engine: Baseline Case",
+    "JET_PW1127GJM_BASELINE": "Jet — PW1127G-JM Real Engine: Baseline Case",
+    "JET_PW1127GJM_SHORT_FIELD": "Jet — PW1127G-JM Real Engine: Short-Field Case",
+    "JET_PW1127GJM_LONG_FIELD": "Jet — PW1127G-JM Real Engine: Long-Field Case",
+    "PROPELLER_UNICADO_BASELINE": "Propeller — UNICADO: Baseline Case",
 }
 analysis_label = case_labels.get(
     case_id,
