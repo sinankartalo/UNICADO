@@ -439,7 +439,7 @@ def main() -> None:
         "propeller_subsonic_cruise_constraint": cruise_power_loading,
         "propeller_subsonic_climb_constraint": climb_power_loading,
         "propeller_turn_constraint": airborne_power_loading(
-            3000.0, 120.0, beta["cruise_end"], load_factor=2.5
+            3000.0, 120.0, beta["cruise"], load_factor=2.5
         )[0],
     }
 
