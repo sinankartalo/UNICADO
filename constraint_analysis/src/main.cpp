@@ -109,39 +109,55 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_root = "output";
         std::filesystem::create_directories(output_root);
 
-        // Command-line arguments are optional.
+        // Command-line arguments are optional. Expensive carpet/sensitivity
+        // sweeps are opt-in so a normal matching-chart run does not repeat
+        // the complete constraint analysis roughly one hundred times.
         // Supported forms:
         //   app.exe
         //   app.exe CASE_ID
         //   app.exe "config\\another_config.xml"
         //   app.exe "config\\another_config.xml" CASE_ID
+        //   app.exe CASE_ID --with-studies
         //
         // The engine directory is always read from engine/engine_directory_path
         // in the selected XML constraint case.
         std::filesystem::path config_path = "config/constraint_analysis_conf.xml";
         std::string case_override_id;
+        bool run_parameter_studies = false;
+        std::vector<std::string> positional_arguments;
 
-        if (argc > 3)
+        for (int index = 1; index < argc; ++index)
         {
-            throw std::runtime_error(
-                "Too many command-line arguments. Use: app.exe [config.xml] [case_ID] "
-                "or app.exe [case_ID].");
+            const std::string argument = argv[index];
+            if (argument == "--with-studies")
+                run_parameter_studies = true;
+            else
+                positional_arguments.push_back(argument);
         }
 
-        if (argc >= 2)
+        if (positional_arguments.size() > 2)
+            throw std::runtime_error(
+                "Too many positional arguments. Use: app.exe [config.xml] "
+                "[case_ID] [--with-studies] or app.exe [case_ID] "
+                "[--with-studies].");
+
+        if (!positional_arguments.empty())
         {
-            const std::filesystem::path first_argument = argv[1];
+            const std::filesystem::path first_argument =
+                positional_arguments.front();
 
             if (first_argument.extension() == ".xml")
             {
                 config_path = first_argument;
-                case_override_id = (argc == 3) ? argv[2] : "";
+                case_override_id = positional_arguments.size() == 2
+                    ? positional_arguments[1]
+                    : "";
             }
             else
             {
-                case_override_id = argv[1];
+                case_override_id = positional_arguments.front();
 
-                if (argc == 3)
+                if (positional_arguments.size() == 2)
                 {
                     throw std::runtime_error(
                         "When the first argument is a case ID, no second argument is allowed. "
@@ -158,6 +174,22 @@ int main(int argc, char* argv[])
         std::filesystem::create_directories(output_directory);
         std::filesystem::remove(
             output_directory / "carpet_plot_full.csv");
+        if (!run_parameter_studies)
+        {
+            for (const char* study_file : {
+                     "carpet_plot_study.csv",
+                     "true_carpet_constraints.csv",
+                     "jet_cd0_k_carpet.csv",
+                     "jet_cd0_takeoff_distance_carpet.csv",
+                     "jet_cd0_thrust_lapse_carpet.csv",
+                     "jet_k_sensitivity_curves.csv",
+                     "propeller_cd0_sensitivity_curves.csv",
+                     "propeller_cd0_k_carpet.csv",
+                     "propeller_k_sensitivity_curves.csv"})
+            {
+                std::filesystem::remove(output_directory / study_file);
+            }
+        }
         for (const auto& entry :
              std::filesystem::directory_iterator(output_directory))
         {
@@ -180,6 +212,11 @@ int main(int argc, char* argv[])
         std::cout << "Using constraint case ID: " << active_case_id << '\n';
         std::cout << "Case output directory: "
                   << output_directory.string() << '\n';
+        std::cout << "Parameter studies: "
+                  << (run_parameter_studies
+                          ? "enabled (--with-studies)"
+                          : "skipped (main analysis only)")
+                  << '\n';
 
         const bool is_propeller =
             xml_string(config, "propulsion_type") == "propeller";
@@ -639,7 +676,7 @@ int main(int argc, char* argv[])
                 input.aircraft.polar.k * factor);
         }
 
-        if (!is_propeller)
+        if (run_parameter_studies && !is_propeller)
         {
             carpet_plot_study study{atm};
             carpet_points = study.run(input, cd0_values);
@@ -704,8 +741,9 @@ int main(int argc, char* argv[])
                 (output_directory /
                     "jet_k_sensitivity_curves.csv").string());
         }
-        else
+        else if (run_parameter_studies)
         {
+            std::cout << "Running propeller CD0 sensitivity (9 analyses)...\n";
             true_carpet_constraints cd0_sensitivity{atm};
             true_carpet_points = cd0_sensitivity.run(
                 input, cd0_carpet_values);
@@ -714,6 +752,7 @@ int main(int argc, char* argv[])
                 (output_directory /
                     "propeller_cd0_sensitivity_curves.csv").string());
 
+            std::cout << "Running propeller CD0-k carpet (81 analyses)...\n";
             jet_aerodynamic_carpet_study aero_carpet{atm};
             jet_aero_carpet_points = aero_carpet.run(
                 input, cd0_carpet_values, induced_drag_factor_values);
@@ -722,6 +761,7 @@ int main(int argc, char* argv[])
                 (output_directory /
                     "propeller_cd0_k_carpet.csv").string());
 
+            std::cout << "Running propeller k sensitivity (9 analyses)...\n";
             k_sensitivity_study k_sensitivity{atm};
             k_sensitivity_points = k_sensitivity.run(
                 input, induced_drag_factor_values);
@@ -1133,7 +1173,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (!is_propeller)
+        if (!is_propeller && run_parameter_studies)
         {
         std::cout << "\n=== carpet_plot_study ===\n";
 
