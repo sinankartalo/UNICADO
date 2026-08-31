@@ -73,21 +73,6 @@ namespace constraint_analysis
         double beta_max_mach = 1.0;
     };
 
-    struct acceleration_constraint
-    {
-        double altitude_m = 0.0;
-        double speed_ms = 0.0;
-        double acceleration_ms2 = 0.0;
-        double beta_acceleration = 1.0;
-    };
-
-    struct supercruise_constraint
-    {
-        double altitude_m = 0.0;
-        double mach = 0.0;
-        double beta_supercruise = 1.0;
-    };
-
     struct climb_mission_point
     {
         double altitude_m = 0.0;
@@ -95,6 +80,15 @@ namespace constraint_analysis
         double roc_ms = 0.0;
         double acceleration_ms2 = 0.0;
         double beta_climb = 1.0;
+    };
+
+    struct acceleration_constraint
+    {
+        double altitude_m = 0.0;
+        double speed_ms = 0.0;
+        double acceleration_ms2 = 0.0;
+        double beta_acceleration = 1.0;
+        std::vector<climb_mission_point> mission_points;
     };
 
     struct climb_constraint
@@ -113,6 +107,7 @@ namespace constraint_analysis
         double speed_ms = 0.0;
 
         double beta_cruise = 1.0;
+        std::vector<climb_mission_point> mission_points;
     };
 
     struct turn_constraint
@@ -186,7 +181,6 @@ namespace constraint_analysis
         landing_constraint landing;
         stall_speed_constraint stall_speed;
         gust_constraint gust;
-        supercruise_constraint supercruise;
         range_constraint range;
 
         double wing_loading_min = 0.0;
@@ -467,7 +461,6 @@ namespace constraint_analysis
         vertical_constraint compute_stall_speed_constraint_limit(const constraint_input& input) const;
         vertical_constraint compute_gust_constraint_limit(const constraint_input& input) const;
 
-        constraint_curve compute_supercruise_constraint(const constraint_input& input) const;
         constraint_curve compute_max_mach_constraint(const constraint_input& input) const;
         constraint_curve compute_acceleration_constraint(const constraint_input& input) const;
         constraint_curve compute_cruise_constraint(const constraint_input& input) const;
