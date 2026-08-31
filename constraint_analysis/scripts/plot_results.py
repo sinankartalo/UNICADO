@@ -1473,14 +1473,34 @@ if propeller_mode:
     prop_k_path = os.path.join(
         output_dir, "propeller_k_sensitivity_curves.csv"
     )
-    for required_path in (
-        prop_aero_carpet_path, prop_cd0_path, prop_k_path
-    ):
-        if not os.path.exists(required_path):
-            raise FileNotFoundError(
-                f"{os.path.basename(required_path)} not found; "
-                "rerun the C++ application."
-            )
+    missing_study_paths = [
+        required_path for required_path in (
+            prop_aero_carpet_path, prop_cd0_path, prop_k_path
+        )
+        if not os.path.exists(required_path)
+    ]
+    if missing_study_paths:
+        print()
+        print(
+            "Optional propeller parameter-study CSV files are absent; "
+            "main-result plots are complete and study plots were skipped."
+        )
+        print(
+            "Run the C++ application with --with-studies, then rerun this "
+            "script to generate sensitivity and carpet plots."
+        )
+        print()
+        print("Plot generation completed.")
+        print(
+            f"Aircraft point: W/S = {aircraft_ws:.0f} N/m², "
+            f"{y_symbol} = {aircraft_tw:.4f}"
+        )
+        print(
+            f"Best design point: W/S = {best_ws:.0f} N/m², "
+            f"{y_symbol} = {best_tw:.4f}"
+        )
+        print(f"Plots saved to: {save_dir}")
+        raise SystemExit(0)
 
     prop_aero_carpet = pd.read_csv(prop_aero_carpet_path).dropna()
     prop_cd0_sensitivity = pd.read_csv(prop_cd0_path).dropna()
