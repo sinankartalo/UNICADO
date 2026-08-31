@@ -561,33 +561,65 @@ stall_ws_limit = read_vertical_limit(f"{vertical_prefix}_stall_speed_limit.csv")
 gust_ws_limit = read_vertical_limit(f"{vertical_prefix}_gust_limit.csv")
 
 
-# Axis limits
-x_min = envelope["wing_loading"].min()
-
-# The landing and stall limits can lie outside the sampled W/S range.
-# Expand the plotting range so those vertical constraint lines remain visible.
+# Axis limits. Build the visible domain from every finite curve point, every
+# vertical constraint, and both marked design points. This is deliberately a
+# union: a matching chart must never hide valid analysis data merely to obtain
+# a visually tighter crop.
 vertical_limits = [
     value for value in (landing_ws_limit, stall_ws_limit, gust_ws_limit)
-    if value is not None
+    if value is not None and np.isfinite(value)
 ]
-
-x_data_max = envelope["wing_loading"].max()
-x_limit_max = max(vertical_limits, default=x_data_max)
-x_max = max(x_data_max, x_limit_max) * 1.05
-
-tolerance_x_limit_max = max(
-    [
-        value * (1.0 + constraint_tolerances[name][1])
-        for name, value in (
-            ("Landing", landing_ws_limit),
-            ("Stall speed", stall_ws_limit),
-            ("Gust", gust_ws_limit),
-        )
-        if value is not None
+curve_x_arrays = [
+    envelope["wing_loading"].to_numpy(dtype=float),
+    *[
+        df["wing_loading"].to_numpy(dtype=float)
+        for df in constraints.values()
     ],
-    default=x_data_max,
-)
-tolerance_x_max = max(x_data_max, tolerance_x_limit_max) * 1.05
+]
+curve_x_values = np.concatenate(curve_x_arrays)
+curve_x_values = curve_x_values[np.isfinite(curve_x_values)]
+if curve_x_values.size == 0:
+    raise RuntimeError("Matching chart contains no finite wing-loading data.")
+
+nominal_extent_values = np.concatenate((
+    curve_x_values,
+    np.asarray(vertical_limits, dtype=float),
+    np.asarray([aircraft_ws, best_ws], dtype=float),
+))
+nominal_extent_values = nominal_extent_values[
+    np.isfinite(nominal_extent_values)
+]
+nominal_extent_min = float(np.min(nominal_extent_values))
+nominal_extent_max = float(np.max(nominal_extent_values))
+nominal_span = max(nominal_extent_max - nominal_extent_min, 1.0)
+nominal_padding = 0.04 * nominal_span
+x_min = max(0.0, nominal_extent_min - nominal_padding)
+x_max = nominal_extent_max + nominal_padding
+
+tolerance_vertical_limits = []
+for name, value in (
+    ("Landing", landing_ws_limit),
+    ("Stall speed", stall_ws_limit),
+    ("Gust", gust_ws_limit),
+):
+    if value is None or not np.isfinite(value):
+        continue
+    lower_fraction, upper_fraction = constraint_tolerances[name]
+    tolerance_vertical_limits.extend((
+        value * (1.0 - lower_fraction),
+        value * (1.0 + upper_fraction),
+    ))
+
+tolerance_extent_values = np.concatenate((
+    nominal_extent_values,
+    np.asarray(tolerance_vertical_limits, dtype=float),
+))
+tolerance_extent_min = float(np.min(tolerance_extent_values))
+tolerance_extent_max = float(np.max(tolerance_extent_values))
+tolerance_span = max(tolerance_extent_max - tolerance_extent_min, 1.0)
+tolerance_padding = 0.04 * tolerance_span
+tolerance_x_min = max(0.0, tolerance_extent_min - tolerance_padding)
+tolerance_x_max = tolerance_extent_max + tolerance_padding
 
 y_min = 0.0
 y_max = max(
@@ -647,34 +679,33 @@ feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
 feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
 
 
-def centered_feasible_xlim(required_right, fallback_right):
-    """Center the nominal feasible W/S interval in the visible chart."""
+def centered_feasible_xlim(required_left, required_right):
+    """Show all required data while centering feasibility when possible."""
     if not np.isfinite(feasible_ws_min) or not np.isfinite(feasible_ws_max):
-        return x_min, fallback_right
+        return required_left, required_right
     if feasible_ws_min >= feasible_ws_max:
-        return x_min, fallback_right
+        return required_left, required_right
 
     center = 0.5 * (feasible_ws_min + feasible_ws_max)
-    feasible_width = feasible_ws_max - feasible_ws_min
-    left_required = max(0.0, x_min - 0.05 * feasible_width)
     half_width = max(
-        center - left_required,
+        center - required_left,
         required_right - center,
-        0.60 * feasible_width,
+        0.60 * (feasible_ws_max - feasible_ws_min),
     )
-    return max(0.0, center - half_width), center + half_width
+    centered_left = center - half_width
+    centered_right = center + half_width
+    if centered_left < 0.0:
+        # Negative wing loading is non-physical. Once the left edge reaches
+        # zero, retaining every right-side datum takes priority over perfect
+        # centering.
+        centered_left = 0.0
+        centered_right = max(centered_right, required_right)
+    return centered_left, centered_right
 
 
-normal_required_right = max(
-    feasible_ws_max,
-    aircraft_ws * 1.03,
-    max(vertical_limits, default=feasible_ws_max) * 1.01,
-)
-x_plot_min, x_plot_max = centered_feasible_xlim(
-    normal_required_right, x_max
-)
+x_plot_min, x_plot_max = centered_feasible_xlim(x_min, x_max)
 tolerance_plot_min, tolerance_plot_max = centered_feasible_xlim(
-    max(normal_required_right, tolerance_x_limit_max), tolerance_x_max
+    tolerance_x_min, tolerance_x_max
 )
 
 def shade_feasible_design_region(ax, upper_y, label=True):
