@@ -254,7 +254,7 @@ namespace constraint_analysis
             standard_set + "takeoff_ground_roll/altitude");
         xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
-            standard_set + "takeoff_ground_roll/takeoff_field_length");
+            standard_set + "takeoff_ground_roll/takeoff_ground_roll_m");
         xml_map_value(config, *standard_set_node,
             "takeoff_speed_factor",
             standard_set + "takeoff_ground_roll/k_TO");
@@ -270,7 +270,7 @@ namespace constraint_analysis
             standard_set + "landing_field_length/altitude");
         xml_map_value(config, *standard_set_node,
             "landing_runway_m",
-            standard_set + "landing_field_length/landing_field_length");
+            standard_set + "landing_field_length/landing_braking_roll_m");
         xml_map_value(config, *standard_set_node,
             "landing_speed_factor",
             standard_set + "landing_field_length/k_TD");
