@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <numbers>
 #include <sstream>
 #include <stdexcept>
@@ -193,8 +194,11 @@ namespace constraint_analysis
                 "propeller_count",
                 "engine/propeller/count");
             xml_map_value(config, *selected_case,
-                "propeller_takeoff_rpm",
-                "engine/propeller/takeoff/RPM");
+                "propeller_cruise_fallback_altitude_m",
+                "engine/propeller/cruise_fallback/altitude");
+            xml_map_value(config, *selected_case,
+                "propeller_cruise_fallback_speed_ms",
+                "engine/propeller/cruise_fallback/speed");
         }
         else
         {
@@ -250,9 +254,6 @@ namespace constraint_analysis
         const std::string standard_set = "";
 
         xml_map_value(config, *standard_set_node,
-            "takeoff_altitude_m",
-            standard_set + "takeoff_ground_roll/altitude");
-        xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
             standard_set + "takeoff_ground_roll/takeoff_ground_roll_m");
         xml_map_value(config, *standard_set_node,
@@ -265,9 +266,6 @@ namespace constraint_analysis
             "takeoff_cd_ground",
             standard_set + "takeoff_ground_roll/ground_drag_coefficient");
 
-        xml_map_value(config, *standard_set_node,
-            "landing_altitude_m",
-            standard_set + "landing_field_length/altitude");
         xml_map_value(config, *standard_set_node,
             "landing_runway_m",
             standard_set + "landing_field_length/landing_braking_roll_m");
@@ -291,23 +289,6 @@ namespace constraint_analysis
         xml_map_value(config, *standard_set_node,
             "max_mach",
             standard_set + "max_mach/Mach");
-
-        xml_map_value(config, *standard_set_node,
-            "acceleration_altitude_m",
-            standard_set + "horizontal_acceleration/altitude");
-        xml_map_value(config, *standard_set_node,
-            "acceleration_speed_ms",
-            standard_set + "horizontal_acceleration/speed");
-        xml_map_value(config, *standard_set_node,
-            "acceleration_ms2",
-            standard_set + "horizontal_acceleration/acceleration");
-
-        xml_map_value(config, *standard_set_node,
-            "cruise_altitude_m",
-            standard_set + "cruise/altitude");
-        xml_map_value(config, *standard_set_node,
-            "cruise_speed_ms",
-            standard_set + "cruise/speed");
 
         xml_map_value(config, *standard_set_node,
             "turn_altitude_m",
@@ -375,8 +356,6 @@ namespace constraint_analysis
             }
             input.propeller.count = static_cast<int>(
                 xml_double(config, "propeller_count"));
-            input.propeller.takeoff.rpm =
-                xml_double(config, "propeller_takeoff_rpm");
         }
         else if (propulsion == "jet")
         {
@@ -392,14 +371,16 @@ namespace constraint_analysis
         input.wing_loading_max = xml_double(config, "wing_loading_max");
         input.wing_loading_step = xml_double(config, "wing_loading_step");
 
-        input.takeoff.altitude_m = xml_double(config, "takeoff_altitude_m");
+        input.takeoff.altitude_m =
+            mission_data.get_segment_reference_altitude("takeoff");
         input.takeoff.runway_m = xml_double(config, "takeoff_runway_m");
         input.takeoff.speed_factor = xml_double(config, "takeoff_speed_factor");
         input.takeoff.beta_to = mission_data.get_beta("takeoff", input.takeoff.altitude_m);
         input.takeoff.mu_ro = xml_double(config, "takeoff_mu_ro");
         input.takeoff.cd_ground = xml_double(config, "takeoff_cd_ground");
 
-        input.landing.altitude_m = xml_double(config, "landing_altitude_m");
+        input.landing.altitude_m =
+            mission_data.get_segment_reference_altitude("landing");
         input.landing.runway_m = xml_double(config, "landing_runway_m");
         input.landing.speed_factor = xml_double(config, "landing_speed_factor");
         input.landing.mu_brake = xml_double(config, "landing_mu_brake");
@@ -418,24 +399,52 @@ namespace constraint_analysis
         input.max_mach.mach = xml_double(config, "max_mach");
         input.max_mach.beta_max_mach = mission_data.get_beta("cruise");
 
-        input.acceleration.altitude_m = xml_double(config, "acceleration_altitude_m");
-        input.acceleration.speed_ms = xml_double(config, "acceleration_speed_ms");
-        input.acceleration.acceleration_ms2 = xml_double(config, "acceleration_ms2");
-        input.acceleration.beta_acceleration = mission_data.get_beta("cruise");
         input.acceleration.mission_points =
             mission_data.get_acceleration_conditions();
+        const auto representative_acceleration_it = std::max_element(
+            input.acceleration.mission_points.begin(),
+            input.acceleration.mission_points.end(),
+            [](const climb_mission_point& left,
+               const climb_mission_point& right)
+            {
+                constexpr double g = 9.80665;
+                const double left_demand =
+                    left.roc_ms / left.speed_ms + left.acceleration_ms2 / g;
+                const double right_demand =
+                    right.roc_ms / right.speed_ms + right.acceleration_ms2 / g;
+                return left_demand < right_demand;
+            });
+        input.acceleration.altitude_m = representative_acceleration_it->altitude_m;
+        input.acceleration.speed_ms = representative_acceleration_it->speed_ms;
+        input.acceleration.acceleration_ms2 =
+            representative_acceleration_it->acceleration_ms2;
+        input.acceleration.beta_acceleration =
+            representative_acceleration_it->beta_climb;
 
-        input.cruise.altitude_m = xml_double(config, "cruise_altitude_m");
-        input.cruise.speed_ms = xml_double(config, "cruise_speed_ms");
-        input.cruise.beta_cruise = mission_data.get_beta("cruise", input.cruise.altitude_m);
         input.cruise.mission_points = mission_data.get_cruise_conditions();
+        const auto representative_cruise_it = std::max_element(
+            input.cruise.mission_points.begin(),
+            input.cruise.mission_points.end(),
+            [](const climb_mission_point& left,
+               const climb_mission_point& right)
+            {
+                return left.beta_climb * left.speed_ms * left.speed_ms <
+                    right.beta_climb * right.speed_ms * right.speed_ms;
+            });
+        input.cruise.altitude_m = representative_cruise_it->altitude_m;
+        input.cruise.speed_ms = representative_cruise_it->speed_ms;
+        input.cruise.beta_cruise = representative_cruise_it->beta_climb;
+        if (input.propulsion == propulsion_type::propeller)
+        {
+            input.cruise.altitude_m = xml_double(
+                config, "propeller_cruise_fallback_altitude_m");
+            input.cruise.speed_ms = xml_double(
+                config, "propeller_cruise_fallback_speed_ms");
+            input.cruise.beta_cruise = mission_data.get_beta(
+                "cruise", input.cruise.altitude_m);
+        }
 
-        // Gust remains a separate preliminary-sizing constraint and keeps the
-        // configured reference condition. Its assumptions are reviewed apart
-        // from the mission-derived cruise performance constraint.
-        input.gust.altitude_m = input.cruise.altitude_m;
-        input.gust.speed_ms = input.cruise.speed_ms;
-        input.gust.beta_gust = input.cruise.beta_cruise;
+        input.gust.mission_points = input.cruise.mission_points;
 
         input.climb.mission_points = mission_data.get_climb_conditions();
         input.climb.representative_point = *std::max_element(
@@ -457,7 +466,8 @@ namespace constraint_analysis
         input.turn.altitude_m = xml_double(config, "turn_altitude_m");
         input.turn.speed_ms = xml_double(config, "turn_speed_ms");
         input.turn.load_factor = xml_double(config, "turn_load_factor");
-        input.turn.beta_turn = mission_data.get_beta("cruise");
+        input.turn.beta_turn = mission_data.get_beta(
+            "cruise", input.turn.altitude_m);
 
         input.range.altitude_m = mission_data.get_range_weighted_altitude();
         input.range.speed_ms = mission_data.get_range_weighted_tas();
@@ -492,10 +502,9 @@ namespace constraint_analysis
                 << "at landing altitude = "
                 << input.stall_speed.altitude_m << " m, beta = "
                 << input.stall_speed.beta_stall << '\n';
-        std::cout << "Gust constraint uses configured reference condition: "
-                << "V = " << input.gust.speed_ms << " m/s, altitude = "
-                << input.gust.altitude_m << " m, beta = "
-                << input.gust.beta_gust << '\n';
+        std::cout << "Gust constraint scans "
+                << input.gust.mission_points.size()
+                << " mission cruise conditions.\n";
         const auto& representative_climb = input.climb.representative_point;
         const auto representative_acceleration = std::max_element(
             input.acceleration.mission_points.begin(),
@@ -823,6 +832,34 @@ namespace constraint_analysis
             throw std::runtime_error(
                 "Mission CSV contains no valid cruise points.");
         return conditions;
+    }
+
+    double readMission::get_segment_reference_altitude(
+        const std::string& segment) const
+    {
+        const std::string wanted_segment = trim_copy(segment);
+        double reference_altitude = std::numeric_limits<double>::infinity();
+
+        for (std::size_t i = 0; i < this->altitude.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i]) == wanted_segment &&
+                std::isfinite(this->altitude[i]))
+            {
+                // The lowest altitude in the ground-operation segment is the
+                // runway elevation and remains valid if the segment contains
+                // a small transition to or from airborne flight.
+                reference_altitude = std::min(
+                    reference_altitude, this->altitude[i]);
+            }
+        }
+
+        if (!std::isfinite(reference_altitude))
+        {
+            throw std::runtime_error(
+                "Mission CSV contains no altitude for segment: " +
+                wanted_segment);
+        }
+        return reference_altitude;
     }
 
     auto readMission::get_beta(

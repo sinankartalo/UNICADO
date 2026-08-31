@@ -383,6 +383,16 @@ namespace constraint_analysis
         const double takeoff_speed_ms =
             input.takeoff.speed_factor * stall_speed_ms;
         const double dv = takeoff_speed_ms / integration_steps;
+        std::vector<double> available_pitches;
+        for (const auto& row : read_propeller_deck(input.propeller.deck_path))
+        {
+            if (std::find(available_pitches.begin(), available_pitches.end(),
+                          row.pitch_deg) == available_pitches.end())
+                available_pitches.push_back(row.pitch_deg);
+        }
+        if (available_pitches.empty())
+            throw std::runtime_error(
+                "Propeller takeoff deck contains no pitch slices.");
 
         auto integrate = [&](double power_to_weight_W_N,
                              bool keep_steps) -> propeller_takeoff_result
@@ -399,39 +409,56 @@ namespace constraint_analysis
             for (int index = 0; index < integration_steps; ++index)
             {
                 const double speed_ms = (index + 0.5) * dv;
-                const double advance_ratio =
-                    speed_ms /
-                    ((input.propeller.takeoff.rpm / 60.0) *
-                     input.propeller.diameter_m);
-                std::vector<double> valid_pitches;
-                if (advance_ratio <= 1.05)
-                    valid_pitches.push_back(15.0);
-                if (advance_ratio >= 0.5 && advance_ratio <= 1.5)
-                    valid_pitches.push_back(30.0);
-                if (advance_ratio >= 0.75 && advance_ratio <= 2.8)
-                    valid_pitches.push_back(45.0);
-                if (valid_pitches.empty())
+                const double speed_of_sound_ms =
+                    atmosphere_.getSpeedOfSound(input.takeoff.altitude_m);
+                // A variable-speed controller uses the highest RPM allowed by
+                // the configured helical tip-Mach limit. A small margin avoids
+                // rejecting a point because of floating-point roundoff.
+                const double allowed_helical_tip_speed_ms =
+                    0.995 * input.propeller.tip_mach_limit *
+                    speed_of_sound_ms;
+                if (speed_ms >= allowed_helical_tip_speed_ms)
                     throw std::runtime_error(
-                        "No valid supplied-deck pitch slice for integrated takeoff.");
+                        "Takeoff speed exceeds the propeller helical tip-speed limit.");
+                const double rotational_tip_speed_ms = std::sqrt(
+                    allowed_helical_tip_speed_ms * allowed_helical_tip_speed_ms -
+                    speed_ms * speed_ms);
+                const double automatic_rpm =
+                    60.0 * rotational_tip_speed_ms /
+                    (std::numbers::pi * input.propeller.diameter_m);
 
                 propeller_operating_point deck_point;
                 double best_power_per_thrust =
                     std::numeric_limits<double>::infinity();
-                for (double pitch_deg : valid_pitches)
+                for (double pitch_deg : available_pitches)
                 {
-                    propeller_setting candidate = input.propeller.takeoff;
+                    propeller_setting candidate;
+                    candidate.rpm = automatic_rpm;
                     candidate.pitch_deg = pitch_deg;
-                    const auto candidate_point = evaluate(
-                        input, input.takeoff.altitude_m, speed_ms, candidate);
-                    const double candidate_power_per_thrust =
-                        candidate_point.shaft_power_W /
-                        candidate_point.thrust_N;
-                    if (candidate_power_per_thrust < best_power_per_thrust)
+                    try
                     {
-                        best_power_per_thrust = candidate_power_per_thrust;
-                        deck_point = candidate_point;
+                        const auto candidate_point = evaluate(
+                            input, input.takeoff.altitude_m, speed_ms, candidate);
+                        if (!candidate_point.tip_mach_feasible)
+                            continue;
+                        const double candidate_power_per_thrust =
+                            candidate_point.shaft_power_W /
+                            candidate_point.thrust_N;
+                        if (candidate_power_per_thrust < best_power_per_thrust)
+                        {
+                            best_power_per_thrust = candidate_power_per_thrust;
+                            deck_point = candidate_point;
+                        }
+                    }
+                    catch (const std::exception& error)
+                    {
+                        if (!is_propeller_deck_coverage_error(error))
+                            throw;
                     }
                 }
+                if (!std::isfinite(best_power_per_thrust))
+                    throw std::runtime_error(
+                        "No valid automatic RPM/pitch deck point for integrated takeoff.");
                 const double power_per_thrust_ms =
                     deck_point.shaft_power_W / deck_point.thrust_N;
                 const double thrust_to_weight =
@@ -552,23 +579,114 @@ namespace constraint_analysis
         return curve;
     }
 
+    constraint_curve
+    propeller_constraint_analysis::compute_mission_airborne_constraint(
+        const constraint_input& input,
+        const std::string& name,
+        const std::vector<climb_mission_point>& mission_points) const
+    {
+        if (mission_points.empty())
+            throw std::runtime_error(name + " has no mission points.");
+
+        struct prepared_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            propeller_operating_point propeller;
+        };
+        std::vector<prepared_point> prepared;
+        prepared.reserve(mission_points.size());
+        for (const auto& point : mission_points)
+        {
+            try
+            {
+                const double rho = atmosphere_.getDensity(point.altitude_m);
+                prepared.push_back({
+                    &point,
+                    constraint_utilities::compute_dynamic_pressure(
+                        rho, point.speed_ms),
+                    select_best_airborne_operating_point(
+                        input, point.altitude_m, point.speed_ms)});
+            }
+            catch (const std::exception& error)
+            {
+                if (!is_propeller_deck_coverage_error(error))
+                    throw;
+            }
+        }
+        if (prepared.empty())
+            throw std::runtime_error(
+                name + " has no mission points covered by the propeller deck.");
+
+        constraint_curve curve;
+        curve.name = name;
+        for (double ws = input.wing_loading_min;
+             ws <= input.wing_loading_max;
+             ws += input.wing_loading_step)
+        {
+            double worst_power_to_weight =
+                -std::numeric_limits<double>::infinity();
+            for (const auto& item : prepared)
+            {
+                const auto& point = *item.mission;
+                mattingly_airborne_case_input airborne;
+                airborne.wing_loading = ws;
+                airborne.dynamic_pressure = item.dynamic_pressure;
+                airborne.alpha = 1.0;
+                airborne.beta = point.beta_climb;
+                airborne.k1 = input.aircraft.polar.k;
+                airborne.k2 = 0.0;
+                airborne.cd0 = input.aircraft.polar.cd_0;
+                airborne.cdr = 0.0;
+                airborne.load_factor = 1.0;
+                airborne.climb_rate = point.roc_ms;
+                airborne.velocity = point.speed_ms;
+                airborne.acceleration = point.acceleration_ms2;
+
+                const auto thrust_result =
+                    mattingly_airborne_case::compute(airborne);
+                worst_power_to_weight = std::max(
+                    worst_power_to_weight,
+                    power_loading_from_thrust_loading(
+                        thrust_result.thrust_to_weight_sl,
+                        item.propeller));
+            }
+            if (!std::isfinite(worst_power_to_weight))
+                throw std::runtime_error(
+                    name + " mission scan produced no finite result.");
+            curve.points.push_back({ws, worst_power_to_weight});
+        }
+        return curve;
+    }
+
     constraint_curve propeller_constraint_analysis::compute_acceleration_constraint(
         const constraint_input& input) const
     {
-        return compute_airborne_constraint(
+        return compute_mission_airborne_constraint(
             input, "propeller_acceleration_constraint",
-            input.acceleration.altitude_m, input.acceleration.speed_ms,
-            input.acceleration.beta_acceleration, 1.0, 0.0,
-            input.acceleration.acceleration_ms2);
+            input.acceleration.mission_points);
     }
 
     constraint_curve propeller_constraint_analysis::compute_cruise_constraint(
         const constraint_input& input) const
     {
-        return compute_airborne_constraint(
-            input, "propeller_cruise_constraint",
-            input.cruise.altitude_m, input.cruise.speed_ms,
-            input.cruise.beta_cruise, 1.0, 0.0, 0.0);
+        try
+        {
+            return compute_mission_airborne_constraint(
+                input, "propeller_cruise_constraint",
+                input.cruise.mission_points);
+        }
+        catch (const std::runtime_error& error)
+        {
+            const std::string message = error.what();
+            if (message.find("has no mission points covered by the propeller deck") ==
+                std::string::npos)
+                throw;
+            return compute_airborne_constraint(
+                input, "propeller_cruise_constraint",
+                input.cruise.altitude_m, input.cruise.speed_ms,
+                input.cruise.beta_cruise, 1.0, 0.0, 0.0);
+        }
     }
 
     constraint_curve propeller_constraint_analysis::compute_climb_constraint(
@@ -1264,21 +1382,10 @@ namespace constraint_analysis
         vc.name = "jet_gust_limit";
         vc.is_upper_limit = false;
 
-        if (input.gust.speed_ms <= 0.0)
-        {
-            throw std::runtime_error("Gust limit error: speed_ms must be positive.");
-        }
+        if (input.gust.mission_points.empty())
+            throw std::runtime_error(
+                "Gust limit error: mission cruise scan has no points.");
 
-        if (input.gust.beta_gust <= 0.0)
-        {
-            throw std::runtime_error("Gust limit error: beta_gust must be positive.");
-        }
-
-        const double rho = atmosphere_.getDensity(input.gust.altitude_m);
-        const double v = input.gust.speed_ms;
-        const double beta = input.gust.beta_gust;
-
-        const double u_de = automatic_design_gust_velocity_ms(input.gust.altitude_m);
         const double effective_aspect_ratio = automatic_effective_aspect_ratio(
             input.aircraft.aspect_ratio,
             input.aircraft.polar.k);
@@ -1289,7 +1396,7 @@ namespace constraint_analysis
             throw std::runtime_error("Gust limit error: takeoff weight must be positive.");
         }
 
-        if (rho <= 0.0 || u_de <= 0.0 || a <= 0.0 || n_limit <= 1.0)
+        if (a <= 0.0 || n_limit <= 1.0)
         {
             throw std::runtime_error("Gust limit error: automatic gust parameters are invalid.");
         }
@@ -1304,63 +1411,67 @@ namespace constraint_analysis
          * K_g also depends on W/S_actual through the mass ratio, so the limit
          * is solved as a scalar root instead of using a fixed K_g value.
          */
-        const auto delta_n = [&](double takeoff_wing_loading) -> double
+        const auto solve_point_limit = [&](const climb_mission_point& point)
         {
-            const double actual_wing_loading = beta * takeoff_wing_loading;
+            if (point.speed_ms <= 0.0 || point.beta_climb <= 0.0)
+                throw std::runtime_error(
+                    "Gust limit error: mission point has invalid speed or beta.");
+            const double rho = atmosphere_.getDensity(point.altitude_m);
+            const double u_de =
+                automatic_design_gust_velocity_ms(point.altitude_m);
+            if (rho <= 0.0 || u_de <= 0.0)
+                throw std::runtime_error(
+                    "Gust limit error: mission atmosphere is invalid.");
 
-            // For every candidate W/S, calculate its corresponding clean-sheet wing area:
-            //     S = W_TO / (W_TO/S)
-            // This keeps wing area an output of sizing rather than a polar-file input.
-            const double candidate_wing_area_m2 =
-                input.aircraft.takeoff_weight_N / takeoff_wing_loading;
-            const double mean_chord = automatic_mean_aerodynamic_chord_m(
-                candidate_wing_area_m2,
-                effective_aspect_ratio);
+            const auto delta_n = [&](double takeoff_wing_loading)
+            {
+                const double actual_wing_loading =
+                    point.beta_climb * takeoff_wing_loading;
 
-            const double k_g = automatic_gust_alleviation_factor(
-                actual_wing_loading,
-                rho,
-                mean_chord,
-                a);
+                const double candidate_wing_area_m2 =
+                    input.aircraft.takeoff_weight_N / takeoff_wing_loading;
+                const double mean_chord = automatic_mean_aerodynamic_chord_m(
+                    candidate_wing_area_m2,
+                    effective_aspect_ratio);
 
-            return k_g * rho * v * a * u_de / (2.0 * actual_wing_loading);
+                const double k_g = automatic_gust_alleviation_factor(
+                    actual_wing_loading, rho, mean_chord, a);
+
+                return k_g * rho * point.speed_ms * a * u_de /
+                    (2.0 * actual_wing_loading);
+            };
+
+            const double target_delta_n = n_limit - 1.0;
+            double lower = 1.0;
+            double upper = 100000.0;
+
+            while (delta_n(lower) < target_delta_n && lower > 1.0e-6)
+                lower *= 0.5;
+
+            while (delta_n(upper) > target_delta_n)
+            {
+                upper *= 2.0;
+                if (upper > 1.0e8)
+                    throw std::runtime_error(
+                        "Gust limit error: could not bracket W/S limit.");
+            }
+
+            for (int iteration = 0; iteration < 80; ++iteration)
+            {
+                const double mid = 0.5 * (lower + upper);
+                if (delta_n(mid) > target_delta_n)
+                    lower = mid;
+                else
+                    upper = mid;
+            }
+            return 0.5 * (lower + upper);
         };
 
-        const double target_delta_n = n_limit - 1.0;
-
-        double lower = 1.0;
-        double upper = 100000.0;
-
-        while (delta_n(lower) < target_delta_n && lower > 1.0e-6)
-        {
-            lower *= 0.5;
-        }
-
-        while (delta_n(upper) > target_delta_n)
-        {
-            upper *= 2.0;
-
-            if (upper > 1.0e8)
-            {
-                throw std::runtime_error("Gust limit error: could not bracket W/S limit.");
-            }
-        }
-
-        for (int iteration = 0; iteration < 80; ++iteration)
-        {
-            const double mid = 0.5 * (lower + upper);
-
-            if (delta_n(mid) > target_delta_n)
-            {
-                lower = mid;
-            }
-            else
-            {
-                upper = mid;
-            }
-        }
-
-        vc.x_limit = 0.5 * (lower + upper);
+        // Gust is a lower W/S limit, so the largest limit across the mission
+        // cruise segment is the governing condition.
+        vc.x_limit = 0.0;
+        for (const auto& point : input.gust.mission_points)
+            vc.x_limit = std::max(vc.x_limit, solve_point_limit(point));
         return vc;
     }
 

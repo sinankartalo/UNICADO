@@ -34,7 +34,6 @@ namespace constraint_analysis
         double diameter_m = 0.0;
         double tip_mach_limit = 0.95;
         int count = 1;
-        propeller_setting takeoff;
     };
 
 
@@ -141,12 +140,10 @@ namespace constraint_analysis
 
     struct gust_constraint
     {
-        // Gust condition is inherited from the cruise case in the parser.
-        // The design gust velocity, lift-curve slope, alleviation factor,
-        // and load-factor limit are derived inside compute_gust_constraint_limit().
-        double altitude_m = 0.0;
-        double speed_ms = 0.0;
-        double beta_gust = 1.0;
+        // Every mission cruise condition is scanned. The design gust
+        // velocity, lift-curve slope, alleviation factor and load-factor
+        // limit are derived inside compute_gust_constraint_limit().
+        std::vector<climb_mission_point> mission_points;
     };
 
     struct range_constraint
@@ -514,6 +511,11 @@ namespace constraint_analysis
             double load_factor,
             double climb_rate_ms,
             double acceleration_ms2) const;
+
+        constraint_curve compute_mission_airborne_constraint(
+            const constraint_input& input,
+            const std::string& name,
+            const std::vector<climb_mission_point>& mission_points) const;
 
         const atmosphere& atmosphere_;
     };

@@ -24,7 +24,6 @@ CD0 = 0.00455002
 K = 0.0217487
 CLMAX_TO = 2.111
 DIAMETER_M = 3.96
-RPM = 1200.0
 WS = 4000.0
 G0 = 9.80665
 TIP_MACH_LIMIT = 0.95
@@ -54,6 +53,24 @@ def case_ground_roll_requirement_m(case_id: str) -> float:
     return float(value)
 
 
+def propeller_cruise_fallback() -> tuple[float, float]:
+    root = ET.parse(CONFIG_XML).getroot()
+    case = root.find(
+        ".//constraint_case[@ID='PROPELLER_UNICADO_BASELINE']"
+    )
+    if case is None:
+        raise ValueError("Propeller constraint case not found")
+    altitude = case.findtext(
+        "./engine/propeller/cruise_fallback/altitude/value"
+    )
+    speed = case.findtext(
+        "./engine/propeller/cruise_fallback/speed/value"
+    )
+    if altitude is None or speed is None:
+        raise ValueError("Propeller cruise fallback is incomplete")
+    return float(altitude), float(speed)
+
+
 def isa_density(altitude_m: float) -> float:
     temperature = 288.15 - 0.0065 * altitude_m
     pressure = 101325.0 * (temperature / 288.15) ** 5.255877
@@ -65,7 +82,7 @@ def isa_speed_of_sound(altitude_m: float) -> float:
     return math.sqrt(1.4 * 287.05287 * temperature)
 
 
-def tip_mach(altitude_m: float, speed_ms: float, rpm: float = RPM) -> float:
+def tip_mach(altitude_m: float, speed_ms: float, rpm: float) -> float:
     rotational_tip_speed = math.pi * DIAMETER_M * rpm / 60.0
     helical_tip_speed = math.hypot(speed_ms, rotational_tip_speed)
     return helical_tip_speed / isa_speed_of_sound(altitude_m)
@@ -122,19 +139,34 @@ def best_airborne_prop_row(
 
 
 def best_takeoff_prop_row(
-    advance_ratio: float,
-) -> tuple[float, float, float]:
+    altitude_m: float, speed_ms: float,
+) -> tuple[float, float, float, float, float, float]:
+    allowed_helical_tip_speed = (
+        0.995 * TIP_MACH_LIMIT * isa_speed_of_sound(altitude_m)
+    )
+    if speed_ms >= allowed_helical_tip_speed:
+        raise ValueError("Takeoff speed exceeds helical tip-speed limit")
+    rotational_tip_speed = math.sqrt(
+        allowed_helical_tip_speed**2 - speed_ms**2
+    )
+    rpm = 60.0 * rotational_tip_speed / (math.pi * DIAMETER_M)
+    advance_ratio = speed_ms / ((rpm / 60.0) * DIAMETER_M)
+    with PROP_CSV.open(encoding="utf-8-sig") as stream:
+        pitches = sorted({float(row[0]) for row in csv.reader(stream)})
     candidates = []
-    for pitch, low, high in ((15.0, 0.0, 1.05),
-                             (30.0, 0.5, 1.5),
-                             (45.0, 0.75, 2.8)):
-        if low <= advance_ratio <= high:
+    for pitch in pitches:
+        try:
             ct, cp, eta = prop_row(pitch, advance_ratio)
-            candidates.append((cp / ct, ct, cp, eta))
+        except ValueError:
+            continue
+        candidates.append(
+            ((cp / ct) * (rpm / 60.0) * DIAMETER_M,
+             ct, cp, eta, rpm, pitch, advance_ratio)
+        )
     if not candidates:
         raise ValueError(f"No takeoff pitch slice covers J={advance_ratio}")
-    _, ct, cp, eta = min(candidates)
-    return ct, cp, eta
+    _, ct, cp, eta, rpm, pitch, advance_ratio = min(candidates)
+    return ct, cp, eta, rpm, pitch, advance_ratio
 
 
 def mission_betas() -> dict[str, float]:
@@ -267,18 +299,82 @@ def mission_climb_power_loading() -> tuple[float, int, int]:
     return worst_power_loading, valid_points, invalid_points
 
 
+def mission_mode_power_loading(
+    modes: set[str], acceleration_scan: bool,
+) -> tuple[float, int, int]:
+    """Independent mission scan for propeller cruise or acceleration."""
+    with MISSION_CSV.open(encoding="utf-8-sig") as stream:
+        rows = list(csv.reader(stream, delimiter=";"))
+    header = [cell.strip() for cell in rows[0]]
+    data = rows[1:]
+    time_index = header.index("Time [s]")
+    altitude_index = header.index("Altitude [m]")
+    mode_index = header.index("Mode name [-]")
+    mass_index = header.index("Total mass [kg]")
+    speed_index = header.index("TAS [m/s]")
+    roc_index = header.index("ROC [fpm]")
+    initial_mass = float(data[0][mass_index])
+    worst = -math.inf
+    valid = 0
+    invalid = 0
+
+    for index, row in enumerate(data):
+        mode = row[mode_index].strip()
+        if mode not in modes:
+            continue
+        acceleration_ms2 = 0.0
+        roc_ms = 0.0
+        if acceleration_scan:
+            lower = index - 1 if (
+                index > 0 and data[index - 1][mode_index].strip() == mode
+            ) else index
+            upper = index + 1 if (
+                index + 1 < len(data) and
+                data[index + 1][mode_index].strip() == mode
+            ) else index
+            if lower == upper:
+                continue
+            dt = float(data[upper][time_index]) - float(data[lower][time_index])
+            if dt <= 0.0:
+                continue
+            acceleration_ms2 = (
+                float(data[upper][speed_index]) -
+                float(data[lower][speed_index])
+            ) / dt
+            if acceleration_ms2 <= 1.0e-6:
+                continue
+            roc_ms = float(row[roc_index]) * 0.00508
+
+        try:
+            value = airborne_power_loading(
+                float(row[altitude_index]),
+                float(row[speed_index]),
+                float(row[mass_index]) / initial_mass,
+                roc_ms=roc_ms,
+                acceleration_ms2=acceleration_ms2,
+            )[0]
+        except ValueError:
+            invalid += 1
+            continue
+        valid += 1
+        worst = max(worst, value)
+
+    if not math.isfinite(worst):
+        raise AssertionError("Mission mode has no deck-covered points")
+    return worst, valid, invalid
+
+
 def takeoff_distance(power_loading: float, beta: float) -> float:
     rho = isa_density(0.0)
     stall_speed = math.sqrt(2.0 * beta * WS / (rho * CLMAX_TO))
     takeoff_speed = 1.2 * stall_speed
     steps = 240
     dv = takeoff_speed / steps
-    n = RPM / 60.0
     distance = 0.0
     for index in range(steps):
         speed = (index + 0.5) * dv
-        advance_ratio = speed / (n * DIAMETER_M)
-        ct, cp, _ = best_takeoff_prop_row(advance_ratio)
+        ct, cp, _, rpm, _, _ = best_takeoff_prop_row(0.0, speed)
+        n = rpm / 60.0
         thrust_to_weight = power_loading / ((cp / ct) * n * DIAMETER_M)
         q = 0.5 * rho * speed**2
         lift_to_weight = q * (0.8 * CLMAX_TO) / WS
@@ -316,16 +412,31 @@ def main() -> None:
     climb_power_loading, climb_valid, climb_invalid = (
         mission_climb_power_loading()
     )
+    acceleration_power_loading, acceleration_valid, acceleration_invalid = (
+        mission_mode_power_loading(
+            {"accelerate", "change_speed_to_CAS", "change_speed_to_Mach"},
+            acceleration_scan=True,
+        )
+    )
+    try:
+        cruise_power_loading, cruise_valid, cruise_invalid = (
+            mission_mode_power_loading({"cruise"}, acceleration_scan=False)
+        )
+        cruise_mode = "mission_scan"
+    except AssertionError:
+        fallback_altitude_m, fallback_speed_ms = propeller_cruise_fallback()
+        cruise_power_loading = airborne_power_loading(
+            fallback_altitude_m, fallback_speed_ms, beta["cruise"]
+        )[0]
+        cruise_valid = 0
+        cruise_invalid = 0
+        cruise_mode = "explicit_configured_fallback"
     checks = {
         "propeller_takeoff_constraint": takeoff_power_loading(
             beta["takeoff"], takeoff_ground_roll_m
         ),
-        "propeller_acceleration_constraint": airborne_power_loading(
-            8000.0, 180.0, beta["cruise_end"], acceleration_ms2=1.5
-        )[0],
-        "propeller_cruise_constraint": airborne_power_loading(
-            6000.0, 180.0, beta["cruise"]
-        )[0],
+        "propeller_acceleration_constraint": acceleration_power_loading,
+        "propeller_cruise_constraint": cruise_power_loading,
         "propeller_climb_constraint": climb_power_loading,
         "propeller_turn_constraint": airborne_power_loading(
             3000.0, 120.0, beta["cruise_end"], load_factor=2.5
@@ -336,6 +447,14 @@ def main() -> None:
     print(
         "Mission climb deck coverage: "
         f"valid={climb_valid}, invalid={climb_invalid}"
+    )
+    print(
+        "Mission acceleration deck coverage: "
+        f"valid={acceleration_valid}, invalid={acceleration_invalid}"
+    )
+    print(
+        "Mission cruise deck coverage: "
+        f"valid={cruise_valid}, invalid={cruise_invalid}, mode={cruise_mode}"
     )
     for name, expected in checks.items():
         output_path = OUTPUT / f"{name}.csv"

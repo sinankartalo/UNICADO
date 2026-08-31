@@ -49,6 +49,7 @@ namespace constraint_analysis
         std::vector<climb_mission_point> get_climb_conditions() const;
         std::vector<climb_mission_point> get_acceleration_conditions() const;
         std::vector<climb_mission_point> get_cruise_conditions() const;
+        double get_segment_reference_altitude(const std::string& segment) const;
 
         readMission(const std::filesystem::path missionCSV) : missionCSV(missionCSV)
         {

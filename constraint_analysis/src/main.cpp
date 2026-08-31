@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -268,6 +269,56 @@ int main(int argc, char* argv[])
         if (is_propeller)
         {
             propeller_constraint_analysis propeller_analysis{atm};
+            const auto count_deck_coverage = [&propeller_analysis, &input](
+                const std::vector<climb_mission_point>& points)
+            {
+                std::size_t valid = 0;
+                for (const auto& point : points)
+                {
+                    try
+                    {
+                        (void)propeller_analysis.select_best_airborne_operating_point(
+                            input, point.altitude_m, point.speed_ms);
+                        ++valid;
+                    }
+                    catch (const std::exception&)
+                    {
+                    }
+                }
+                return valid;
+            };
+            const std::size_t acceleration_valid = count_deck_coverage(
+                input.acceleration.mission_points);
+            const std::size_t cruise_valid = count_deck_coverage(
+                input.cruise.mission_points);
+            {
+                std::ofstream coverage_summary(
+                    output_directory /
+                    "propeller_mission_constraint_coverage.csv");
+                coverage_summary <<
+                    "constraint,total_mission_points,valid_deck_points,"
+                    "invalid_deck_points,analysis_mode\n";
+                coverage_summary << "acceleration,"
+                    << input.acceleration.mission_points.size() << ","
+                    << acceleration_valid << ","
+                    << input.acceleration.mission_points.size() -
+                        acceleration_valid << ",mission_scan\n";
+                coverage_summary << "cruise,"
+                    << input.cruise.mission_points.size() << ","
+                    << cruise_valid << ","
+                    << input.cruise.mission_points.size() - cruise_valid << ","
+                    << (cruise_valid == 0
+                            ? "explicit_configured_fallback"
+                            : "mission_scan") << "\n";
+            }
+            if (cruise_valid == 0)
+            {
+                std::cout
+                    << "WARNING: Propeller deck covers no mission cruise "
+                    << "points. Cruise constraint uses explicit fallback: "
+                    << "V=" << input.cruise.speed_ms << " m/s, altitude="
+                    << input.cruise.altitude_m << " m.\n";
+            }
             const propeller_climb_coverage coverage =
                 propeller_analysis.assess_climb_coverage(input);
 
@@ -618,19 +669,61 @@ int main(int argc, char* argv[])
                              << point.efficiency << "\n";
                 }
             }
-            const std::vector<propeller_operating_point> points = {
-                propeller_analysis.select_best_airborne_operating_point(
-                    input, input.cruise.altitude_m, input.cruise.speed_ms),
-                propeller_analysis.select_best_airborne_operating_point(
-                    input,
-                    input.climb.representative_point.altitude_m,
-                    input.climb.representative_point.speed_ms),
-                propeller_analysis.select_best_airborne_operating_point(
-                    input, input.turn.altitude_m, input.turn.speed_ms),
-                propeller_analysis.select_best_airborne_operating_point(
-                    input, input.acceleration.altitude_m,
-                    input.acceleration.speed_ms)
+            const auto select_valid_representative = [
+                &propeller_analysis, &input](
+                    const std::vector<climb_mission_point>& mission_points,
+                    double fallback_altitude_m,
+                    double fallback_speed_ms)
+            {
+                propeller_operating_point best;
+                double best_kinematic_demand =
+                    -std::numeric_limits<double>::infinity();
+                for (const auto& mission_point : mission_points)
+                {
+                    try
+                    {
+                        const auto point =
+                            propeller_analysis.select_best_airborne_operating_point(
+                                input, mission_point.altitude_m,
+                                mission_point.speed_ms);
+                        const double demand =
+                            mission_point.roc_ms / mission_point.speed_ms +
+                            mission_point.acceleration_ms2 / 9.80665;
+                        if (demand > best_kinematic_demand)
+                        {
+                            best_kinematic_demand = demand;
+                            best = point;
+                        }
+                    }
+                    catch (const std::exception&)
+                    {
+                    }
+                }
+                if (std::isfinite(best_kinematic_demand))
+                    return best;
+                return propeller_analysis.select_best_airborne_operating_point(
+                    input, fallback_altitude_m, fallback_speed_ms);
             };
+            const auto cruise_operating_point = select_valid_representative(
+                input.cruise.mission_points,
+                input.cruise.altitude_m, input.cruise.speed_ms);
+            const auto climb_operating_point = select_valid_representative(
+                input.climb.mission_points,
+                input.climb.representative_point.altitude_m,
+                input.climb.representative_point.speed_ms);
+            const auto acceleration_operating_point =
+                select_valid_representative(
+                    input.acceleration.mission_points,
+                    input.acceleration.altitude_m,
+                    input.acceleration.speed_ms);
+            const auto turn_operating_point =
+                propeller_analysis.select_best_airborne_operating_point(
+                    input, input.turn.altitude_m, input.turn.speed_ms);
+            const std::vector<propeller_operating_point> points = {
+                cruise_operating_point,
+                climb_operating_point,
+                turn_operating_point,
+                acceleration_operating_point};
 
             std::ofstream file(
                 output_directory / "propeller_operating_points.csv");
@@ -700,14 +793,17 @@ int main(int argc, char* argv[])
             };
             const std::vector<capacity_case> capacity_cases = {
                 {"acceleration", "propeller_acceleration_constraint",
-                 input.acceleration.altitude_m, input.acceleration.speed_ms},
+                 acceleration_operating_point.altitude_m,
+                 acceleration_operating_point.speed_ms},
                 {"cruise", "propeller_cruise_constraint",
-                 input.cruise.altitude_m, input.cruise.speed_ms},
+                 cruise_operating_point.altitude_m,
+                 cruise_operating_point.speed_ms},
                 {"climb", "propeller_climb_constraint",
-                 input.climb.representative_point.altitude_m,
-                 input.climb.representative_point.speed_ms},
+                 climb_operating_point.altitude_m,
+                 climb_operating_point.speed_ms},
                 {"turn", "propeller_turn_constraint",
-                 input.turn.altitude_m, input.turn.speed_ms},
+                 turn_operating_point.altitude_m,
+                 turn_operating_point.speed_ms},
             };
 
             std::ofstream capacity(
@@ -803,10 +899,10 @@ int main(int argc, char* argv[])
                      "propeller_aerodynamic_map,implemented,"
                      "supplied_UNICADO_propeller_deck\n"
                      "takeoff_ground_roll,implemented,"
-                     "speed_integrated_ground_roll_with_deck_CT_and_CP\n"
+                     "speed_integrated_ground_roll_with_automatic_tip_mach_limited_RPM_and_deck_pitch\n"
                      "airborne_constraints,implemented_with_coverage_flag,"
-                     "climb_uses_only_supplied_deck_covered_mission_points;"
-                     "see_propeller_climb_mission_coverage.csv\n"
+                     "acceleration_and_climb_use_deck_covered_mission_points;"
+                     "cruise_uses_reported_fallback_when_mission_coverage_is_zero\n"
                      "vertical_constraints,implemented,"
                      "landing_stall_and_gust_wing_loading_limits\n"
                      "propeller_tip_mach,implemented,"
