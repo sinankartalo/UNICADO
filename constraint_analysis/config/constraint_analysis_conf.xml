@@ -55,13 +55,8 @@
           <Mach><value>0.78</value></Mach>
         </max_mach>
 
-        <supercruise ID="SC_BASELINE">
-          <active><value>true</value></active>
-          <altitude><value>11000.0</value></altitude>
-          <Mach><value>0.78</value></Mach>
-        </supercruise>
-
-        <!-- Point-performance constraints -->
+        <!-- Fixed values are retained for the propeller reference case.
+             Jet acceleration and cruise scan the mission CSV instead. -->
         <horizontal_acceleration ID="ACC_BASELINE">
           <active><value>true</value></active>
           <altitude><value>8000.0</value></altitude>
@@ -132,12 +127,8 @@
           <Mach><value>0.78</value></Mach>
         </max_mach>
 
-        <supercruise ID="SC_SHORT">
-          <active><value>true</value></active>
-          <altitude><value>11000.0</value></altitude>
-          <Mach><value>0.78</value></Mach>
-        </supercruise>
-
+        <!-- Fixed values are retained for the propeller reference case.
+             Jet acceleration and cruise scan the mission CSV instead. -->
         <horizontal_acceleration ID="ACC_SHORT">
           <active><value>true</value></active>
           <altitude><value>8000.0</value></altitude>
