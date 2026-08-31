@@ -571,8 +571,6 @@ vertical_limits = [
 ]
 
 x_data_max = envelope["wing_loading"].max()
-x_padding = 0.05 * (x_data_max - x_min)
-x_plot_min = max(0.0, x_min - x_padding)
 x_limit_max = max(vertical_limits, default=x_data_max)
 x_max = max(x_data_max, x_limit_max) * 1.05
 
@@ -646,6 +644,37 @@ upper_ws_limits = [
 ]
 feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
 feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
+
+
+def centered_feasible_xlim(required_right, fallback_right):
+    """Center the nominal feasible W/S interval in the visible chart."""
+    if not np.isfinite(feasible_ws_min) or not np.isfinite(feasible_ws_max):
+        return x_min, fallback_right
+    if feasible_ws_min >= feasible_ws_max:
+        return x_min, fallback_right
+
+    center = 0.5 * (feasible_ws_min + feasible_ws_max)
+    feasible_width = feasible_ws_max - feasible_ws_min
+    left_required = max(0.0, x_min - 0.05 * feasible_width)
+    half_width = max(
+        center - left_required,
+        required_right - center,
+        0.60 * feasible_width,
+    )
+    return max(0.0, center - half_width), center + half_width
+
+
+normal_required_right = max(
+    feasible_ws_max,
+    aircraft_ws * 1.03,
+    max(vertical_limits, default=feasible_ws_max) * 1.01,
+)
+x_plot_min, x_plot_max = centered_feasible_xlim(
+    normal_required_right, x_max
+)
+tolerance_plot_min, tolerance_plot_max = centered_feasible_xlim(
+    max(normal_required_right, tolerance_x_limit_max), tolerance_x_max
+)
 
 def shade_feasible_design_region(ax, upper_y, label=True):
     if feasible_ws_min >= feasible_ws_max:
@@ -805,7 +834,7 @@ if propeller_climb_coverage_note:
         zorder=10,
     )
 
-ax.set_xlim(x_plot_min, x_max)
+ax.set_xlim(x_plot_min, x_plot_max)
 ax.set_ylim(y_min, y_max)
 
 ax.spines["top"].set_visible(False)
@@ -934,7 +963,7 @@ if propeller_climb_coverage_note:
         ),
         zorder=10,
     )
-ax.set_xlim(x_plot_min, tolerance_x_max)
+ax.set_xlim(tolerance_plot_min, tolerance_plot_max)
 ax.set_ylim(y_min, tolerance_y_max)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
@@ -1109,7 +1138,7 @@ if gust_ws_limit is not None:
 ax.set_title(analysis_title("Active Constraint Regions"))
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
-ax.set_xlim(x_plot_min, x_max)
+ax.set_xlim(x_plot_min, x_plot_max)
 ax.set_ylim(y_min, y_max)
 
 performance_legend = ax.legend(
@@ -1302,7 +1331,7 @@ if propeller_mode:
         )
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
-        ax.set_xlim(x_plot_min, x_max)
+        ax.set_xlim(x_plot_min, x_plot_max)
         ax.set_ylim(0.0, carpet_y_max)
         clean_axes(ax)
         ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0),
