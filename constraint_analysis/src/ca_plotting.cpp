@@ -265,8 +265,6 @@ namespace constraint_analysis
                     return input.aircraft.polar.k;
                 case jet_carpet_parameter::takeoff_distance_m:
                     return input.takeoff.runway_m;
-                case jet_carpet_parameter::acceleration_requirement_ms2:
-                    return input.acceleration.acceleration_ms2;
                 case jet_carpet_parameter::thrust_lapse_scale:
                     return input.installed_thrust_lapse_scale;
             }
@@ -293,9 +291,6 @@ namespace constraint_analysis
                     return;
                 case jet_carpet_parameter::takeoff_distance_m:
                     input.takeoff.runway_m = value;
-                    return;
-                case jet_carpet_parameter::acceleration_requirement_ms2:
-                    input.acceleration.acceleration_ms2 = value;
                     return;
                 case jet_carpet_parameter::thrust_lapse_scale:
                     input.installed_thrust_lapse_scale = value;
