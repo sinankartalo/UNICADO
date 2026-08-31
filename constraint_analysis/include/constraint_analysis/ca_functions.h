@@ -50,6 +50,8 @@ namespace constraint_analysis
         double aspect_ratio = 0.0;
         double cl_max_takeoff = 0.0;
         double cl_max_landing = 0.0;
+        double aerodynamic_minimum_mach = 0.0;
+        double aerodynamic_maximum_mach = 0.0;
         drag_polar polar;
     };
 
@@ -107,6 +109,7 @@ namespace constraint_analysis
 
         double beta_cruise = 1.0;
         std::vector<climb_mission_point> mission_points;
+        bool allow_configured_fallback = false;
     };
 
     struct turn_constraint

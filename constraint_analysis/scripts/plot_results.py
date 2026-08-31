@@ -396,8 +396,6 @@ def plot_two_parameter_classical_carpet(
 if propeller_mode:
     constraint_files = {
         "Acceleration": "propeller_acceleration_constraint.csv",
-        "Climb": "propeller_climb_constraint.csv",
-        "Cruise": "propeller_cruise_constraint.csv",
         "Takeoff": "propeller_takeoff_constraint.csv",
         "Turn": "propeller_turn_constraint.csv",
     }
@@ -417,8 +415,6 @@ if propeller_mode:
 else:
     constraint_files = {
         "Acceleration": "jet_acceleration_constraint.csv",
-        "Climb": "jet_climb_constraint.csv",
-        "Cruise": "jet_cruise_constraint.csv",
         "Max Mach": "jet_max_mach_constraint.csv",
         "Takeoff": "jet_takeoff_constraint.csv",
         "Turn": "jet_turn_constraint.csv",
@@ -431,6 +427,27 @@ else:
     )
     if os.path.exists(stale_duplicate):
         os.remove(stale_duplicate)
+
+propulsion_prefix = "propeller" if propeller_mode else "jet"
+for regime in ("subsonic", "transonic", "supersonic"):
+    for segment in ("climb", "cruise"):
+        filename = (
+            f"{propulsion_prefix}_{regime}_{segment}_constraint.csv"
+        )
+        if os.path.exists(os.path.join(output_dir, filename)):
+            label = f"{regime.title()} {segment.title()}"
+            constraint_files[label] = filename
+
+for required_segment in ("Climb", "Cruise"):
+    if not any(name.endswith(required_segment) for name in constraint_files):
+        raise RuntimeError(
+            f"No mission-supported {required_segment.lower()} constraint "
+            "curve was generated. Inspect mission_mach_regime_coverage.csv."
+        )
+
+for name in constraint_files:
+    if name.endswith("Climb") or name.endswith("Cruise"):
+        constraint_tolerances.setdefault(name, (0.10, 0.10))
 
 constraints = {}
 missing_constraint_files = []
@@ -657,6 +674,14 @@ color_map = {
     "Turn": "#e377c2",
     "Range": "#7f7f7f",
 }
+color_map.update({
+    "Subsonic Climb": "#2ca02c",
+    "Subsonic Cruise": "#ff7f0e",
+    "Transonic Climb": "#9467bd",
+    "Transonic Cruise": "#17becf",
+    "Supersonic Climb": "#006d2c",
+    "Supersonic Cruise": "#d95f02",
+})
 
 for name, df in constraints.items():
     ax.plot(
@@ -1278,6 +1303,12 @@ if propeller_mode:
             "Acceleration": "#0072B2",
             "Climb": "#009E73",
             "Cruise": "#E69F00",
+            "Subsonic Climb": "#009E73",
+            "Subsonic Cruise": "#E69F00",
+            "Transonic Climb": "#9467BD",
+            "Transonic Cruise": "#17BECF",
+            "Supersonic Climb": "#006D2C",
+            "Supersonic Cruise": "#D95F02",
             "Takeoff": "#D55E00",
             "Turn": "#CC79A7",
         }

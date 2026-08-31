@@ -3,6 +3,7 @@
 #include "atmosphere/atmosphere.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <exception>
 #include <filesystem>
@@ -157,6 +158,23 @@ int main(int argc, char* argv[])
         std::filesystem::create_directories(output_directory);
         std::filesystem::remove(
             output_directory / "carpet_plot_full.csv");
+        for (const auto& entry :
+             std::filesystem::directory_iterator(output_directory))
+        {
+            if (!entry.is_regular_file())
+                continue;
+            const std::string filename = entry.path().filename().string();
+            const bool legacy_mission_curve =
+                filename == "jet_climb_constraint.csv" ||
+                filename == "jet_cruise_constraint.csv" ||
+                filename == "propeller_climb_constraint.csv" ||
+                filename == "propeller_cruise_constraint.csv";
+            const bool regime_mission_curve =
+                filename.ends_with("_climb_constraint.csv") ||
+                filename.ends_with("_cruise_constraint.csv");
+            if (legacy_mission_curve || regime_mission_curve)
+                std::filesystem::remove(entry.path());
+        }
 
         std::cout << "Using XML configuration: " << config_path << '\n';
         std::cout << "Using constraint case ID: " << active_case_id << '\n';
@@ -240,6 +258,73 @@ int main(int argc, char* argv[])
         // ============================================================
         atmosphere atm;
         constraint_analysis_tool tool{atm};
+
+        {
+            struct regime_definition
+            {
+                const char* name;
+                double minimum_mach;
+                double maximum_mach;
+            };
+            const std::array<regime_definition, 3> regimes = {{
+                {"subsonic", 0.0, 0.95},
+                {"transonic", 0.95, 1.20},
+                {"supersonic", 1.20,
+                 std::numeric_limits<double>::infinity()}
+            }};
+            std::ofstream coverage(
+                output_directory / "mission_mach_regime_coverage.csv");
+            coverage << "segment,regime,observed_minimum_mach,"
+                        "observed_maximum_mach,"
+                        "mission_point_count,aerodynamic_supported_point_count,"
+                        "curve_generated\n";
+            const auto write_segment = [&](
+                const char* segment,
+                const std::vector<climb_mission_point>& points)
+            {
+                for (const auto& regime : regimes)
+                {
+                    std::size_t count = 0;
+                    std::size_t supported_count = 0;
+                    double observed_min =
+                        std::numeric_limits<double>::infinity();
+                    double observed_max = 0.0;
+                    for (const auto& point : points)
+                    {
+                        const double mach = point.speed_ms /
+                            atm.getSpeedOfSound(point.altitude_m);
+                        if (std::isfinite(mach) &&
+                            mach >= regime.minimum_mach &&
+                            mach < regime.maximum_mach)
+                        {
+                            ++count;
+                            observed_min = std::min(observed_min, mach);
+                            observed_max = std::max(observed_max, mach);
+                            if (mach >= input.aircraft.aerodynamic_minimum_mach &&
+                                mach <= input.aircraft.aerodynamic_maximum_mach)
+                                ++supported_count;
+                        }
+                    }
+                    coverage << segment << "," << regime.name << ",";
+                    if (count > 0)
+                        coverage << observed_min << "," << observed_max;
+                    else
+                        coverage << ",";
+                    coverage << "," << count << "," << supported_count << ","
+                             << (supported_count > 0 ? "true" : "false")
+                             << "\n";
+                    std::cout << "Mission " << segment << " "
+                              << regime.name << " points = " << count
+                              << ", aero-supported = " << supported_count;
+                    if (count > 0)
+                        std::cout << " (Mach " << observed_min << " to "
+                                  << observed_max << ")";
+                    std::cout << "\n";
+                }
+            };
+            write_segment("climb", input.climb.mission_points);
+            write_segment("cruise", input.cruise.mission_points);
+        }
 
         const constraint_output output = tool.run(input);
 
@@ -795,10 +880,10 @@ int main(int argc, char* argv[])
                 {"acceleration", "propeller_acceleration_constraint",
                  acceleration_operating_point.altitude_m,
                  acceleration_operating_point.speed_ms},
-                {"cruise", "propeller_cruise_constraint",
+                {"cruise", "propeller_subsonic_cruise_constraint",
                  cruise_operating_point.altitude_m,
                  cruise_operating_point.speed_ms},
-                {"climb", "propeller_climb_constraint",
+                {"climb", "propeller_subsonic_climb_constraint",
                  climb_operating_point.altitude_m,
                  climb_operating_point.speed_ms},
                 {"turn", "propeller_turn_constraint",

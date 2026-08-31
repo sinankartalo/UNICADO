@@ -57,10 +57,18 @@ namespace constraint_analysis
         }
 
         double cl_max = -std::numeric_limits<double>::infinity();
+        values.minimum_mach = std::numeric_limits<double>::infinity();
+        values.maximum_mach = -std::numeric_limits<double>::infinity();
         for (const auto& configuration : component.configurations)
         {
             for (const auto& polar : configuration.polars)
             {
+                values.minimum_mach = std::min(
+                    values.minimum_mach,
+                    polar.conditions.freestream_M);
+                values.maximum_mach = std::max(
+                    values.maximum_mach,
+                    polar.conditions.freestream_M);
                 if (polar.CL.size() > 0)
                 {
                     cl_max = std::max(cl_max, polar.CL.maxCoeff());
@@ -71,6 +79,13 @@ namespace constraint_analysis
         if (!std::isfinite(cl_max))
         {
             throw std::runtime_error("Could not determine CLmax from aerodynamics polar XML.");
+        }
+        if (!std::isfinite(values.minimum_mach) ||
+            !std::isfinite(values.maximum_mach) ||
+            values.maximum_mach < values.minimum_mach)
+        {
+            throw std::runtime_error(
+                "Could not determine Mach coverage from aerodynamics polar XML.");
         }
 
         values.cl_max_takeoff = cl_max;

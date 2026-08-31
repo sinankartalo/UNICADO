@@ -13,6 +13,8 @@ namespace constraint_analysis
         double k = 0.0;
         double cl_max_takeoff = 0.0;
         double cl_max_landing = 0.0;
+        double minimum_mach = 0.0;
+        double maximum_mach = 0.0;
     };
 
     aerodynamic_aircraft_values read_aerodynamic_aircraft_values(

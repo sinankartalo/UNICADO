@@ -77,13 +77,19 @@ def save_plot(name):
 # ============================================================
 constraint_files = {
     "Acceleration": "propeller_acceleration_constraint.csv",
-    "Climb": "propeller_climb_constraint.csv",
-    "Cruise": "propeller_cruise_constraint.csv",
     "Max speed": "propeller_max_speed_constraint.csv",
     "High-speed cruise": "propeller_high_speed_cruise_constraint.csv",
     "Takeoff": "propeller_takeoff_constraint.csv",
     "Turn": "propeller_turn_constraint.csv",
 }
+
+for regime in ("subsonic", "transonic", "supersonic"):
+    for segment in ("climb", "cruise"):
+        filename = f"propeller_{regime}_{segment}_constraint.csv"
+        if os.path.exists(os.path.join(output_dir, filename)):
+            constraint_files[
+                f"{regime.title()} {segment.title()}"
+            ] = filename
 
 constraints = {}
 
@@ -183,6 +189,12 @@ color_map = {
     "High-speed cruise": "#17becf",
     "Turn": "#e377c2",
     "Range": "#7f7f7f",
+    "Subsonic Climb": "#2ca02c",
+    "Subsonic Cruise": "#ff7f0e",
+    "Transonic Climb": "#9467bd",
+    "Transonic Cruise": "#17becf",
+    "Supersonic Climb": "#006d2c",
+    "Supersonic Cruise": "#d95f02",
 }
 
 for name, df in constraints.items():

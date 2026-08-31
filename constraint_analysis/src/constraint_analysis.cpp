@@ -1,11 +1,55 @@
 #include "constraint_analysis/constraint_analysis.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
+#include <utility>
 
 namespace constraint_analysis
 {
+    namespace
+    {
+        struct mach_regime
+        {
+            const char* name;
+            double minimum_mach;
+            double maximum_mach;
+        };
+
+        constexpr std::array<mach_regime, 3> mission_mach_regimes = {{
+            {"subsonic", 0.0, 0.95},
+            {"transonic", 0.95, 1.20},
+            {"supersonic", 1.20, std::numeric_limits<double>::infinity()}
+        }};
+
+        std::vector<climb_mission_point> points_in_regime(
+            const std::vector<climb_mission_point>& points,
+            const mach_regime& regime,
+            const atmosphere& atmosphere,
+            double aerodynamic_minimum_mach,
+            double aerodynamic_maximum_mach)
+        {
+            std::vector<climb_mission_point> selected;
+            for (const auto& point : points)
+            {
+                const double speed_of_sound =
+                    atmosphere.getSpeedOfSound(point.altitude_m);
+                const double mach = point.speed_ms / speed_of_sound;
+                if (std::isfinite(mach) &&
+                    mach >= regime.minimum_mach &&
+                    mach < regime.maximum_mach &&
+                    mach >= aerodynamic_minimum_mach &&
+                    mach <= aerodynamic_maximum_mach)
+                {
+                    selected.push_back(point);
+                }
+            }
+            return selected;
+        }
+    }
+
     constraint_analysis_tool::constraint_analysis_tool(const atmosphere& atmosphere)
         : atmosphere_(atmosphere)
     {
@@ -84,8 +128,34 @@ namespace constraint_analysis
             output.curves.push_back(jet_analysis.compute_takeoff_constraint(sampled_input));
             output.curves.push_back(jet_analysis.compute_max_mach_constraint(sampled_input));
             output.curves.push_back(jet_analysis.compute_acceleration_constraint(sampled_input));
-            output.curves.push_back(jet_analysis.compute_cruise_constraint(sampled_input));
-            output.curves.push_back(jet_analysis.compute_climb_constraint(sampled_input));
+            for (const auto& regime : mission_mach_regimes)
+            {
+                auto regime_input = sampled_input;
+                regime_input.cruise.mission_points = points_in_regime(
+                    sampled_input.cruise.mission_points, regime, atmosphere_,
+                    sampled_input.aircraft.aerodynamic_minimum_mach,
+                    sampled_input.aircraft.aerodynamic_maximum_mach);
+                if (!regime_input.cruise.mission_points.empty())
+                {
+                    auto curve = jet_analysis.compute_cruise_constraint(regime_input);
+                    curve.name = std::string("jet_") + regime.name +
+                        "_cruise_constraint";
+                    output.curves.push_back(std::move(curve));
+                }
+
+                regime_input = sampled_input;
+                regime_input.climb.mission_points = points_in_regime(
+                    sampled_input.climb.mission_points, regime, atmosphere_,
+                    sampled_input.aircraft.aerodynamic_minimum_mach,
+                    sampled_input.aircraft.aerodynamic_maximum_mach);
+                if (!regime_input.climb.mission_points.empty())
+                {
+                    auto curve = jet_analysis.compute_climb_constraint(regime_input);
+                    curve.name = std::string("jet_") + regime.name +
+                        "_climb_constraint";
+                    output.curves.push_back(std::move(curve));
+                }
+            }
             output.curves.push_back(jet_analysis.compute_turn_constraint(sampled_input));
         }
         else
@@ -99,8 +169,39 @@ namespace constraint_analysis
             propeller_constraint_analysis propeller_analysis(atmosphere_);
             output.curves.push_back(propeller_analysis.compute_takeoff_constraint(sampled_input));
             output.curves.push_back(propeller_analysis.compute_acceleration_constraint(sampled_input));
-            output.curves.push_back(propeller_analysis.compute_cruise_constraint(sampled_input));
-            output.curves.push_back(propeller_analysis.compute_climb_constraint(sampled_input));
+            for (const auto& regime : mission_mach_regimes)
+            {
+                auto regime_input = sampled_input;
+                regime_input.cruise.mission_points = points_in_regime(
+                    sampled_input.cruise.mission_points, regime, atmosphere_,
+                    sampled_input.aircraft.aerodynamic_minimum_mach,
+                    sampled_input.aircraft.aerodynamic_maximum_mach);
+                regime_input.cruise.allow_configured_fallback =
+                    sampled_input.cruise.allow_configured_fallback &&
+                    std::string(regime.name) == "subsonic";
+                if (!regime_input.cruise.mission_points.empty())
+                {
+                    auto curve = propeller_analysis.compute_cruise_constraint(
+                        regime_input);
+                    curve.name = std::string("propeller_") + regime.name +
+                        "_cruise_constraint";
+                    output.curves.push_back(std::move(curve));
+                }
+
+                regime_input = sampled_input;
+                regime_input.climb.mission_points = points_in_regime(
+                    sampled_input.climb.mission_points, regime, atmosphere_,
+                    sampled_input.aircraft.aerodynamic_minimum_mach,
+                    sampled_input.aircraft.aerodynamic_maximum_mach);
+                if (!regime_input.climb.mission_points.empty())
+                {
+                    auto curve = propeller_analysis.compute_climb_constraint(
+                        regime_input);
+                    curve.name = std::string("propeller_") + regime.name +
+                        "_climb_constraint";
+                    output.curves.push_back(std::move(curve));
+                }
+            }
             output.curves.push_back(propeller_analysis.compute_turn_constraint(sampled_input));
         }
 

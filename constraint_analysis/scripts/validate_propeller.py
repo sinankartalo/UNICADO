@@ -436,8 +436,8 @@ def main() -> None:
             beta["takeoff"], takeoff_ground_roll_m
         ),
         "propeller_acceleration_constraint": acceleration_power_loading,
-        "propeller_cruise_constraint": cruise_power_loading,
-        "propeller_climb_constraint": climb_power_loading,
+        "propeller_subsonic_cruise_constraint": cruise_power_loading,
+        "propeller_subsonic_climb_constraint": climb_power_loading,
         "propeller_turn_constraint": airborne_power_loading(
             3000.0, 120.0, beta["cruise_end"], load_factor=2.5
         )[0],
@@ -472,10 +472,10 @@ def main() -> None:
 
     if not all(math.isfinite(value) and value > 0.0 for value in checks.values()):
         raise AssertionError("All propeller power-loading checks must be finite and positive")
-    if not (checks["propeller_climb_constraint"] >
+    if not (checks["propeller_subsonic_climb_constraint"] >
             checks["propeller_acceleration_constraint"] >
             checks["propeller_turn_constraint"] >
-            checks["propeller_cruise_constraint"]):
+            checks["propeller_subsonic_cruise_constraint"]):
         raise AssertionError("Airborne constraint ordering is physically inconsistent")
 
     required_envelope_W_N = max(checks.values())

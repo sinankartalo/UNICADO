@@ -680,7 +680,8 @@ namespace constraint_analysis
         {
             const std::string message = error.what();
             if (message.find("has no mission points covered by the propeller deck") ==
-                std::string::npos)
+                    std::string::npos ||
+                !input.cruise.allow_configured_fallback)
                 throw;
             return compute_airborne_constraint(
                 input, "propeller_cruise_constraint",

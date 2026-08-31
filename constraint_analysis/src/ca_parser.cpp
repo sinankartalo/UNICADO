@@ -338,6 +338,8 @@ namespace constraint_analysis
         input.aircraft.polar.k = aero_values.k;
         input.aircraft.cl_max_takeoff = aero_values.cl_max_takeoff;
         input.aircraft.cl_max_landing = aero_values.cl_max_landing;
+        input.aircraft.aerodynamic_minimum_mach = aero_values.minimum_mach;
+        input.aircraft.aerodynamic_maximum_mach = aero_values.maximum_mach;
 
         input.engine = engine;
         const std::string propulsion = xml_string(config, "propulsion_type");
@@ -442,6 +444,7 @@ namespace constraint_analysis
                 config, "propeller_cruise_fallback_speed_ms");
             input.cruise.beta_cruise = mission_data.get_beta(
                 "cruise", input.cruise.altitude_m);
+            input.cruise.allow_configured_fallback = true;
         }
 
         input.gust.mission_points = input.cruise.mission_points;
@@ -485,6 +488,9 @@ namespace constraint_analysis
                 << input.aircraft.polar.cd_0 << '\n';
         std::cout << "Induced drag factor k from aerodynamics = "
                 << input.aircraft.polar.k << '\n';
+        std::cout << "Aerodynamic polar Mach coverage = "
+                << input.aircraft.aerodynamic_minimum_mach << " to "
+                << input.aircraft.aerodynamic_maximum_mach << '\n';
         std::cout << "Takeoff CLmax from aerodynamics = "
                 << aero_values.cl_max_takeoff << '\n';
         std::cout << "Landing CLmax from aerodynamics = "
