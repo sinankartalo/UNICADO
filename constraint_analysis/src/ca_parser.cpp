@@ -293,13 +293,6 @@ namespace constraint_analysis
             standard_set + "max_mach/Mach");
 
         xml_map_value(config, *standard_set_node,
-            "supercruise_altitude_m",
-            standard_set + "supercruise/altitude");
-        xml_map_value(config, *standard_set_node,
-            "supercruise_mach",
-            standard_set + "supercruise/Mach");
-
-        xml_map_value(config, *standard_set_node,
             "acceleration_altitude_m",
             standard_set + "horizontal_acceleration/altitude");
         xml_map_value(config, *standard_set_node,
@@ -425,21 +418,21 @@ namespace constraint_analysis
         input.max_mach.mach = xml_double(config, "max_mach");
         input.max_mach.beta_max_mach = mission_data.get_beta("cruise");
 
-        input.supercruise.altitude_m = xml_double(config, "supercruise_altitude_m");
-        input.supercruise.mach = xml_double(config, "supercruise_mach");
-        input.supercruise.beta_supercruise = mission_data.get_beta("cruise");
-
         input.acceleration.altitude_m = xml_double(config, "acceleration_altitude_m");
         input.acceleration.speed_ms = xml_double(config, "acceleration_speed_ms");
         input.acceleration.acceleration_ms2 = xml_double(config, "acceleration_ms2");
         input.acceleration.beta_acceleration = mission_data.get_beta("cruise");
+        input.acceleration.mission_points =
+            mission_data.get_acceleration_conditions();
 
         input.cruise.altitude_m = xml_double(config, "cruise_altitude_m");
         input.cruise.speed_ms = xml_double(config, "cruise_speed_ms");
         input.cruise.beta_cruise = mission_data.get_beta("cruise", input.cruise.altitude_m);
+        input.cruise.mission_points = mission_data.get_cruise_conditions();
 
-        // Gust constraint uses the cruise flight condition automatically.
-        // All remaining gust quantities are derived in compute_gust_constraint_limit().
+        // Gust remains a separate preliminary-sizing constraint and keeps the
+        // configured reference condition. Its assumptions are reviewed apart
+        // from the mission-derived cruise performance constraint.
         input.gust.altitude_m = input.cruise.altitude_m;
         input.gust.speed_ms = input.cruise.speed_ms;
         input.gust.beta_gust = input.cruise.beta_cruise;
@@ -499,11 +492,36 @@ namespace constraint_analysis
                 << "at landing altitude = "
                 << input.stall_speed.altitude_m << " m, beta = "
                 << input.stall_speed.beta_stall << '\n';
-        std::cout << "Gust constraint flight condition inherited from cruise: "
+        std::cout << "Gust constraint uses configured reference condition: "
                 << "V = " << input.gust.speed_ms << " m/s, altitude = "
                 << input.gust.altitude_m << " m, beta = "
                 << input.gust.beta_gust << '\n';
         const auto& representative_climb = input.climb.representative_point;
+        const auto representative_acceleration = std::max_element(
+            input.acceleration.mission_points.begin(),
+            input.acceleration.mission_points.end(),
+            [](const climb_mission_point& left,
+               const climb_mission_point& right)
+            {
+                constexpr double g = 9.80665;
+                return left.roc_ms / left.speed_ms +
+                        left.acceleration_ms2 / g <
+                    right.roc_ms / right.speed_ms +
+                        right.acceleration_ms2 / g;
+            });
+        std::cout << "Acceleration constraint scans "
+                  << input.acceleration.mission_points.size()
+                  << " positive-dV/dt mission points. Highest energy-demand "
+                     "candidate: V = "
+                  << representative_acceleration->speed_ms
+                  << " m/s, ROC = " << representative_acceleration->roc_ms
+                  << " m/s, dV/dt = "
+                  << representative_acceleration->acceleration_ms2
+                  << " m/s^2, altitude = "
+                  << representative_acceleration->altitude_m << " m\n";
+        std::cout << "Cruise constraint scans "
+                  << input.cruise.mission_points.size()
+                  << " mission cruise points.\n";
         std::cout << "Climb constraint scans "
                   << input.climb.mission_points.size()
                   << " mission climb points. Highest kinematic demand point: "
@@ -707,6 +725,103 @@ namespace constraint_analysis
                 "Mission CSV contains no valid airborne positive-ROC points.");
         }
 
+        return conditions;
+    }
+
+    std::vector<climb_mission_point>
+    readMission::get_acceleration_conditions() const
+    {
+        std::vector<climb_mission_point> conditions;
+        for (std::size_t i = 0; i < this->altitude.size(); ++i)
+        {
+            const std::string current_mode = trim_copy(this->mode_name[i]);
+            const bool acceleration_mode =
+                current_mode == "accelerate" ||
+                current_mode == "change_speed_to_CAS" ||
+                current_mode == "change_speed_to_Mach";
+            if (!acceleration_mode)
+                continue;
+
+            std::size_t lower = i;
+            std::size_t upper = i;
+            if (i > 0 && trim_copy(this->mode_name[i - 1]) == current_mode)
+                lower = i - 1;
+            if (i + 1 < this->altitude.size() &&
+                trim_copy(this->mode_name[i + 1]) == current_mode)
+                upper = i + 1;
+
+            const double time_delta = this->time_s[upper] - this->time_s[lower];
+            if (lower == upper || time_delta <= 0.0)
+                continue;
+
+            climb_mission_point point;
+            point.altitude_m = this->altitude[i];
+            point.speed_ms = this->tas[i];
+            point.roc_ms = this->climb_rate_ms[i];
+            point.acceleration_ms2 =
+                (this->tas[upper] - this->tas[lower]) / time_delta;
+            point.beta_climb =
+                this->total_mass[i] / this->total_mass.front();
+
+            if (std::isfinite(point.altitude_m) &&
+                std::isfinite(point.speed_ms) && point.speed_ms > 0.0 &&
+                std::isfinite(point.roc_ms) &&
+                std::isfinite(point.acceleration_ms2) &&
+                point.acceleration_ms2 > 1.0e-6 &&
+                std::isfinite(point.beta_climb) && point.beta_climb > 0.0)
+            {
+                conditions.push_back(point);
+            }
+        }
+
+        if (conditions.empty())
+            throw std::runtime_error(
+                "Mission CSV contains no valid airborne acceleration points.");
+        return conditions;
+    }
+
+    std::vector<climb_mission_point> readMission::get_cruise_conditions() const
+    {
+        std::vector<climb_mission_point> conditions;
+        for (std::size_t i = 0; i < this->altitude.size(); ++i)
+        {
+            if (trim_copy(this->mode_name[i]) != "cruise")
+                continue;
+
+            climb_mission_point point;
+            point.altitude_m = this->altitude[i];
+            point.speed_ms = this->tas[i];
+            point.roc_ms = 0.0;
+            point.acceleration_ms2 = 0.0;
+            point.beta_climb =
+                this->total_mass[i] / this->total_mass.front();
+
+            if (std::isfinite(point.altitude_m) &&
+                std::isfinite(point.speed_ms) && point.speed_ms > 0.0 &&
+                std::isfinite(point.beta_climb) && point.beta_climb > 0.0)
+            {
+                // At fixed altitude and TAS, the largest beta is the
+                // conservative cruise sizing condition. Collapse thousands
+                // of repeated mission rows without changing the envelope.
+                const auto existing = std::find_if(
+                    conditions.begin(), conditions.end(),
+                    [&](const climb_mission_point& candidate)
+                    {
+                        return std::abs(candidate.altitude_m - point.altitude_m)
+                                   < 1.0e-6 &&
+                            std::abs(candidate.speed_ms - point.speed_ms)
+                                   < 1.0e-6;
+                    });
+                if (existing == conditions.end())
+                    conditions.push_back(point);
+                else if (point.beta_climb > existing->beta_climb)
+                    *existing = point;
+            }
+        }
+
+        if (conditions.empty())
+            throw std::runtime_error(
+                "Mission CSV contains no valid cruise points.");
         return conditions;
     }
 
