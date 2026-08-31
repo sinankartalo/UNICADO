@@ -47,6 +47,8 @@ namespace constraint_analysis
         double get_range_weighted_altitude() const;
         double get_range_weighted_tas() const;
         std::vector<climb_mission_point> get_climb_conditions() const;
+        std::vector<climb_mission_point> get_acceleration_conditions() const;
+        std::vector<climb_mission_point> get_cruise_conditions() const;
 
         readMission(const std::filesystem::path missionCSV) : missionCSV(missionCSV)
         {
