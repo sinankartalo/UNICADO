@@ -571,6 +571,8 @@ vertical_limits = [
 ]
 
 x_data_max = envelope["wing_loading"].max()
+x_padding = 0.05 * (x_data_max - x_min)
+x_plot_min = max(0.0, x_min - x_padding)
 x_limit_max = max(vertical_limits, default=x_data_max)
 x_max = max(x_data_max, x_limit_max) * 1.05
 
@@ -803,7 +805,7 @@ if propeller_climb_coverage_note:
         zorder=10,
     )
 
-ax.set_xlim(x_min, x_max)
+ax.set_xlim(x_plot_min, x_max)
 ax.set_ylim(y_min, y_max)
 
 ax.spines["top"].set_visible(False)
@@ -932,7 +934,7 @@ if propeller_climb_coverage_note:
         ),
         zorder=10,
     )
-ax.set_xlim(x_min, tolerance_x_max)
+ax.set_xlim(x_plot_min, tolerance_x_max)
 ax.set_ylim(y_min, tolerance_y_max)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
@@ -1107,7 +1109,7 @@ if gust_ws_limit is not None:
 ax.set_title(analysis_title("Active Constraint Regions"))
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
-ax.set_xlim(x_min, x_max)
+ax.set_xlim(x_plot_min, x_max)
 ax.set_ylim(y_min, y_max)
 
 performance_legend = ax.legend(
@@ -1300,7 +1302,7 @@ if propeller_mode:
         )
         ax.set_xlabel("Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
-        ax.set_xlim(x_min, x_max)
+        ax.set_xlim(x_plot_min, x_max)
         ax.set_ylim(0.0, carpet_y_max)
         clean_axes(ax)
         ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0),
