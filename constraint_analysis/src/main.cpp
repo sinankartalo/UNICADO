@@ -226,6 +226,12 @@ int main(int argc, char* argv[])
         else
         {
             std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
+            for (const char* stale_file : {
+                     "jet_supercruise_constraint.csv",
+                     "jet_k_acceleration_carpet.csv"})
+            {
+                std::filesystem::remove(output_directory / stale_file);
+            }
         }
 
         // ============================================================
@@ -235,6 +241,29 @@ int main(int argc, char* argv[])
         constraint_analysis_tool tool{atm};
 
         const constraint_output output = tool.run(input);
+
+        if (!is_propeller)
+        {
+            const auto write_mission_points = [](
+                const std::filesystem::path& path,
+                const std::vector<climb_mission_point>& points)
+            {
+                std::ofstream file(path);
+                file << "altitude_m,speed_ms,roc_ms,acceleration_ms2,beta\n";
+                for (const auto& point : points)
+                {
+                    file << point.altitude_m << "," << point.speed_ms << ","
+                         << point.roc_ms << "," << point.acceleration_ms2
+                         << "," << point.beta_climb << "\n";
+                }
+            };
+            write_mission_points(
+                output_directory / "jet_acceleration_mission_points.csv",
+                input.acceleration.mission_points);
+            write_mission_points(
+                output_directory / "jet_cruise_mission_points.csv",
+                input.cruise.mission_points);
+        }
 
         if (is_propeller)
         {
@@ -507,8 +536,6 @@ int main(int argc, char* argv[])
             };
             const auto takeoff_distance_values =
                 scaled_values(input.takeoff.runway_m);
-            const auto acceleration_requirement_values =
-                scaled_values(input.acceleration.acceleration_ms2);
             const std::vector<double> thrust_lapse_scale_values =
                 sensitivity_factors;
 
@@ -522,18 +549,6 @@ int main(int argc, char* argv[])
                 cd0_takeoff_points, "cd_0", "takeoff_distance_m",
                 (output_directory /
                     "jet_cd0_takeoff_distance_carpet.csv").string());
-
-            const auto k_acceleration_points = paired_carpet.run(
-                input,
-                jet_carpet_parameter::induced_drag_factor,
-                induced_drag_factor_values,
-                jet_carpet_parameter::acceleration_requirement_ms2,
-                acceleration_requirement_values);
-            jet_two_parameter_carpet_study::write_to_csv(
-                k_acceleration_points, "induced_drag_factor",
-                "acceleration_requirement_ms2",
-                (output_directory /
-                    "jet_k_acceleration_carpet.csv").string());
 
             const auto cd0_lapse_points = paired_carpet.run(
                 input,
