@@ -254,8 +254,18 @@ namespace constraint_analysis
         const std::string standard_set = "";
 
         xml_map_value(config, *standard_set_node,
+            "condition_source",
+            standard_set + "condition_source");
+
+        xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
             standard_set + "takeoff_ground_roll/takeoff_ground_roll_m");
+        xml_map_value(config, *standard_set_node,
+            "takeoff_altitude_m",
+            standard_set + "takeoff_ground_roll/altitude");
+        xml_map_value(config, *standard_set_node,
+            "takeoff_beta",
+            standard_set + "takeoff_ground_roll/weight_fraction");
         xml_map_value(config, *standard_set_node,
             "takeoff_speed_factor",
             standard_set + "takeoff_ground_roll/k_TO");
@@ -269,6 +279,12 @@ namespace constraint_analysis
         xml_map_value(config, *standard_set_node,
             "landing_runway_m",
             standard_set + "landing_field_length/landing_braking_roll_m");
+        xml_map_value(config, *standard_set_node,
+            "landing_altitude_m",
+            standard_set + "landing_field_length/altitude");
+        xml_map_value(config, *standard_set_node,
+            "landing_beta",
+            standard_set + "landing_field_length/weight_fraction");
         xml_map_value(config, *standard_set_node,
             "landing_speed_factor",
             standard_set + "landing_field_length/k_TD");
@@ -289,6 +305,61 @@ namespace constraint_analysis
         xml_map_value(config, *standard_set_node,
             "max_mach",
             standard_set + "max_mach/Mach");
+        xml_map_value(config, *standard_set_node,
+            "max_mach_beta",
+            standard_set + "max_mach/weight_fraction");
+
+        xml_map_value(config, *standard_set_node,
+            "acceleration_altitude_m",
+            standard_set + "horizontal_acceleration/altitude");
+        xml_map_value(config, *standard_set_node,
+            "acceleration_speed_ms",
+            standard_set + "horizontal_acceleration/speed");
+        xml_map_value(config, *standard_set_node,
+            "acceleration_ms2",
+            standard_set + "horizontal_acceleration/acceleration");
+        xml_map_value(config, *standard_set_node,
+            "acceleration_roc_ms",
+            standard_set + "horizontal_acceleration/climb_rate");
+        xml_map_value(config, *standard_set_node,
+            "acceleration_beta",
+            standard_set + "horizontal_acceleration/weight_fraction");
+
+        xml_map_value(config, *standard_set_node,
+            "cruise_altitude_m",
+            standard_set + "cruise/altitude");
+        xml_map_value(config, *standard_set_node,
+            "cruise_speed_ms",
+            standard_set + "cruise/speed");
+        xml_map_value(config, *standard_set_node,
+            "cruise_beta",
+            standard_set + "cruise/weight_fraction");
+
+        xml_map_value(config, *standard_set_node,
+            "climb_altitude_m",
+            standard_set + "climb/altitude");
+        xml_map_value(config, *standard_set_node,
+            "climb_speed_ms",
+            standard_set + "climb/speed");
+        xml_map_value(config, *standard_set_node,
+            "climb_roc_ms",
+            standard_set + "climb/climb_rate");
+        xml_map_value(config, *standard_set_node,
+            "climb_acceleration_ms2",
+            standard_set + "climb/acceleration");
+        xml_map_value(config, *standard_set_node,
+            "climb_beta",
+            standard_set + "climb/weight_fraction");
+
+        xml_map_value(config, *standard_set_node,
+            "gust_altitude_m",
+            standard_set + "gust/altitude");
+        xml_map_value(config, *standard_set_node,
+            "gust_speed_ms",
+            standard_set + "gust/speed");
+        xml_map_value(config, *standard_set_node,
+            "gust_beta",
+            standard_set + "gust/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "turn_altitude_m",
@@ -299,6 +370,9 @@ namespace constraint_analysis
         xml_map_value(config, *standard_set_node,
             "turn_load_factor",
             standard_set + "constant_speed_turn/load_factor");
+        xml_map_value(config, *standard_set_node,
+            "turn_beta",
+            standard_set + "constant_speed_turn/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "range_available_fuel_fraction",
@@ -313,6 +387,18 @@ namespace constraint_analysis
         Engine* engine)
     {
         constraint_input input;
+
+        input.condition_source = xml_string(config, "condition_source");
+        std::transform(
+            input.condition_source.begin(), input.condition_source.end(),
+            input.condition_source.begin(),
+            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        if (input.condition_source != "performance" &&
+            input.condition_source != "mission")
+        {
+            throw std::runtime_error(
+                "condition_source must be 'performance' or 'mission'.");
+        }
 
         const std::filesystem::path aerodynamic_polar_xml_path =
             xml_string(config, "aerodynamic_polar_xml_path");
@@ -379,21 +465,19 @@ namespace constraint_analysis
         input.wing_loading_max = xml_double(config, "wing_loading_max");
         input.wing_loading_step = xml_double(config, "wing_loading_step");
 
-        input.takeoff.altitude_m =
-            mission_data.get_segment_reference_altitude("takeoff");
+        input.takeoff.altitude_m = xml_double(config, "takeoff_altitude_m");
         input.takeoff.runway_m = xml_double(config, "takeoff_runway_m");
         input.takeoff.speed_factor = xml_double(config, "takeoff_speed_factor");
-        input.takeoff.beta_to = mission_data.get_beta("takeoff", input.takeoff.altitude_m);
+        input.takeoff.beta_to = xml_double(config, "takeoff_beta");
         input.takeoff.mu_ro = xml_double(config, "takeoff_mu_ro");
         input.takeoff.cd_ground = xml_double(config, "takeoff_cd_ground");
 
-        input.landing.altitude_m =
-            mission_data.get_segment_reference_altitude("landing");
+        input.landing.altitude_m = xml_double(config, "landing_altitude_m");
         input.landing.runway_m = xml_double(config, "landing_runway_m");
         input.landing.speed_factor = xml_double(config, "landing_speed_factor");
         input.landing.mu_brake = xml_double(config, "landing_mu_brake");
         input.landing.cd_brake = xml_double(config, "landing_cd_brake");
-        input.landing.beta_landing = mission_data.get_beta("landing", input.landing.altitude_m);
+        input.landing.beta_landing = xml_double(config, "landing_beta");
 
         // Stall-speed constraint uses the same condition as landing.
         // Only the maximum allowed stall speed remains a requirement input.
@@ -405,10 +489,23 @@ namespace constraint_analysis
 
         input.max_mach.altitude_m = xml_double(config, "max_mach_altitude_m");
         input.max_mach.mach = xml_double(config, "max_mach");
-        input.max_mach.beta_max_mach = mission_data.get_beta("cruise");
+        input.max_mach.beta_max_mach = xml_double(config, "max_mach_beta");
 
-        input.acceleration.mission_points =
-            mission_data.get_acceleration_conditions();
+        if (input.condition_source == "performance")
+        {
+            const climb_mission_point acceleration_point{
+                xml_double(config, "acceleration_altitude_m"),
+                xml_double(config, "acceleration_speed_ms"),
+                xml_double(config, "acceleration_roc_ms"),
+                xml_double(config, "acceleration_ms2"),
+                xml_double(config, "acceleration_beta")};
+            input.acceleration.mission_points = {acceleration_point};
+        }
+        else
+        {
+            input.acceleration.mission_points =
+                mission_data.get_acceleration_conditions();
+        }
         const auto representative_acceleration_it = std::max_element(
             input.acceleration.mission_points.begin(),
             input.acceleration.mission_points.end(),
@@ -429,7 +526,19 @@ namespace constraint_analysis
         input.acceleration.beta_acceleration =
             representative_acceleration_it->beta_climb;
 
-        input.cruise.mission_points = mission_data.get_cruise_conditions();
+        if (input.condition_source == "performance")
+        {
+            input.cruise.mission_points = {{
+                xml_double(config, "cruise_altitude_m"),
+                xml_double(config, "cruise_speed_ms"),
+                0.0,
+                0.0,
+                xml_double(config, "cruise_beta")}};
+        }
+        else
+        {
+            input.cruise.mission_points = mission_data.get_cruise_conditions();
+        }
         const auto representative_cruise_it = std::max_element(
             input.cruise.mission_points.begin(),
             input.cruise.mission_points.end(),
@@ -453,9 +562,61 @@ namespace constraint_analysis
             input.cruise.allow_configured_fallback = true;
         }
 
-        input.gust.mission_points = input.cruise.mission_points;
+        if (input.condition_source == "performance")
+        {
+            input.gust.mission_points = {{
+                xml_double(config, "gust_altitude_m"),
+                xml_double(config, "gust_speed_ms"),
+                0.0,
+                0.0,
+                xml_double(config, "gust_beta")}};
+        }
+        else
+        {
+            input.gust.mission_points = input.cruise.mission_points;
+        }
 
-        input.climb.mission_points = mission_data.get_climb_conditions();
+        if (input.condition_source == "performance")
+        {
+            input.climb.mission_points = {{
+                xml_double(config, "climb_altitude_m"),
+                xml_double(config, "climb_speed_ms"),
+                xml_double(config, "climb_roc_ms"),
+                xml_double(config, "climb_acceleration_ms2"),
+                xml_double(config, "climb_beta")}};
+        }
+        else
+        {
+            input.climb.mission_points = mission_data.get_climb_conditions();
+        }
+
+        const auto validate_condition_points = [](
+            const std::vector<climb_mission_point>& points,
+            const std::string& name)
+        {
+            if (points.empty())
+            {
+                throw std::runtime_error(name + " has no operating conditions.");
+            }
+            for (const auto& point : points)
+            {
+                if (point.altitude_m < 0.0 || point.speed_ms <= 0.0 ||
+                    point.beta_climb <= 0.0 || point.beta_climb > 1.0 ||
+                    !std::isfinite(point.roc_ms) ||
+                    !std::isfinite(point.acceleration_ms2))
+                {
+                    throw std::runtime_error(
+                        name + " contains an invalid altitude, speed, "
+                        "weight fraction, climb rate or acceleration.");
+                }
+            }
+        };
+        validate_condition_points(
+            input.acceleration.mission_points, "Acceleration constraint");
+        validate_condition_points(input.cruise.mission_points, "Cruise constraint");
+        validate_condition_points(input.gust.mission_points, "Gust constraint");
+        validate_condition_points(input.climb.mission_points, "Climb constraint");
+
         input.climb.representative_point = *std::max_element(
             input.climb.mission_points.begin(),
             input.climb.mission_points.end(),
@@ -475,8 +636,7 @@ namespace constraint_analysis
         input.turn.altitude_m = xml_double(config, "turn_altitude_m");
         input.turn.speed_ms = xml_double(config, "turn_speed_ms");
         input.turn.load_factor = xml_double(config, "turn_load_factor");
-        input.turn.beta_turn = mission_data.get_beta(
-            "cruise", input.turn.altitude_m);
+        input.turn.beta_turn = xml_double(config, "turn_beta");
 
         input.range.altitude_m =
             mission_data.get_cruise_range_weighted_altitude();
@@ -520,20 +680,19 @@ namespace constraint_analysis
         }
         std::cout << "Using mission CSV: "
                 << mission_csv_path.string() << '\n';
-        std::cout << "Mission beta takeoff = "
+        std::cout << "Takeoff-condition beta = "
                 << input.takeoff.beta_to << '\n';
-        std::cout << "Mission beta cruise = "
+        std::cout << "Cruise-condition beta = "
                 << input.cruise.beta_cruise << '\n';
-        std::cout << "Mission beta landing = "
+        std::cout << "Landing-condition beta = "
                 << input.landing.beta_landing << '\n';
         std::cout << "Stall speed limit = "
                 << input.stall_speed.speed_limit_ms << " m/s "
                 << "at landing altitude = "
                 << input.stall_speed.altitude_m << " m, beta = "
                 << input.stall_speed.beta_stall << '\n';
-        std::cout << "Gust constraint scans "
-                << input.gust.mission_points.size()
-                << " mission cruise conditions.\n";
+        std::cout << "Constraint condition source = "
+                  << input.condition_source << '\n';
         const auto& representative_climb = input.climb.representative_point;
         const auto representative_acceleration = std::max_element(
             input.acceleration.mission_points.begin(),
@@ -547,22 +706,24 @@ namespace constraint_analysis
                     right.roc_ms / right.speed_ms +
                         right.acceleration_ms2 / g;
             });
-        std::cout << "Acceleration constraint scans "
+        std::cout << "Acceleration constraint evaluates "
                   << input.acceleration.mission_points.size()
-                  << " positive-dV/dt mission points. Highest energy-demand "
-                     "candidate: V = "
+                  << " condition(s). Governing candidate: V = "
                   << representative_acceleration->speed_ms
                   << " m/s, ROC = " << representative_acceleration->roc_ms
                   << " m/s, dV/dt = "
                   << representative_acceleration->acceleration_ms2
                   << " m/s^2, altitude = "
                   << representative_acceleration->altitude_m << " m\n";
-        std::cout << "Cruise constraint scans "
+        std::cout << "Cruise constraint evaluates "
                   << input.cruise.mission_points.size()
-                  << " mission cruise points.\n";
-        std::cout << "Climb constraint scans "
+                  << " condition(s).\n";
+        std::cout << "Gust constraint evaluates "
+                  << input.gust.mission_points.size()
+                  << " condition(s).\n";
+        std::cout << "Climb constraint evaluates "
                   << input.climb.mission_points.size()
-                  << " mission climb points. Highest kinematic demand point: "
+                  << " condition(s). Governing kinematic point: "
                   << "V = " << representative_climb.speed_ms
                   << " m/s, ROC = " << representative_climb.roc_ms
                   << " m/s, dV/dt = "

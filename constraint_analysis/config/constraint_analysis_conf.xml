@@ -18,9 +18,15 @@
       <!-- Baseline requirements shared by all non-specialized cases. -->
       <standard_set ID="BASELINE_STANDARD_SET">
 
+        <!-- Matching-chart source: "performance" uses the explicit user
+             requirements below; "mission" scans the mission CSV instead. -->
+        <condition_source><value>performance</value></condition_source>
+
         <!-- Ground performance -->
         <takeoff_ground_roll ID="TO_BASELINE">
           <!-- Project-defined normal-field takeoff ground-roll requirement. -->
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>1.0</value></weight_fraction>
           <takeoff_ground_roll_m><value>1200.0</value></takeoff_ground_roll_m>
           <k_TO><value>1.2</value></k_TO>
           <friction_coefficient><value>0.02</value></friction_coefficient>
@@ -29,6 +35,8 @@
 
         <landing_field_length ID="LDG_BASELINE">
           <!-- Project-defined normal-field landing braking-roll requirement. -->
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>0.85</value></weight_fraction>
           <landing_braking_roll_m><value>1000.0</value></landing_braking_roll_m>
           <k_TD><value>1.15</value></k_TD>
           <friction_coefficient><value>0.40</value></friction_coefficient>
@@ -41,29 +49,45 @@
 
         <!-- Atmospheric / structural limit -->
         <gust ID="GUST_BASELINE">
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </gust>
 
         <!-- High-speed flight -->
         <max_mach ID="MMO_BASELINE">
           <altitude><value>9000.0</value></altitude>
           <Mach><value>0.78</value></Mach>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </max_mach>
 
-        <!-- Jet and propeller architectures both scan the mission CSV. -->
         <horizontal_acceleration ID="ACC_BASELINE">
+          <altitude><value>8000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <acceleration><value>1.5</value></acceleration>
+          <climb_rate><value>0.0</value></climb_rate>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </horizontal_acceleration>
 
         <cruise ID="CR_BASELINE">
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </cruise>
 
         <climb ID="CL_BASELINE">
-          <!-- The complete mission climb segment defines this constraint. -->
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <climb_rate><value>5.0</value></climb_rate>
+          <acceleration><value>0.0</value></acceleration>
+          <weight_fraction><value>0.99</value></weight_fraction>
         </climb>
 
         <constant_speed_turn ID="TURN_BASELINE">
           <altitude><value>3000.0</value></altitude>
           <speed><value>120.0</value></speed>
           <load_factor><value>2.5</value></load_factor>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </constant_speed_turn>
 
         <!-- Mission requirement -->
@@ -76,8 +100,12 @@
       <!-- Only runway requirements differ from the baseline case. -->
       <standard_set ID="SHORT_FIELD_STANDARD_SET">
 
+        <condition_source><value>performance</value></condition_source>
+
         <takeoff_ground_roll ID="TO_SHORT">
           <!-- Project-defined short-field takeoff ground-roll requirement. -->
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>1.0</value></weight_fraction>
           <takeoff_ground_roll_m><value>800.0</value></takeoff_ground_roll_m>
           <k_TO><value>1.2</value></k_TO>
           <friction_coefficient><value>0.02</value></friction_coefficient>
@@ -86,6 +114,8 @@
 
         <landing_field_length ID="LDG_SHORT">
           <!-- Project-defined short-field landing braking-roll requirement. -->
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>0.85</value></weight_fraction>
           <landing_braking_roll_m><value>700.0</value></landing_braking_roll_m>
           <k_TD><value>1.15</value></k_TD>
           <friction_coefficient><value>0.40</value></friction_coefficient>
@@ -97,28 +127,44 @@
         </stall_speed>
 
         <gust ID="GUST_SHORT">
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </gust>
 
         <max_mach ID="MMO_SHORT">
           <altitude><value>9000.0</value></altitude>
           <Mach><value>0.78</value></Mach>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </max_mach>
 
-        <!-- Jet and propeller architectures both scan the mission CSV. -->
         <horizontal_acceleration ID="ACC_SHORT">
+          <altitude><value>8000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <acceleration><value>1.5</value></acceleration>
+          <climb_rate><value>0.0</value></climb_rate>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </horizontal_acceleration>
 
         <cruise ID="CR_SHORT">
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </cruise>
 
         <climb ID="CL_SHORT">
-          <!-- The complete mission climb segment defines this constraint. -->
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <climb_rate><value>5.0</value></climb_rate>
+          <acceleration><value>0.0</value></acceleration>
+          <weight_fraction><value>0.99</value></weight_fraction>
         </climb>
 
         <constant_speed_turn ID="TURN_SHORT">
           <altitude><value>3000.0</value></altitude>
           <speed><value>120.0</value></speed>
           <load_factor><value>2.5</value></load_factor>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </constant_speed_turn>
 
         <range_fuel_fraction ID="RANGE_SHORT">
@@ -132,7 +178,11 @@
            not certified total field lengths. -->
       <standard_set ID="LONG_FIELD_STANDARD_SET">
 
+        <condition_source><value>performance</value></condition_source>
+
         <takeoff_ground_roll ID="TO_LONG">
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>1.0</value></weight_fraction>
           <takeoff_ground_roll_m><value>1800.0</value></takeoff_ground_roll_m>
           <k_TO><value>1.2</value></k_TO>
           <friction_coefficient><value>0.02</value></friction_coefficient>
@@ -140,6 +190,8 @@
         </takeoff_ground_roll>
 
         <landing_field_length ID="LDG_LONG">
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>0.85</value></weight_fraction>
           <landing_braking_roll_m><value>1500.0</value></landing_braking_roll_m>
           <k_TD><value>1.15</value></k_TD>
           <friction_coefficient><value>0.40</value></friction_coefficient>
@@ -151,26 +203,44 @@
         </stall_speed>
 
         <gust ID="GUST_LONG">
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </gust>
 
         <max_mach ID="MMO_LONG">
           <altitude><value>9000.0</value></altitude>
           <Mach><value>0.78</value></Mach>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </max_mach>
 
         <horizontal_acceleration ID="ACC_LONG">
+          <altitude><value>8000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <acceleration><value>1.5</value></acceleration>
+          <climb_rate><value>0.0</value></climb_rate>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </horizontal_acceleration>
 
         <cruise ID="CR_LONG">
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </cruise>
 
         <climb ID="CL_LONG">
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <climb_rate><value>5.0</value></climb_rate>
+          <acceleration><value>0.0</value></acceleration>
+          <weight_fraction><value>0.99</value></weight_fraction>
         </climb>
 
         <constant_speed_turn ID="TURN_LONG">
           <altitude><value>3000.0</value></altitude>
           <speed><value>120.0</value></speed>
           <load_factor><value>2.5</value></load_factor>
+          <weight_fraction><value>0.98</value></weight_fraction>
         </constant_speed_turn>
 
         <range_fuel_fraction ID="RANGE_LONG">

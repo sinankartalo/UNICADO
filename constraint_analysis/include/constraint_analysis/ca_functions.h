@@ -179,6 +179,9 @@ namespace constraint_analysis
 
     struct constraint_input
     {
+        // "performance" evaluates user-defined sizing conditions; "mission"
+        // scans the mission history. The former is the matching-chart default.
+        std::string condition_source = "performance";
         propulsion_type propulsion = propulsion_type::jet;
         aircraft_data aircraft;
 

@@ -356,7 +356,7 @@ int main(int argc, char* argv[])
                     coverage << "," << count << "," << supported_count << ","
                              << (supported_count > 0 ? "true" : "false")
                              << "\n";
-                    std::cout << "Mission " << segment << " "
+                    std::cout << input.condition_source << " " << segment << " "
                               << regime.name << " points = " << count
                               << ", aero-supported = " << supported_count;
                     if (count > 0)
@@ -430,20 +430,21 @@ int main(int argc, char* argv[])
                     << input.acceleration.mission_points.size() << ","
                     << acceleration_valid << ","
                     << input.acceleration.mission_points.size() -
-                        acceleration_valid << ",mission_scan\n";
+                        acceleration_valid << "," << input.condition_source
+                        << "\n";
                 coverage_summary << "cruise,"
                     << input.cruise.mission_points.size() << ","
                     << cruise_valid << ","
                     << input.cruise.mission_points.size() - cruise_valid << ","
                     << (cruise_valid == 0
                             ? "explicit_configured_fallback"
-                            : "mission_scan") << "\n";
+                            : input.condition_source) << "\n";
             }
             if (cruise_valid == 0)
             {
                 std::cout
-                    << "WARNING: Propeller deck covers no mission cruise "
-                    << "points. Cruise constraint uses explicit fallback: "
+                    << "WARNING: Propeller deck covers no configured cruise "
+                    << "condition. Cruise constraint uses explicit fallback: "
                     << "V=" << input.cruise.speed_ms << " m/s, altitude="
                     << input.cruise.altitude_m << " m.\n";
             }
@@ -464,8 +465,8 @@ int main(int argc, char* argv[])
                         static_cast<double>(coverage.total_mission_points);
             coverage_file
                 << (coverage.invalid_deck_points == 0
-                        ? "full_mission_coverage"
-                        : "partial_mission_coverage") << ","
+                        ? "full_condition_coverage"
+                        : "partial_condition_coverage") << ","
                 << coverage.total_mission_points << ","
                 << coverage.valid_deck_points << ","
                 << coverage.invalid_deck_points << ","
@@ -518,7 +519,7 @@ int main(int argc, char* argv[])
             if (coverage.invalid_deck_points > 0)
             {
                 std::cout
-                    << "WARNING: Propeller climb uses partial mission coverage: "
+                    << "WARNING: Propeller climb uses partial condition coverage: "
                     << coverage.valid_deck_points << "/"
                     << coverage.total_mission_points
                     << " points are inside the supplied deck. First invalid: "
