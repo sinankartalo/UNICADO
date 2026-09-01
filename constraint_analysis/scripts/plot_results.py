@@ -240,6 +240,18 @@ def add_curve_family_region(
     )
 
 
+def set_feasible_sensitivity_xlim(ax, family, lower_limit, upper_limit):
+    """Frame a sensitivity family around the physically feasible W/S window."""
+    data_min = float(family["wing_loading"].min())
+    data_max = float(family["wing_loading"].max())
+    left = max(data_min, float(lower_limit))
+    right = min(data_max, float(upper_limit))
+    if not np.isfinite(left) or not np.isfinite(right) or left >= right:
+        left, right = data_min, data_max
+    padding = 0.035 * max(right - left, 1.0)
+    ax.set_xlim(max(data_min, left - padding), min(data_max, right + padding))
+
+
 def add_vertical_family_region(ax, values, color, label):
     """Draw a centre-dark region for a family of vertical limits."""
     values = np.sort(np.asarray(values, dtype=float))
@@ -1762,9 +1774,10 @@ if propeller_mode:
         ax, acceleration_cd0, "cd_0", cd0_values,
         "#15803d", "Acceleration P/W region (CD₀: 80–120%)",
     )
-    ax.set_title(analysis_title(
-        f"Acceleration P/W Sensitivity to CD₀ at Nominal k = {nominal_k:.4f}"
-    ))
+    set_feasible_sensitivity_xlim(
+        ax, acceleration_cd0, feasible_ws_min, feasible_ws_max
+    )
+    ax.set_title(analysis_title("CD₀ Sensitivity Region"))
     ax.set_xlabel("Wing Loading, W/S [N/m²]")
     ax.set_ylabel("Required Shaft Power Loading, P/W [W/N]")
     ax.text(
@@ -1844,6 +1857,9 @@ if propeller_mode:
         ax, prop_k_sensitivity, "induced_drag_factor",
         sensitivity_k_values, "#2563eb",
         "Acceleration P/W region (k: 80–120%)",
+    )
+    set_feasible_sensitivity_xlim(
+        ax, prop_k_sensitivity, feasible_ws_min, feasible_ws_max
     )
     prop_gust_limits = prop_k_sensitivity.groupby(
         "induced_drag_factor"
@@ -2099,10 +2115,10 @@ if not propeller_mode and os.path.exists(study_path):
         ax, acceleration_family, "cd_0", sensitivity_cd0_values,
         "#15803d", "Acceleration T/W region (CD₀: 80–120%)",
     )
-    ax.set_title(analysis_title(
-        f"Acceleration-Constraint Sensitivity to CD₀ "
-        f"at Nominal k = {nominal_k:.4f}"
-    ))
+    set_feasible_sensitivity_xlim(
+        ax, acceleration_family, feasible_ws_min, feasible_ws_max
+    )
+    ax.set_title(analysis_title("CD₀ Sensitivity Region"))
     ax.set_xlabel("Wing Loading, W/S [N/m²]")
     ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
     ax.text(
@@ -2257,32 +2273,68 @@ if not propeller_mode and os.path.exists(study_path):
     )
 
     gust_inset.remove()
-    ax.clear()
+    plt.close(fig)
+    fig, (ax, gust_ax) = plt.subplots(
+        1, 2, figsize=(13.2, 5.8),
+        gridspec_kw={"width_ratios": [1.65, 1.0]},
+    )
     k_region_handle = add_curve_family_region(
         ax, k_sensitivity, "induced_drag_factor", k_values,
         "#2563eb", "Acceleration T/W region (k: 80–120%)",
     )
-    gust_region_handle = add_vertical_family_region(
-        ax, gust_limits, "#ea580c", "Gust-limit region (k: 80–120%)",
+    set_feasible_sensitivity_xlim(
+        ax, k_sensitivity, feasible_ws_min, feasible_ws_max
     )
-    ax.set_title(analysis_title(
-        f"Acceleration and Gust-Limit Sensitivity to k "
-        f"at Nominal CD₀ = {nominal_cd0:.5f}"
-    ))
+    ax.set_title("Acceleration T/W region")
     ax.set_xlabel("Wing Loading, W/S [N/m²]")
     ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
-    ax.text(
-        0.01, 0.02,
+    clean_axes(ax)
+    ax.legend(handles=[k_region_handle], loc="upper right", frameon=False)
+
+    k_percent = 100.0 * k_values / nominal_k
+    nominal_index = int(np.argmin(np.abs(k_values - nominal_k)))
+    nominal_gust = float(gust_limits[nominal_index])
+    gust_delta = gust_limits - nominal_gust
+    for scale in np.linspace(1.0, 0.125, 8):
+        gust_ax.fill_between(
+            k_percent, nominal_gust, nominal_gust + scale * gust_delta,
+            color="#ea580c", alpha=0.12, linewidth=0.0,
+        )
+    gust_ax.plot(k_percent, gust_limits, color="#c2410c", linewidth=1.35)
+    gust_ax.axhline(
+        nominal_gust, color="#9a3412", linestyle="--", linewidth=1.0,
+    )
+    gust_ax.scatter(
+        [100.0], [nominal_gust], marker="*", s=120,
+        facecolor="#facc15", edgecolor="#111827", zorder=4,
+    )
+    gust_span = float(np.ptp(gust_limits))
+    gust_padding = max(0.18 * gust_span, 0.005 * abs(nominal_gust), 1.0)
+    gust_ax.set_ylim(
+        float(gust_limits.min()) - gust_padding,
+        float(gust_limits.max()) + gust_padding,
+    )
+    gust_ax.set_xlabel("k / nominal k [%]")
+    gust_ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=100.0))
+    gust_ax.set_ylabel("Gust W/S limit [N/m²]")
+    gust_ax.set_title("Gust-limit response")
+    clean_axes(gust_ax)
+    gust_ax.legend(
+        handles=[Patch(
+            facecolor="#ea580c", edgecolor="#c2410c", alpha=0.42,
+            label="Gust W/S region (k: 80–120%)",
+        )],
+        loc="best", frameon=False,
+    )
+
+    fig.suptitle(analysis_title("k Sensitivity: Acceleration and Gust"))
+    fig.text(
+        0.5, 0.015,
         "Only k varies (80–120%); CD₀, mission, propulsion and all "
         "other aircraft parameters remain constant.",
-        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-        va="bottom",
-        bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
-                  edgecolor="none", alpha=0.88),
+        ha="center", fontsize=8.8, color="#4d4d4d",
     )
-    clean_axes(ax)
-    ax.legend(handles=[k_region_handle, gust_region_handle],
-              loc="upper right", frameon=False)
+    fig.tight_layout(rect=(0.0, 0.04, 1.0, 0.94))
     save_plot("04_k_parameter_sensitivity")
 
 
