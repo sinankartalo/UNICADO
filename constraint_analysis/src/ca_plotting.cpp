@@ -265,6 +265,8 @@ namespace constraint_analysis
                     return input.aircraft.polar.k;
                 case jet_carpet_parameter::takeoff_distance_m:
                     return input.takeoff.runway_m;
+                case jet_carpet_parameter::acceleration_severity_scale:
+                    return 1.0;
                 case jet_carpet_parameter::thrust_lapse_scale:
                     return input.installed_thrust_lapse_scale;
             }
@@ -291,6 +293,17 @@ namespace constraint_analysis
                     return;
                 case jet_carpet_parameter::takeoff_distance_m:
                     input.takeoff.runway_m = value;
+                    return;
+                case jet_carpet_parameter::acceleration_severity_scale:
+                    // Preserve the mission operating conditions and scale
+                    // only its kinematic specific-energy demand:
+                    //   d(energy)/dt / W = ROC + V/g * dV/dt.
+                    for (auto& point : input.acceleration.mission_points)
+                    {
+                        point.roc_ms *= value;
+                        point.acceleration_ms2 *= value;
+                    }
+                    input.acceleration.acceleration_ms2 *= value;
                     return;
                 case jet_carpet_parameter::thrust_lapse_scale:
                     input.installed_thrust_lapse_scale = value;
