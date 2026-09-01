@@ -338,9 +338,9 @@ if propeller_mode:
         "01_matching_chart_professional",
         "01_matching_chart_with_tolerance_bands",
         "02_active_constraint_regions",
+        "03_constraint_utilization_dashboard",
+        "04_governing_constraint_gap_map",
         "03_propeller_performance_map",
-        "04_cd0_parameter_sensitivity",
-        "05_k_parameter_sensitivity",
         "06_classical_carpet_plot",
     }
 else:
@@ -348,8 +348,8 @@ else:
         "01_matching_chart_professional",
         "01_matching_chart_with_tolerance_bands",
         "02_active_constraint_regions",
-        "03_cd0_parameter_sensitivity",
-        "04_k_parameter_sensitivity",
+        "03_constraint_utilization_dashboard",
+        "04_governing_constraint_gap_map",
         "05_cd0_k_design_map",
         "06_mission_runway_design_map",
     }
@@ -1411,6 +1411,188 @@ ax.legend(
 clean_axes(ax)
 fig.subplots_adjust(right=0.76)
 save_plot("02_active_constraint_regions")
+
+
+# ============================================================
+# Plot 3: Constraint utilization at the two decision points
+# ============================================================
+def constraint_requirements_at(wing_loading):
+    return {
+        name: float(np.interp(
+            wing_loading,
+            curve["wing_loading"].to_numpy(dtype=float),
+            curve["thrust_to_weight"].to_numpy(dtype=float),
+        ))
+        for name, curve in constraints.items()
+    }
+
+
+def utilization_color(value):
+    if value >= 99.5:
+        return "#dc2626"
+    if value >= 90.0:
+        return "#f59e0b"
+    return "#2563eb"
+
+
+decision_points = [
+    ("Best feasible design", best_ws, best_tw),
+    ("Aircraft reference-area point", aircraft_ws, aircraft_tw),
+]
+fig, utilization_axes = plt.subplots(
+    1, 2, figsize=(13.2, 6.4), sharex=True, sharey=True,
+)
+all_utilizations = []
+for utilization_ax, (point_name, point_ws, point_y) in zip(
+        utilization_axes, decision_points):
+    requirements = constraint_requirements_at(point_ws)
+    ordered = sorted(
+        requirements.items(), key=lambda item: item[1], reverse=True,
+    )
+    names = [item[0] for item in ordered][::-1]
+    utilization = np.asarray([
+        100.0 * item[1] / point_y if point_y > 0.0 else np.nan
+        for item in ordered
+    ])[::-1]
+    all_utilizations.extend(utilization[np.isfinite(utilization)])
+    bars = utilization_ax.barh(
+        names, utilization,
+        color=[utilization_color(value) for value in utilization],
+        alpha=0.88, height=0.66,
+    )
+    utilization_ax.axvline(
+        100.0, color="#111827", linewidth=1.4, linestyle="--",
+    )
+    for bar, value in zip(bars, utilization):
+        utilization_ax.text(
+            value + 1.0,
+            bar.get_y() + 0.5 * bar.get_height(),
+            f"{value:.1f}%",
+            va="center", fontsize=8.7, color="#334155",
+        )
+    utilization_ax.set_title(
+        f"{point_name}\nW/S = {point_ws:.0f} N/m², {y_symbol} = {point_y:.3f}",
+        fontsize=12,
+    )
+    utilization_ax.set_xlabel("Constraint utilization [%]")
+    clean_axes(utilization_ax)
+
+utilization_max = max(all_utilizations, default=100.0)
+for utilization_ax in utilization_axes:
+    utilization_ax.set_xlim(0.0, max(112.0, 1.10 * utilization_max))
+
+fig.suptitle(analysis_title("Constraint Utilization Dashboard"))
+fig.text(
+    0.5, 0.015,
+    "100% identifies the governing boundary; values above 100% are infeasible.",
+    ha="center", fontsize=9.2, color="#475569",
+)
+fig.tight_layout(rect=(0.0, 0.04, 1.0, 0.94))
+save_plot("03_constraint_utilization_dashboard")
+
+
+# ============================================================
+# Plot 4: Governing constraint and runner-up separation
+# ============================================================
+feasible_mask = (
+    (x_env >= feasible_ws_min) & (x_env <= feasible_ws_max)
+)
+if not np.any(feasible_mask):
+    feasible_mask = np.ones_like(x_env, dtype=bool)
+
+gap_x = x_env[feasible_mask]
+constraint_matrix = np.vstack([
+    interp_values[name][feasible_mask] for name in constraints
+])
+constraint_names = list(constraints)
+ranked_indices = np.argsort(constraint_matrix, axis=0)
+governing_indices = ranked_indices[-1]
+runner_up_indices = ranked_indices[-2]
+governing_values = np.take_along_axis(
+    constraint_matrix, governing_indices[np.newaxis, :], axis=0,
+).ravel()
+runner_up_values = np.take_along_axis(
+    constraint_matrix, runner_up_indices[np.newaxis, :], axis=0,
+).ravel()
+separation_percent = np.where(
+    governing_values > 0.0,
+    100.0 * (governing_values - runner_up_values) / governing_values,
+    np.nan,
+)
+
+fig, (governing_ax, gap_ax) = plt.subplots(
+    2, 1, figsize=(13.0, 7.4), sharex=True,
+    gridspec_kw={"height_ratios": [2.0, 1.0]},
+)
+governing_ax.plot(
+    gap_x, governing_values, color="#111827", linewidth=1.0, alpha=0.35,
+)
+
+segment_start = 0
+transition_points = []
+for index in range(1, len(gap_x) + 1):
+    if (index == len(gap_x) or
+            governing_indices[index] != governing_indices[segment_start]):
+        segment_end = index
+        constraint_name = constraint_names[governing_indices[segment_start]]
+        plot_start = max(segment_start - 1, 0)
+        governing_ax.plot(
+            gap_x[plot_start:segment_end],
+            governing_values[plot_start:segment_end],
+            color=color_map.get(constraint_name, "#111827"),
+            linewidth=5.0, solid_capstyle="round",
+        )
+        middle = (segment_start + segment_end - 1) // 2
+        governing_ax.annotate(
+            constraint_name,
+            (gap_x[middle], governing_values[middle]),
+            xytext=(0, 11), textcoords="offset points",
+            ha="center", fontsize=9.3, weight="bold",
+            color=color_map.get(constraint_name, "#111827"),
+            bbox=dict(
+                boxstyle="round,pad=0.2", facecolor="white",
+                edgecolor="none", alpha=0.84,
+            ),
+        )
+        if segment_end < len(gap_x):
+            transition_points.append(segment_end)
+        segment_start = index
+
+for transition_index in transition_points:
+    transition_ws = gap_x[transition_index]
+    for target_ax in (governing_ax, gap_ax):
+        target_ax.axvline(
+            transition_ws, color="#64748b", linestyle=":",
+            linewidth=1.0, alpha=0.8,
+        )
+
+governing_ax.scatter(
+    [best_ws, aircraft_ws], [best_tw, aircraft_tw],
+    marker="*", s=[130, 110], color=["#16a34a", "#dc2626"],
+    edgecolor="white", linewidth=0.9, zorder=5,
+)
+governing_ax.set_ylabel(y_axis_label)
+governing_ax.set_title("Governing requirement across the feasible W/S corridor")
+clean_axes(governing_ax)
+
+gap_ax.fill_between(
+    gap_x, 0.0, separation_percent,
+    color="#7c3aed", alpha=0.34, linewidth=0.0,
+)
+gap_ax.plot(gap_x, separation_percent, color="#6d28d9", linewidth=1.4)
+gap_ax.axhline(5.0, color="#f59e0b", linestyle="--", linewidth=1.0)
+gap_ax.text(
+    0.99, 5.0, "5% close competition", transform=gap_ax.get_yaxis_transform(),
+    ha="right", va="bottom", fontsize=8.5, color="#b45309",
+)
+gap_ax.set_xlabel("Wing Loading, W/S [N/m²]")
+gap_ax.set_ylabel("Lead over runner-up [%]")
+gap_ax.set_ylim(bottom=0.0)
+clean_axes(gap_ax)
+
+fig.suptitle(analysis_title("Governing Constraint Gap Map"))
+fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.95))
+save_plot("04_governing_constraint_gap_map")
 
 if propeller_mode:
     # ============================================================
