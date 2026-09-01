@@ -174,6 +174,11 @@ int main(int argc, char* argv[])
         std::filesystem::create_directories(output_directory);
         std::filesystem::remove(
             output_directory / "carpet_plot_full.csv");
+        // These studies were superseded by the mission-energy/runway carpet.
+        std::filesystem::remove(
+            output_directory / "jet_cd0_takeoff_distance_carpet.csv");
+        std::filesystem::remove(
+            output_directory / "jet_cd0_thrust_lapse_carpet.csv");
         if (!run_parameter_studies)
         {
             for (const char* study_file : {
@@ -182,6 +187,7 @@ int main(int argc, char* argv[])
                      "jet_cd0_k_carpet.csv",
                      "jet_cd0_takeoff_distance_carpet.csv",
                      "jet_cd0_thrust_lapse_carpet.csv",
+                     "jet_acceleration_takeoff_distance_carpet.csv",
                      "jet_k_sensitivity_curves.csv",
                      "propeller_cd0_sensitivity_curves.csv",
                      "propeller_cd0_k_carpet.csv",
@@ -709,29 +715,18 @@ int main(int argc, char* argv[])
             };
             const auto takeoff_distance_values =
                 scaled_values(input.takeoff.runway_m);
-            const std::vector<double> thrust_lapse_scale_values =
-                sensitivity_factors;
-
             jet_two_parameter_carpet_study paired_carpet{atm};
-            const auto cd0_takeoff_points = paired_carpet.run(
+            const auto acceleration_takeoff_points = paired_carpet.run(
                 input,
-                jet_carpet_parameter::cd0, cd0_carpet_values,
+                jet_carpet_parameter::acceleration_severity_scale,
+                sensitivity_factors,
                 jet_carpet_parameter::takeoff_distance_m,
                 takeoff_distance_values);
             jet_two_parameter_carpet_study::write_to_csv(
-                cd0_takeoff_points, "cd_0", "takeoff_distance_m",
+                acceleration_takeoff_points,
+                "acceleration_severity_scale", "takeoff_distance_m",
                 (output_directory /
-                    "jet_cd0_takeoff_distance_carpet.csv").string());
-
-            const auto cd0_lapse_points = paired_carpet.run(
-                input,
-                jet_carpet_parameter::cd0, cd0_carpet_values,
-                jet_carpet_parameter::thrust_lapse_scale,
-                thrust_lapse_scale_values);
-            jet_two_parameter_carpet_study::write_to_csv(
-                cd0_lapse_points, "cd_0", "thrust_lapse_scale",
-                (output_directory /
-                    "jet_cd0_thrust_lapse_carpet.csv").string());
+                    "jet_acceleration_takeoff_distance_carpet.csv").string());
 
             k_sensitivity_study k_sensitivity{atm};
             k_sensitivity_points = k_sensitivity.run(
