@@ -213,14 +213,22 @@ namespace constraint_analysis
                 << input.aircraft.reference_wing_id << '|'
                 << mach << '|' << altitude_m;
             const std::string key = key_stream.str();
+            drag_polar polar;
             if (const auto cached = cache.find(key); cached != cache.end())
-                return cached->second;
-            const auto polar = read_drag_polar_at_condition(
-                input.aircraft.aerodynamic_polar_xml_path,
-                input.aircraft.reference_wing_id,
-                mach,
-                altitude_m);
-            cache.emplace(key, polar);
+            {
+                polar = cached->second;
+            }
+            else
+            {
+                polar = read_drag_polar_at_condition(
+                    input.aircraft.aerodynamic_polar_xml_path,
+                    input.aircraft.reference_wing_id,
+                    mach,
+                    altitude_m);
+                cache.emplace(key, polar);
+            }
+            polar.cd_0 *= input.aircraft.operating_cd0_scale;
+            polar.k *= input.aircraft.operating_k_scale;
             return polar;
         }
     }
