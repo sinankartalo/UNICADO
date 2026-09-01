@@ -1169,9 +1169,9 @@ point_x_high = max(best_ws, aircraft_ws)
 point_x_span = max(point_x_high - point_x_low, 1.0)
 point_x_center = 0.5 * (point_x_low + point_x_high)
 zoom_x_padding = max(
-    0.34 * point_x_span,
-    0.095 * max(point_x_center, 1.0),
-    300.0,
+    0.42 * point_x_span,
+    0.12 * max(point_x_center, 1.0),
+    375.0,
 )
 tolerance_zoom_x_min = max(
     tolerance_plot_min, point_x_low - zoom_x_padding,
@@ -1197,8 +1197,8 @@ zoom_band_values.extend((aircraft_tw, best_tw))
 zoom_y_low = float(np.nanmin(zoom_band_values))
 zoom_y_high = float(np.nanmax(zoom_band_values))
 zoom_y_span = max(zoom_y_high - zoom_y_low, 1.0e-3)
-tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.14 * zoom_y_span)
-tolerance_zoom_y_max = zoom_y_high + 0.16 * zoom_y_span
+tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.18 * zoom_y_span)
+tolerance_zoom_y_max = zoom_y_high + 0.20 * zoom_y_span
 
 fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
