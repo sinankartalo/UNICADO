@@ -142,24 +142,42 @@ constraint_tolerances = {
 
 def add_gradient_curve_band(
         ax, x, nominal_y, color, lower_fraction, upper_fraction,
-        layers=14, draw_edges=True, layer_alpha=0.075):
-    """Shade a curve tolerance band darkest at its nominal centreline."""
+        layers=120, draw_edges=True, edge_alpha=0.08,
+        center_alpha=0.48):
+    """Shade a curve band with one continuous centre-dark alpha gradient."""
     x = np.asarray(x, dtype=float)
     nominal_y = np.asarray(nominal_y, dtype=float)
 
-    # The widest layer reaches the tolerance limits and is seen only at the
-    # edges. Progressively narrower translucent layers overlap near the
-    # nominal curve, creating a centre-dark/edge-light uncertainty band.
-    for scale in np.linspace(1.0, 1.0 / layers, layers):
-        lower_y = nominal_y * (1.0 - lower_fraction * scale)
-        upper_y = nominal_y * (1.0 + upper_fraction * scale)
+    # Adjacent, non-overlapping slices avoid the visible nested bands produced
+    # by repeatedly painting smaller regions on top of one another. Every
+    # slice uses the same RGB colour; only opacity changes continuously.
+    normalized_edges = np.linspace(-1.0, 1.0, layers + 1)
+    for normalized_low, normalized_high in zip(
+            normalized_edges[:-1], normalized_edges[1:]):
+        def fractional_offset(normalized):
+            return (
+                normalized * lower_fraction if normalized < 0.0
+                else normalized * upper_fraction
+            )
+
+        lower_y = nominal_y * (
+            1.0 + fractional_offset(normalized_low)
+        )
+        upper_y = nominal_y * (
+            1.0 + fractional_offset(normalized_high)
+        )
+        normalized_mid = 0.5 * (normalized_low + normalized_high)
+        alpha = edge_alpha + (
+            center_alpha - edge_alpha
+        ) * (1.0 - abs(normalized_mid))
         ax.fill_between(
             x,
             lower_y,
             upper_y,
             color=color,
-            alpha=layer_alpha,
+            alpha=alpha,
             linewidth=0.0,
+            antialiased=False,
             zorder=1,
         )
     if draw_edges:
@@ -174,18 +192,35 @@ def add_gradient_curve_band(
 
 
 def add_gradient_vertical_band(
-        ax, nominal_x, color, lower_fraction, upper_fraction, layers=14,
-        draw_edges=True, layer_alpha=0.075):
-    """Shade a vertical-limit tolerance band darkest at its nominal value."""
-    for scale in np.linspace(1.0, 1.0 / layers, layers):
-        lower_x = nominal_x * (1.0 - lower_fraction * scale)
-        upper_x = nominal_x * (1.0 + upper_fraction * scale)
+        ax, nominal_x, color, lower_fraction, upper_fraction, layers=120,
+        draw_edges=True, edge_alpha=0.08, center_alpha=0.48):
+    """Shade a vertical band with one continuous centre-dark gradient."""
+    normalized_edges = np.linspace(-1.0, 1.0, layers + 1)
+    for normalized_low, normalized_high in zip(
+            normalized_edges[:-1], normalized_edges[1:]):
+        def fractional_offset(normalized):
+            return (
+                normalized * lower_fraction if normalized < 0.0
+                else normalized * upper_fraction
+            )
+
+        lower_x = nominal_x * (
+            1.0 + fractional_offset(normalized_low)
+        )
+        upper_x = nominal_x * (
+            1.0 + fractional_offset(normalized_high)
+        )
+        normalized_mid = 0.5 * (normalized_low + normalized_high)
+        alpha = edge_alpha + (
+            center_alpha - edge_alpha
+        ) * (1.0 - abs(normalized_mid))
         ax.axvspan(
             lower_x,
             upper_x,
             color=color,
-            alpha=layer_alpha,
+            alpha=alpha,
             linewidth=0.0,
+            antialiased=False,
             zorder=1,
         )
     if draw_edges:
@@ -1178,9 +1213,10 @@ for name, df in constraints.items():
         color,
         lower_fraction,
         upper_fraction,
-        layers=6,
+        layers=120,
         draw_edges=False,
-        layer_alpha=0.12,
+        edge_alpha=0.08,
+        center_alpha=0.48,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor="none", alpha=0.35,
@@ -1232,9 +1268,10 @@ for name, limit, linestyle, linewidth, label in vertical_band_specs:
         color,
         lower_fraction,
         upper_fraction,
-        layers=6,
+        layers=120,
         draw_edges=False,
-        layer_alpha=0.12,
+        edge_alpha=0.08,
+        center_alpha=0.48,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor="none", alpha=0.35,
