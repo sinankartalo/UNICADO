@@ -141,7 +141,7 @@ constraint_tolerances = {
 
 def add_gradient_curve_band(
         ax, x, nominal_y, color, lower_fraction, upper_fraction,
-        layers=14):
+        layers=14, draw_edges=True):
     """Shade a curve tolerance band darkest at its nominal centreline."""
     x = np.asarray(x, dtype=float)
     nominal_y = np.asarray(nominal_y, dtype=float)
@@ -161,18 +161,20 @@ def add_gradient_curve_band(
             linewidth=0.0,
             zorder=1,
         )
-    ax.plot(
-        x, nominal_y * (1.0 - lower_fraction),
-        color=color, linewidth=1.05, alpha=0.82, zorder=2,
-    )
-    ax.plot(
-        x, nominal_y * (1.0 + upper_fraction),
-        color=color, linewidth=1.05, alpha=0.82, zorder=2,
-    )
+    if draw_edges:
+        ax.plot(
+            x, nominal_y * (1.0 - lower_fraction),
+            color=color, linewidth=1.05, alpha=0.82, zorder=2,
+        )
+        ax.plot(
+            x, nominal_y * (1.0 + upper_fraction),
+            color=color, linewidth=1.05, alpha=0.82, zorder=2,
+        )
 
 
 def add_gradient_vertical_band(
-        ax, nominal_x, color, lower_fraction, upper_fraction, layers=14):
+        ax, nominal_x, color, lower_fraction, upper_fraction, layers=14,
+        draw_edges=True):
     """Shade a vertical-limit tolerance band darkest at its nominal value."""
     for scale in np.linspace(1.0, 1.0 / layers, layers):
         lower_x = nominal_x * (1.0 - lower_fraction * scale)
@@ -185,14 +187,15 @@ def add_gradient_vertical_band(
             linewidth=0.0,
             zorder=1,
         )
-    ax.axvline(
-        nominal_x * (1.0 - lower_fraction),
-        color=color, linewidth=1.05, alpha=0.82, zorder=2,
-    )
-    ax.axvline(
-        nominal_x * (1.0 + upper_fraction),
-        color=color, linewidth=1.05, alpha=0.82, zorder=2,
-    )
+    if draw_edges:
+        ax.axvline(
+            nominal_x * (1.0 - lower_fraction),
+            color=color, linewidth=1.05, alpha=0.82, zorder=2,
+        )
+        ax.axvline(
+            nominal_x * (1.0 + upper_fraction),
+            color=color, linewidth=1.05, alpha=0.82, zorder=2,
+        )
 
 
 def add_curve_family_region(
@@ -1124,6 +1127,45 @@ save_plot("01_matching_chart_professional")
 # ============================================================
 # Plot 1b: Matching chart with gradient tolerance bands
 # ============================================================
+# This is intentionally a design-detail view. The nominal matching chart
+# already provides the complete analysis domain; the tolerance chart focuses
+# on the neighbourhood that contains both marked design points.
+point_x_low = min(best_ws, aircraft_ws)
+point_x_high = max(best_ws, aircraft_ws)
+point_x_span = max(point_x_high - point_x_low, 1.0)
+point_x_center = 0.5 * (point_x_low + point_x_high)
+zoom_x_padding = max(
+    0.28 * point_x_span,
+    0.08 * max(point_x_center, 1.0),
+    250.0,
+)
+tolerance_zoom_x_min = max(
+    tolerance_plot_min, point_x_low - zoom_x_padding,
+)
+tolerance_zoom_x_max = min(
+    tolerance_plot_max, point_x_high + zoom_x_padding,
+)
+
+zoom_samples = np.linspace(
+    tolerance_zoom_x_min, tolerance_zoom_x_max, 400,
+)
+zoom_band_values = []
+for name, df in constraints.items():
+    nominal_zoom = np.interp(
+        zoom_samples,
+        df["wing_loading"].to_numpy(dtype=float),
+        df["thrust_to_weight"].to_numpy(dtype=float),
+    )
+    lower_fraction, upper_fraction = constraint_tolerances[name]
+    zoom_band_values.extend(nominal_zoom * (1.0 - lower_fraction))
+    zoom_band_values.extend(nominal_zoom * (1.0 + upper_fraction))
+zoom_band_values.extend((aircraft_tw, best_tw))
+zoom_y_low = float(np.nanmin(zoom_band_values))
+zoom_y_high = float(np.nanmax(zoom_band_values))
+zoom_y_span = max(zoom_y_high - zoom_y_low, 1.0e-3)
+tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.10 * zoom_y_span)
+tolerance_zoom_y_max = zoom_y_high + 0.12 * zoom_y_span
+
 fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
 tolerance_constraint_handles = []
@@ -1137,6 +1179,7 @@ for name, df in constraints.items():
         color,
         lower_fraction,
         upper_fraction,
+        draw_edges=False,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor="none", alpha=0.35,
@@ -1175,12 +1218,20 @@ vertical_band_specs = (
 for name, limit, linestyle, linewidth, label in vertical_band_specs:
     if limit is None:
         continue
+    lower_fraction, upper_fraction = constraint_tolerances[name]
+    band_low = limit * (1.0 - lower_fraction)
+    band_high = limit * (1.0 + upper_fraction)
+    if (band_high < tolerance_zoom_x_min or
+            band_low > tolerance_zoom_x_max):
+        continue
     color = color_map[name]
     add_gradient_vertical_band(
         ax,
         limit,
         color,
-        *constraint_tolerances[name],
+        lower_fraction,
+        upper_fraction,
+        draw_edges=False,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor="none", alpha=0.35,
@@ -1188,7 +1239,7 @@ for name, limit, linestyle, linewidth, label in vertical_band_specs:
     ))
 
 ax.set_title(
-    analysis_title("Constraint Analysis Matching Chart — Tolerance Bands"),
+    analysis_title("Constraint Tolerance Bands — Design-Point Detail"),
     pad=12,
     fontweight="semibold",
 )
@@ -1211,8 +1262,8 @@ if propeller_climb_coverage_note:
         ),
         zorder=10,
     )
-ax.set_xlim(tolerance_plot_min, tolerance_plot_max)
-ax.set_ylim(y_min, tolerance_y_max)
+ax.set_xlim(tolerance_zoom_x_min, tolerance_zoom_x_max)
+ax.set_ylim(tolerance_zoom_y_min, tolerance_zoom_y_max)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.grid(axis="x", alpha=0.18)
