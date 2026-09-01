@@ -260,11 +260,56 @@ int main(int argc, char* argv[])
         input.propeller.model = propeller_model.get();
         {
             std::ofstream metadata(output_directory / "analysis_metadata.csv");
-            metadata << "case_id,propulsion_type,y_axis,y_unit\n";
+            const auto& climb_condition = input.climb.representative_point;
+            const auto& gust_condition = input.gust.mission_points.front();
+            metadata
+                << "case_id,propulsion_type,y_axis,y_unit,condition_source,"
+                << "takeoff_altitude_m,takeoff_runway_m,takeoff_beta,"
+                << "landing_altitude_m,landing_runway_m,landing_beta,"
+                << "stall_speed_limit_ms,max_mach_altitude_m,max_mach,"
+                << "max_mach_beta,acceleration_altitude_m,"
+                << "acceleration_speed_ms,acceleration_ms2,"
+                << "acceleration_roc_ms,acceleration_beta,"
+                << "cruise_altitude_m,cruise_speed_ms,cruise_beta,"
+                << "climb_altitude_m,climb_speed_ms,climb_roc_ms,"
+                << "climb_acceleration_ms2,climb_beta,gust_altitude_m,"
+                << "gust_speed_ms,gust_beta,turn_altitude_m,turn_speed_ms,"
+                << "turn_load_factor,turn_beta\n";
             metadata << active_case_id << ","
                      << (is_propeller ? "propeller" : "jet") << ","
                      << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
-                     << "," << (is_propeller ? "W/N" : "-") << "\n";
+                     << "," << (is_propeller ? "W/N" : "-") << ","
+                     << input.condition_source << ","
+                     << input.takeoff.altitude_m << ","
+                     << input.takeoff.runway_m << ","
+                     << input.takeoff.beta_to << ","
+                     << input.landing.altitude_m << ","
+                     << input.landing.runway_m << ","
+                     << input.landing.beta_landing << ","
+                     << input.stall_speed.speed_limit_ms << ","
+                     << input.max_mach.altitude_m << ","
+                     << input.max_mach.mach << ","
+                     << input.max_mach.beta_max_mach << ","
+                     << input.acceleration.altitude_m << ","
+                     << input.acceleration.speed_ms << ","
+                     << input.acceleration.acceleration_ms2 << ","
+                     << input.acceleration.mission_points.front().roc_ms << ","
+                     << input.acceleration.beta_acceleration << ","
+                     << input.cruise.altitude_m << ","
+                     << input.cruise.speed_ms << ","
+                     << input.cruise.beta_cruise << ","
+                     << climb_condition.altitude_m << ","
+                     << climb_condition.speed_ms << ","
+                     << climb_condition.roc_ms << ","
+                     << climb_condition.acceleration_ms2 << ","
+                     << climb_condition.beta_climb << ","
+                     << gust_condition.altitude_m << ","
+                     << gust_condition.speed_ms << ","
+                     << gust_condition.beta_climb << ","
+                     << input.turn.altitude_m << ","
+                     << input.turn.speed_ms << ","
+                     << input.turn.load_factor << ","
+                     << input.turn.beta_turn << "\n";
         }
         std::cout << "Using UNICADO atmosphere library.\n";
         if (is_propeller)

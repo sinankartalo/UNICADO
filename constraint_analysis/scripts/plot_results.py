@@ -327,8 +327,10 @@ def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
 # Load constraint data
 # ============================================================
 metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
+metadata_row = None
 if os.path.exists(metadata_path):
     metadata = pd.read_csv(metadata_path)
+    metadata_row = metadata.iloc[0]
     case_id = str(metadata.iloc[0]["case_id"])
     if selected_case_id and case_id != selected_case_id:
         raise RuntimeError(
@@ -353,6 +355,75 @@ analysis_label = case_labels.get(
     case_id,
     f"{'Propeller' if propeller_mode else 'Jet'} — {case_id}",
 )
+
+
+def selected_input_summary(row):
+    """Format the exact C++ analysis conditions for the chart sidebar."""
+    required = {
+        "condition_source", "takeoff_altitude_m", "takeoff_runway_m",
+        "landing_altitude_m", "landing_runway_m", "stall_speed_limit_ms",
+        "max_mach_altitude_m", "max_mach", "acceleration_altitude_m",
+        "acceleration_speed_ms", "acceleration_ms2", "cruise_altitude_m",
+        "cruise_speed_ms", "climb_altitude_m", "climb_speed_ms",
+        "climb_roc_ms", "gust_altitude_m", "gust_speed_ms",
+        "turn_altitude_m", "turn_speed_ms", "turn_load_factor",
+        "takeoff_beta", "landing_beta", "max_mach_beta",
+        "acceleration_beta", "cruise_beta", "climb_beta", "gust_beta",
+        "turn_beta",
+    }
+    if row is None or not required.issubset(row.index):
+        return None
+
+    def km(value):
+        return float(value) / 1000.0
+
+    return "\n".join((
+        f"Mode: {str(row['condition_source']).title()}",
+        (f"Takeoff: {row['takeoff_runway_m']:.0f} m runway, "
+         f"h={km(row['takeoff_altitude_m']):.1f} km"),
+        (f"Landing: {row['landing_runway_m']:.0f} m roll, "
+         f"h={km(row['landing_altitude_m']):.1f} km"),
+        f"Stall: V≤{row['stall_speed_limit_ms']:.0f} m/s",
+        (f"Max Mach: M={row['max_mach']:.2f}, "
+         f"h={km(row['max_mach_altitude_m']):.1f} km"),
+        (f"Acceleration: h={km(row['acceleration_altitude_m']):.1f} km, "
+         f"V={row['acceleration_speed_ms']:.0f} m/s, "
+         f"a={row['acceleration_ms2']:.2f} m/s²"),
+        (f"Cruise: h={km(row['cruise_altitude_m']):.1f} km, "
+         f"V={row['cruise_speed_ms']:.0f} m/s"),
+        (f"Climb: h={km(row['climb_altitude_m']):.1f} km, "
+         f"V={row['climb_speed_ms']:.0f} m/s, "
+         f"ROC={row['climb_roc_ms']:.1f} m/s"),
+        (f"Gust: h={km(row['gust_altitude_m']):.1f} km, "
+         f"V={row['gust_speed_ms']:.0f} m/s"),
+        (f"Turn: h={km(row['turn_altitude_m']):.1f} km, "
+         f"V={row['turn_speed_ms']:.0f} m/s, "
+         f"n={row['turn_load_factor']:.1f}"),
+        (f"β: TO={row['takeoff_beta']:.2f}, LDG={row['landing_beta']:.2f}, "
+         f"ACC={row['acceleration_beta']:.2f}, CR={row['cruise_beta']:.2f}"),
+        (f"β: CL={row['climb_beta']:.2f}, Gust={row['gust_beta']:.2f}, "
+         f"Turn={row['turn_beta']:.2f}, MMO={row['max_mach_beta']:.2f}"),
+    ))
+
+
+selected_inputs_text = selected_input_summary(metadata_row)
+
+
+def add_selected_inputs_sidebar(fig):
+    if not selected_inputs_text:
+        return
+    fig.text(
+        0.795, 0.43,
+        "SELECTED ANALYSIS INPUTS\n" + selected_inputs_text,
+        ha="left", va="top", fontsize=8.3, linespacing=1.35,
+        color="#263238",
+        bbox=dict(
+            boxstyle="round,pad=0.55",
+            facecolor="#f7f9fb",
+            edgecolor="#c8d1da",
+            linewidth=0.9,
+        ),
+    )
 
 propeller_climb_coverage_note = None
 if propeller_mode:
@@ -1151,10 +1222,12 @@ ax.legend(
     borderaxespad=0.0,
     frameon=False,
     handlelength=2.4,
-    labelspacing=0.7,
+    labelspacing=0.48,
+    fontsize=8.7,
 )
 
-fig.subplots_adjust(right=0.79)
+add_selected_inputs_sidebar(fig)
+fig.subplots_adjust(right=0.77)
 save_plot("01_matching_chart_professional")
 
 
@@ -1324,10 +1397,12 @@ ax.legend(
     borderaxespad=0.0,
     frameon=False,
     handlelength=2.4,
-    labelspacing=0.7,
+    labelspacing=0.48,
+    fontsize=8.7,
 )
 
-fig.subplots_adjust(right=0.79)
+add_selected_inputs_sidebar(fig)
+fig.subplots_adjust(right=0.77)
 save_plot("01_matching_chart_with_tolerance_bands")
 
 
