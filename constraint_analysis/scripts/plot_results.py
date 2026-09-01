@@ -261,8 +261,8 @@ else:
         "02_active_constraint_regions",
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
-        "05_classical_carpet_plot",
-        "06_acceleration_takeoff_distance_carpet",
+        "05_cd0_k_design_map",
+        "06_mission_runway_design_map",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -273,6 +273,107 @@ for existing_plot in os.listdir(save_dir):
 
 def analysis_title(title):
     return f"{analysis_label}: {title}"
+
+
+def readable_constraint_name(raw_name):
+    return str(raw_name).replace("jet_", "").replace(
+        "_constraint", ""
+    ).replace("_", " ").title()
+
+
+def draw_design_map(
+        ax, carpet, parameter_a, parameter_b,
+        parameter_a_label, parameter_b_label):
+    """Draw an engineering design map without connecting optimum points."""
+    values_a = np.sort(carpet[parameter_a].unique())
+    values_b = np.sort(carpet[parameter_b].unique())
+    ws_grid = carpet.pivot(
+        index=parameter_b, columns=parameter_a,
+        values="best_wing_loading",
+    ).loc[values_b, values_a].to_numpy()
+    tw_grid = carpet.pivot(
+        index=parameter_b, columns=parameter_a,
+        values="best_thrust_to_weight",
+    ).loc[values_b, values_a].to_numpy()
+
+    active_names = sorted(carpet["active_constraint_name"].astype(str).unique())
+    active_index = {name: index for index, name in enumerate(active_names)}
+    active_grid = carpet.assign(
+        _active_index=carpet["active_constraint_name"].astype(str).map(
+            active_index
+        )
+    ).pivot(
+        index=parameter_b, columns=parameter_a, values="_active_index"
+    ).loc[values_b, values_a].to_numpy()
+    active_colors = [
+        color_map.get(readable_constraint_name(name), "#94a3b8")
+        for name in active_names
+    ]
+    ax.pcolormesh(
+        values_a, values_b, active_grid,
+        shading="nearest",
+        cmap=mpl.colors.ListedColormap(active_colors),
+        vmin=-0.5, vmax=max(len(active_names) - 0.5, 0.5),
+        alpha=0.16, zorder=0,
+    )
+
+    ws_contours = ax.contour(
+        values_a, values_b, ws_grid, levels=6,
+        colors="#2563eb", linewidths=1.8, zorder=3,
+    )
+    tw_contours = ax.contour(
+        values_a, values_b, tw_grid, levels=6,
+        colors="#dc2626", linewidths=1.7, linestyles="--", zorder=3,
+    )
+    ax.clabel(ws_contours, inline=True, fontsize=8.0, fmt="W/S %.0f")
+    ax.clabel(tw_contours, inline=True, fontsize=8.0, fmt="T/W %.3f")
+
+    baseline = carpet[carpet["is_baseline"] == 1]
+    if len(baseline) != 1:
+        raise RuntimeError("Design map must contain exactly one nominal point.")
+    baseline_row = baseline.iloc[0]
+    ax.scatter(
+        baseline_row[parameter_a], baseline_row[parameter_b],
+        marker="*", s=190, color="#fbbf24", edgecolor="#0f172a",
+        linewidth=0.95, zorder=8,
+    )
+    ax.annotate(
+        "Nominal case\n"
+        f"W/S = {float(baseline_row['best_wing_loading']):.0f} N/m²\n"
+        f"T/W = {float(baseline_row['best_thrust_to_weight']):.3f}\n"
+        f"Active: {readable_constraint_name(baseline_row['active_constraint_name'])}",
+        (baseline_row[parameter_a], baseline_row[parameter_b]),
+        xytext=(12, 15), textcoords="offset points", fontsize=8.3,
+        color="#334155",
+        bbox=dict(boxstyle="round,pad=0.28", facecolor="white",
+                  edgecolor="#cbd5e1", alpha=0.95),
+        arrowprops=dict(arrowstyle="->", color="#64748b", linewidth=1.0),
+    )
+
+    handles = [
+        Line2D([0], [0], color="#2563eb", linewidth=1.8,
+               label="Optimum W/S contours"),
+        Line2D([0], [0], color="#dc2626", linewidth=1.7, linestyle="--",
+               label="Required T/W contours"),
+        Line2D([0], [0], marker="*", color="none",
+               markerfacecolor="#fbbf24", markeredgecolor="#0f172a",
+               markersize=11, label="Nominal case"),
+    ]
+    handles.extend(
+        Patch(
+            facecolor=color, edgecolor="none", alpha=0.22,
+            label=f"Active region: {readable_constraint_name(name)}",
+        )
+        for name, color in zip(active_names, active_colors)
+    )
+    ax.set_xlabel(parameter_a_label)
+    ax.set_ylabel(parameter_b_label)
+    if parameter_a.endswith("_scale"):
+        ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=1.0))
+    if parameter_b.endswith("_scale"):
+        ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=1.0))
+    clean_axes(ax)
+    return handles
 
 
 def plot_two_parameter_classical_carpet(
@@ -405,15 +506,17 @@ def plot_two_parameter_classical_carpet(
                markeredgecolor="#0f172a", linestyle="None",
                markersize=11, label="Nominal inputs"),
     ]
+    ax.clear()
+    handles = draw_design_map(
+        ax, carpet, parameter_a, parameter_b,
+        parameter_a_label, parameter_b_label,
+    )
     ax.set_title(analysis_title(title))
-    ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Optimum Required T/W [-]")
-    clean_axes(ax)
-    ax.legend(handles=handles + active_handles, frameon=False)
+    ax.legend(handles=handles, frameon=False, loc="best")
     ax.text(
         0.01, 0.02,
-        "81 feasible envelope optima; both inputs are swept from 80% to "
-        "120% of the case-specific nominal value.",
+        "Pastel areas show the governing constraint; solid blue contours "
+        "show optimum W/S and dashed red contours show required T/W.",
         transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
         va="bottom",
     )
@@ -943,6 +1046,7 @@ save_plot("01_matching_chart_professional")
 # ============================================================
 fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
+tolerance_constraint_handles = []
 for name, df in constraints.items():
     color = color_map.get(name, "#7f7f7f")
     lower_fraction, upper_fraction = constraint_tolerances[name]
@@ -954,15 +1058,10 @@ for name, df in constraints.items():
         lower_fraction,
         upper_fraction,
     )
-    ax.plot(
-        df["wing_loading"],
-        df["thrust_to_weight"],
-        label=name,
-        color=color,
-        alpha=0.95,
-        linewidth=1.8,
-        zorder=3,
-    )
+    tolerance_constraint_handles.append(Patch(
+        facecolor=color, edgecolor="none", alpha=0.35,
+        label=f"{name} relaxed region",
+    ))
 
 shade_feasible_design_region(ax, tolerance_y_max)
 
@@ -1012,15 +1111,10 @@ for name, limit, linestyle, linewidth, label in vertical_band_specs:
         color,
         *constraint_tolerances[name],
     )
-    ax.axvline(
-        limit,
-        color=color,
-        linestyle=linestyle,
-        linewidth=linewidth,
-        alpha=0.95,
-        label=f"{label} ({limit:.0f})",
-        zorder=4,
-    )
+    tolerance_constraint_handles.append(Patch(
+        facecolor=color, edgecolor="none", alpha=0.35,
+        label=f"{label} relaxed region ({limit:.0f})",
+    ))
 
 ax.set_title(
     analysis_title("Constraint Analysis Matching Chart — Tolerance Bands"),
@@ -1054,11 +1148,12 @@ ax.grid(axis="x", alpha=0.18)
 ax.grid(axis="y", alpha=0.25)
 
 tolerance_handles, tolerance_labels = ax.get_legend_handles_labels()
+tolerance_handles = tolerance_constraint_handles + tolerance_handles
 tolerance_handles.append(Patch(
     facecolor="#7f7f7f",
     edgecolor="none",
     alpha=0.42,
-    label="Gradient tolerance bands (default ±10%)",
+    label="Region width: default ±10%",
 ))
 ax.legend(
     handles=tolerance_handles,
@@ -2345,19 +2440,22 @@ if not propeller_mode and os.path.exists(study_path):
                 markersize=7, label="Range infeasible",
             ))
 
-        ax.set_title(analysis_title("Classical Aerodynamic Carpet Plot"))
-        ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
-        ax.set_ylabel("Optimum Required T/W [-]")
-        clean_axes(ax)
-        ax.legend(handles=family_handles + active_handles, frameon=False)
+        ax.clear()
+        family_handles = draw_design_map(
+            ax, aero_carpet, "cd_0", "induced_drag_factor",
+            "Zero-lift drag coefficient, CD₀ [-]",
+            "Induced drag factor, k [-]",
+        )
+        ax.set_title(analysis_title("CD₀–k Aerodynamic Design Map"))
+        ax.legend(handles=family_handles, frameon=False, loc="best")
         ax.text(
             0.01, 0.02,
-            "81 interpolated feasible optima; labels show every other "
-            "CD₀ and k level (80–120% of the imported polar).",
+            "Pastel areas show the governing constraint; solid blue "
+            "contours show optimum W/S and dashed red contours show T/W.",
             transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
             va="bottom",
         )
-        save_plot("05_classical_carpet_plot")
+        save_plot("05_cd0_k_design_map")
 
     # ============================================================
     # Additional case-specific, two-parameter classical carpets
@@ -2366,11 +2464,12 @@ if not propeller_mode and os.path.exists(study_path):
         (
             "jet_acceleration_takeoff_distance_carpet.csv",
             "acceleration_severity_scale", "takeoff_distance_m",
-            "mission acceleration demand", "take-off distance",
+            "Mission acceleration demand scale [-]",
+            "Take-off distance [m]",
             lambda value: f"Mission demand = {value:.0%}",
             lambda value: f"s_TO = {value:.0f} m",
-            "Mission-Acceleration–Take-off-Distance Carpet Plot",
-            "06_acceleration_takeoff_distance_carpet",
+            "Mission–Runway Design Map",
+            "06_mission_runway_design_map",
         ),
     ]
     for (
