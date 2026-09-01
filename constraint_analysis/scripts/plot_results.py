@@ -261,7 +261,7 @@ else:
         "02_active_constraint_regions",
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
-        "05_cd0_k_response_maps",
+        "05_classical_carpet_plot",
         "06_acceleration_takeoff_distance_carpet",
     }
 for existing_plot in os.listdir(save_dir):
@@ -313,14 +313,11 @@ def plot_two_parameter_classical_carpet(
             alpha=1.0 if index in label_indices else 0.42,
         )
         if index in label_indices:
-            # Spread labels across the family instead of stacking them at
-            # a shared optimum-space endpoint.
             row = family.iloc[index]
             ax.annotate(
                 parameter_a_formatter(value_a),
                 (row["best_wing_loading"], row["best_thrust_to_weight"]),
-                xytext=(8, 7 if index != 4 else 0),
-                textcoords="offset points",
+                xytext=(7, 5), textcoords="offset points",
                 fontsize=8.2, color="#047857",
             )
 
@@ -344,8 +341,7 @@ def plot_two_parameter_classical_carpet(
             ax.annotate(
                 parameter_b_formatter(value_b),
                 (row["best_wing_loading"], row["best_thrust_to_weight"]),
-                xytext=(8, -9 if index != 4 else -2),
-                textcoords="offset points",
+                xytext=(7, -7), textcoords="offset points",
                 fontsize=8.2, color="#b91c1c",
             )
 
@@ -362,7 +358,9 @@ def plot_two_parameter_classical_carpet(
     active_names = sorted(carpet["active_constraint_name"].astype(str).unique())
     active_handles = []
     for active_name in active_names:
-        active_label = readable_constraint_name(active_name)
+        active_label = active_name.replace("jet_", "").replace(
+            "_constraint", ""
+        ).replace("_", " ").title()
         active_points = carpet[
             carpet["active_constraint_name"].astype(str) == active_name
         ]
@@ -2203,6 +2201,65 @@ if not propeller_mode and os.path.exists(study_path):
             raise RuntimeError(
                 "Jet CD0-k carpet must be a complete 9x9 grid."
             )
+        if (np.ptp(aero_carpet["best_wing_loading"].to_numpy()) < 1.0e-9 and
+                np.ptp(aero_carpet["best_thrust_to_weight"].to_numpy()) <
+                1.0e-12):
+            raise RuntimeError(
+                "Jet CD0-k carpet contains no aerodynamic response. Rerun "
+                "the updated C++ application with --with-studies; the CSV "
+                "was generated before operating-polar scaling was fixed."
+            )
+
+        fig, ax = plt.subplots(figsize=(10.0, 7.0))
+        cd0_color = "#10b981"
+        k_color = "#ef4444"
+
+        # Green family: CD0 remains constant while k varies.
+        label_indices = {0, 4, 8}
+        for cd0_index, cd0 in enumerate(cd0_grid_values):
+            family = aero_carpet[
+                aero_carpet["cd_0"] == cd0
+            ].sort_values("induced_drag_factor")
+            ax.plot(
+                family["best_wing_loading"],
+                family["best_thrust_to_weight"],
+                color=cd0_color,
+                linewidth=2.4 if cd0_index in label_indices else 1.25,
+                alpha=1.0 if cd0_index in label_indices else 0.42,
+            )
+            if cd0_index in label_indices:
+                label_row = family.iloc[-1]
+                ax.annotate(
+                    f"CD₀ = {cd0:.4f}",
+                    (label_row["best_wing_loading"],
+                     label_row["best_thrust_to_weight"]),
+                    xytext=(7, 5), textcoords="offset points",
+                    fontsize=8.5, color="#047857",
+                )
+
+        # Red family: k remains constant while CD0 varies.
+        for k_index, induced_drag_factor in enumerate(k_grid_values):
+            family = aero_carpet[
+                aero_carpet["induced_drag_factor"] == induced_drag_factor
+            ].sort_values("cd_0")
+            ax.plot(
+                family["best_wing_loading"],
+                family["best_thrust_to_weight"],
+                color=k_color,
+                linewidth=2.2 if k_index in label_indices else 1.2,
+                alpha=1.0 if k_index in label_indices else 0.38,
+                marker="o", markersize=4.2,
+                markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+            )
+            if k_index in label_indices:
+                label_row = family.iloc[-1]
+                ax.annotate(
+                    f"k = {induced_drag_factor:.4f}",
+                    (label_row["best_wing_loading"],
+                     label_row["best_thrust_to_weight"]),
+                    xytext=(7, -7), textcoords="offset points",
+                    fontsize=8.5, color="#b91c1c",
+                )
 
         required_columns = {
             "is_baseline", "active_constraint_name",
@@ -2218,48 +2275,6 @@ if not propeller_mode and os.path.exists(study_path):
             raise RuntimeError(
                 "Jet CD0-k carpet must contain one nominal polar point."
             )
-        baseline_row = baseline.iloc[0]
-        nominal_cd0 = float(baseline_row["cd_0"])
-        nominal_k = float(baseline_row["induced_drag_factor"])
-        cd0_percent = 100.0 * cd0_grid_values / nominal_cd0
-        k_percent = 100.0 * k_grid_values / nominal_k
-        ws_grid = aero_carpet.pivot(
-            index="induced_drag_factor", columns="cd_0",
-            values="best_wing_loading",
-        ).loc[k_grid_values, cd0_grid_values].to_numpy()
-        tw_grid = aero_carpet.pivot(
-            index="induced_drag_factor", columns="cd_0",
-            values="best_thrust_to_weight",
-        ).loc[k_grid_values, cd0_grid_values].to_numpy()
-
-        fig, axes = plt.subplots(1, 2, figsize=(14.2, 6.2), sharex=True,
-                                 sharey=True)
-        response_maps = (
-            (axes[0], ws_grid, "Optimum W/S [N/m²]", "viridis"),
-            (axes[1], tw_grid, "Optimum required T/W [-]", "magma"),
-        )
-        for response_ax, response_grid, response_label, cmap in response_maps:
-            image = response_ax.pcolormesh(
-                cd0_percent, k_percent, response_grid,
-                shading="nearest", cmap=cmap,
-            )
-            if np.ptp(response_grid) > 1.0e-12:
-                contours = response_ax.contour(
-                    cd0_percent, k_percent, response_grid,
-                    levels=5, colors="white", linewidths=0.65, alpha=0.75,
-                )
-                response_ax.clabel(contours, inline=True, fontsize=7.5,
-                                   fmt="%.3g")
-            fig.colorbar(image, ax=response_ax, pad=0.02,
-                         label=response_label)
-            response_ax.scatter(
-                100.0, 100.0, marker="*", s=175, color="#fbbf24",
-                edgecolor="#0f172a", linewidth=0.9, zorder=9,
-            )
-            response_ax.set_xlabel("CD₀ / nominal CD₀ [%]")
-            clean_axes(response_ax)
-        axes[0].set_ylabel("k / nominal k [%]")
-
         active_handles = []
         active_names = sorted(
             aero_carpet["active_constraint_name"].astype(str).unique()
@@ -2272,35 +2287,77 @@ if not propeller_mode and os.path.exists(study_path):
                 aero_carpet["active_constraint_name"].astype(str) ==
                 active_name
             ]
-            active_color = color_map.get(active_label, "#475569")
-            for response_ax in axes:
-                response_ax.scatter(
-                    100.0 * active_points["cd_0"] / nominal_cd0,
-                    100.0 * active_points["induced_drag_factor"] / nominal_k,
-                    s=22, facecolor="none", edgecolor=active_color,
-                    linewidth=0.9, alpha=0.95, zorder=7,
-                )
-            active_marker = Line2D(
-                [0], [0], marker="o", markerfacecolor="none",
-                markeredgecolor=active_color, linestyle="None",
+            active_marker = ax.scatter(
+                active_points["best_wing_loading"],
+                active_points["best_thrust_to_weight"],
+                s=34, color=color_map.get(active_label, "#475569"),
+                edgecolor="white", linewidth=0.45, alpha=0.92, zorder=7,
                 label=f"Active: {active_label}",
             )
             active_handles.append(active_marker)
+
+        baseline_row = baseline.iloc[0]
+        baseline_active = str(baseline_row["active_constraint_name"]).replace(
+            "jet_", ""
+        ).replace("_constraint", "").replace("_", " ").title()
+        ax.scatter(
+            baseline_row["best_wing_loading"],
+            baseline_row["best_thrust_to_weight"],
+            marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
+            linewidth=0.9, label="Imported nominal polar", zorder=9,
+        )
+        ax.annotate(
+            f"Nominal polar\nActive: {baseline_active}",
+            (baseline_row["best_wing_loading"],
+             baseline_row["best_thrust_to_weight"]),
+            xytext=(0.98, 0.13), textcoords="axes fraction",
+            ha="right", va="bottom", fontsize=8.5,
+            color="#334155",
+            arrowprops=dict(
+                arrowstyle="->", color="#64748b", linewidth=1.0
+            ),
+            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                      edgecolor="#cbd5e1", alpha=0.92),
+        )
+
+        infeasible = aero_carpet[aero_carpet["range_feasible"] == 0]
+        if not infeasible.empty:
+            ax.scatter(
+                infeasible["best_wing_loading"],
+                infeasible["best_thrust_to_weight"],
+                marker="x", s=65, linewidth=1.8, color="#D55E00",
+                label="Range infeasible", zorder=8,
+            )
+
         family_handles = [
+            Line2D([0], [0], color=cd0_color, linewidth=2.4,
+                   label="Constant CD₀"),
+            Line2D([0], [0], color=k_color, linewidth=2.2,
+                   marker="o", markerfacecolor="#0f172a",
+                   markeredgecolor="#0f172a", label="Constant k"),
             Line2D([0], [0], color="#fbbf24", marker="*",
                    markeredgecolor="#0f172a", linestyle="None",
                    markersize=11, label="Imported nominal polar"),
         ]
-        axes[1].legend(handles=family_handles + active_handles,
-                       loc="upper right", frameon=False)
-        fig.suptitle(analysis_title("CD₀–k Aerodynamic Response Maps"))
-        fig.text(
-            0.5, 0.015,
-            "Color resolves small changes that collapse in optimum-space; "
-            "outlined grid points identify the governing constraint.",
-            ha="center", fontsize=8.8, color="#4d4d4d",
+        if not infeasible.empty:
+            family_handles.append(Line2D(
+                [0], [0], color="#D55E00", marker="x", linestyle="None",
+                markersize=7, label="Range infeasible",
+            ))
+
+        ax.set_title(analysis_title("Classical Aerodynamic Carpet Plot"))
+        ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
+        ax.set_ylabel("Optimum Required T/W [-]")
+        clean_axes(ax)
+        ax.legend(handles=family_handles + active_handles, frameon=False)
+        ax.text(
+            0.01, 0.02,
+            "81 interpolated feasible optima; labels show every other "
+            "CD₀ and k level (80–120% of the imported polar).",
+            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
+            va="bottom",
         )
-        save_plot("05_cd0_k_response_maps")
+        save_plot("05_classical_carpet_plot")
 
     # ============================================================
     # Additional case-specific, two-parameter classical carpets
