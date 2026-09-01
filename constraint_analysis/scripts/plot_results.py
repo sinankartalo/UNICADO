@@ -157,10 +157,18 @@ def add_gradient_curve_band(
             lower_y,
             upper_y,
             color=color,
-            alpha=0.050,
+            alpha=0.075,
             linewidth=0.0,
             zorder=1,
         )
+    ax.plot(
+        x, nominal_y * (1.0 - lower_fraction),
+        color=color, linewidth=1.05, alpha=0.82, zorder=2,
+    )
+    ax.plot(
+        x, nominal_y * (1.0 + upper_fraction),
+        color=color, linewidth=1.05, alpha=0.82, zorder=2,
+    )
 
 
 def add_gradient_vertical_band(
@@ -173,10 +181,79 @@ def add_gradient_vertical_band(
             lower_x,
             upper_x,
             color=color,
-            alpha=0.050,
+            alpha=0.075,
             linewidth=0.0,
             zorder=1,
         )
+    ax.axvline(
+        nominal_x * (1.0 - lower_fraction),
+        color=color, linewidth=1.05, alpha=0.82, zorder=2,
+    )
+    ax.axvline(
+        nominal_x * (1.0 + upper_fraction),
+        color=color, linewidth=1.05, alpha=0.82, zorder=2,
+    )
+
+
+def add_curve_family_region(
+        ax, family, parameter_column, parameter_values, color, label):
+    """Convert a parameter curve family into a centre-dark gradient area."""
+    curves = []
+    reference_x = None
+    for value in parameter_values:
+        curve = family[np.isclose(
+            family[parameter_column], value,
+            rtol=1.0e-9, atol=1.0e-12,
+        )].sort_values("wing_loading")
+        x = curve["wing_loading"].to_numpy(dtype=float)
+        y = curve["thrust_to_weight"].to_numpy(dtype=float)
+        if reference_x is None:
+            reference_x = x
+        elif len(x) != len(reference_x) or not np.allclose(x, reference_x):
+            raise RuntimeError(
+                f"{label} sensitivity curves do not share one W/S grid."
+            )
+        curves.append(y)
+
+    curve_matrix = np.asarray(curves)
+    for inward_index in range(len(parameter_values) // 2):
+        lower = np.minimum(
+            curve_matrix[inward_index], curve_matrix[-1 - inward_index]
+        )
+        upper = np.maximum(
+            curve_matrix[inward_index], curve_matrix[-1 - inward_index]
+        )
+        ax.fill_between(
+            reference_x, lower, upper, color=color,
+            alpha=0.13, linewidth=0.0, zorder=1,
+        )
+
+    outer_lower = np.min(curve_matrix, axis=0)
+    outer_upper = np.max(curve_matrix, axis=0)
+    ax.plot(reference_x, outer_lower, color=color, linewidth=1.25,
+            alpha=0.9, zorder=2)
+    ax.plot(reference_x, outer_upper, color=color, linewidth=1.25,
+            alpha=0.9, zorder=2)
+    return Patch(
+        facecolor=color, edgecolor=color, linewidth=1.0, alpha=0.42,
+        label=label,
+    )
+
+
+def add_vertical_family_region(ax, values, color, label):
+    """Draw a centre-dark region for a family of vertical limits."""
+    values = np.sort(np.asarray(values, dtype=float))
+    for inward_index in range(len(values) // 2):
+        ax.axvspan(
+            values[inward_index], values[-1 - inward_index],
+            color=color, alpha=0.13, linewidth=0.0, zorder=1,
+        )
+    ax.axvline(values[0], color=color, linewidth=1.25, alpha=0.9, zorder=2)
+    ax.axvline(values[-1], color=color, linewidth=1.25, alpha=0.9, zorder=2)
+    return Patch(
+        facecolor=color, edgecolor=color, linewidth=1.0, alpha=0.42,
+        label=label,
+    )
 
 
 def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
@@ -884,15 +961,6 @@ def shade_feasible_design_region(ax, upper_y, label=True):
 
 shade_feasible_design_region(ax, y_max)
 
-ax.plot(
-    envelope["wing_loading"],
-    envelope["thrust_to_weight"],
-    color="black",
-    linewidth=3.2,
-    label="Envelope",
-    zorder=5,
-)
-
 ax.scatter(
     aircraft_ws,
     aircraft_tw,
@@ -1064,15 +1132,6 @@ for name, df in constraints.items():
     ))
 
 shade_feasible_design_region(ax, tolerance_y_max)
-
-ax.plot(
-    envelope["wing_loading"],
-    envelope["thrust_to_weight"],
-    color="black",
-    linewidth=3.2,
-    label="Nominal envelope",
-    zorder=5,
-)
 
 ax.scatter(
     aircraft_ws,
@@ -1698,6 +1757,11 @@ if propeller_mode:
                 fontsize=8.5, color="#166534", va="center",
             )
 
+    ax.clear()
+    cd0_region_handle = add_curve_family_region(
+        ax, acceleration_cd0, "cd_0", cd0_values,
+        "#15803d", "Acceleration P/W region (CD₀: 80–120%)",
+    )
     ax.set_title(analysis_title(
         f"Acceleration P/W Sensitivity to CD₀ at Nominal k = {nominal_k:.4f}"
     ))
@@ -1711,7 +1775,7 @@ if propeller_mode:
         va="bottom",
     )
     clean_axes(ax)
-    ax.legend(loc="upper right", frameon=False)
+    ax.legend(handles=[cd0_region_handle], loc="upper right", frameon=False)
     save_plot("04_cd0_parameter_sensitivity")
 
     # k sensitivity: acceleration P/W curves and the associated gust limits.
@@ -1775,6 +1839,18 @@ if propeller_mode:
                 fontsize=8.5, color="#1d4ed8", va="center",
             )
 
+    ax.clear()
+    k_region_handle = add_curve_family_region(
+        ax, prop_k_sensitivity, "induced_drag_factor",
+        sensitivity_k_values, "#2563eb",
+        "Acceleration P/W region (k: 80–120%)",
+    )
+    prop_gust_limits = prop_k_sensitivity.groupby(
+        "induced_drag_factor"
+    )["gust_wing_loading_limit"].first().to_numpy()
+    gust_region_handle = add_vertical_family_region(
+        ax, prop_gust_limits, "#ea580c", "Gust-limit region (k: 80–120%)",
+    )
     ax.set_title(analysis_title(
         f"Acceleration and Gust-Limit P/W Sensitivity to k "
         f"at Nominal CD₀ = {nominal_cd0:.5f}"
@@ -1789,7 +1865,8 @@ if propeller_mode:
         va="bottom",
     )
     clean_axes(ax)
-    ax.legend(loc="upper right", frameon=False)
+    ax.legend(handles=[k_region_handle, gust_region_handle],
+              loc="upper right", frameon=False)
     save_plot("05_k_parameter_sensitivity")
 
     # Classical aircraft-level carpet: optimum W/S and P/W responses.
@@ -2017,6 +2094,11 @@ if not propeller_mode and os.path.exists(study_path):
         arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
     )
 
+    ax.clear()
+    cd0_region_handle = add_curve_family_region(
+        ax, acceleration_family, "cd_0", sensitivity_cd0_values,
+        "#15803d", "Acceleration T/W region (CD₀: 80–120%)",
+    )
     ax.set_title(analysis_title(
         f"Acceleration-Constraint Sensitivity to CD₀ "
         f"at Nominal k = {nominal_k:.4f}"
@@ -2032,8 +2114,7 @@ if not propeller_mode and os.path.exists(study_path):
     )
 
     clean_axes(ax)
-    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
-    fig.subplots_adjust(right=0.79)
+    ax.legend(handles=[cd0_region_handle], loc="upper right", frameon=False)
     save_plot("03_cd0_parameter_sensitivity")
 
     # ========================================================
@@ -2175,6 +2256,15 @@ if not propeller_mode and os.path.exists(study_path):
         arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
     )
 
+    gust_inset.remove()
+    ax.clear()
+    k_region_handle = add_curve_family_region(
+        ax, k_sensitivity, "induced_drag_factor", k_values,
+        "#2563eb", "Acceleration T/W region (k: 80–120%)",
+    )
+    gust_region_handle = add_vertical_family_region(
+        ax, gust_limits, "#ea580c", "Gust-limit region (k: 80–120%)",
+    )
     ax.set_title(analysis_title(
         f"Acceleration and Gust-Limit Sensitivity to k "
         f"at Nominal CD₀ = {nominal_cd0:.5f}"
@@ -2191,7 +2281,8 @@ if not propeller_mode and os.path.exists(study_path):
                   edgecolor="none", alpha=0.88),
     )
     clean_axes(ax)
-    ax.legend(loc="upper right", frameon=False)
+    ax.legend(handles=[k_region_handle, gust_region_handle],
+              loc="upper right", frameon=False)
     save_plot("04_k_parameter_sensitivity")
 
 
