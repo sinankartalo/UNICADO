@@ -141,10 +141,14 @@ constraint_tolerances = {
 
 def add_gradient_curve_band(
         ax, x, nominal_y, color, lower_fraction, upper_fraction,
-        layers=14):
+        layers=14, where=None):
     """Shade a curve tolerance band darkest at its nominal centreline."""
     x = np.asarray(x, dtype=float)
     nominal_y = np.asarray(nominal_y, dtype=float)
+    if where is None:
+        where = np.ones_like(nominal_y, dtype=bool)
+    else:
+        where = np.asarray(where, dtype=bool)
 
     # The widest layer reaches the tolerance limits and is seen only at the
     # edges. Progressively narrower translucent layers overlap near the
@@ -156,17 +160,25 @@ def add_gradient_curve_band(
             x,
             lower_y,
             upper_y,
+            where=where,
+            interpolate=True,
             color=color,
             alpha=0.075,
             linewidth=0.0,
             zorder=1,
         )
+    visible_lower = np.where(
+        where, nominal_y * (1.0 - lower_fraction), np.nan,
+    )
+    visible_upper = np.where(
+        where, nominal_y * (1.0 + upper_fraction), np.nan,
+    )
     ax.plot(
-        x, nominal_y * (1.0 - lower_fraction),
+        x, visible_lower,
         color=color, linewidth=1.05, alpha=0.82, zorder=2,
     )
     ax.plot(
-        x, nominal_y * (1.0 + upper_fraction),
+        x, visible_upper,
         color=color, linewidth=1.05, alpha=0.82, zorder=2,
     )
 
@@ -1130,7 +1142,7 @@ grid = fig.add_gridspec(
     left=0.08, right=0.78, top=0.90, bottom=0.10,
 )
 ax = fig.add_subplot(grid[0])
-limit_ax = fig.add_subplot(grid[1], sharex=ax)
+limit_ax = fig.add_subplot(grid[1])
 
 # The main panel is a design-detail view. The inset below preserves the full
 # numerical domain, so no valid constraint data are hidden by this crop.
@@ -1160,17 +1172,36 @@ tolerance_constraint_handles = []
 for name, df in constraints.items():
     color = color_map.get(name, "#7f7f7f")
     lower_fraction, upper_fraction = constraint_tolerances[name]
+    nominal_y = df["thrust_to_weight"].to_numpy(dtype=float)
+    curve_x = df["wing_loading"].to_numpy(dtype=float)
+    envelope_at_curve = np.interp(
+        curve_x,
+        envelope["wing_loading"].to_numpy(dtype=float),
+        envelope["thrust_to_weight"].to_numpy(dtype=float),
+    )
+    # A tolerance region is decision-relevant when its relaxed upper edge is
+    # within 25% of the governing requirement. Full nominal curves remain
+    # visible, preserving the complete physical context without flooding the
+    # chart with overlapping uncertainty colour.
+    decision_relevant = (
+        nominal_y * (1.0 + upper_fraction) >= 0.75 * envelope_at_curve
+    )
     add_gradient_curve_band(
         ax,
-        df["wing_loading"],
-        df["thrust_to_weight"],
+        curve_x,
+        nominal_y,
         color,
         lower_fraction,
         upper_fraction,
+        where=decision_relevant,
     )
     ax.plot(
-        df["wing_loading"], df["thrust_to_weight"],
-        color=color, linewidth=1.25, alpha=0.92, zorder=3,
+        curve_x, nominal_y,
+        color=color, linewidth=0.95, alpha=0.34, zorder=2,
+    )
+    ax.plot(
+        curve_x, np.where(decision_relevant, nominal_y, np.nan),
+        color=color, linewidth=1.35, alpha=0.96, zorder=3,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor=color, alpha=0.35, label=name,
@@ -1214,8 +1245,8 @@ for name, limit, _, _, label in vertical_band_specs:
     strip_rows.append((row_index, name, limit, label))
     color = color_map[name]
     is_lower_limit = name == "Gust"
-    allowed_left = limit if is_lower_limit else focus_x_min
-    allowed_right = focus_x_max if is_lower_limit else limit
+    allowed_left = limit if is_lower_limit else tolerance_plot_min
+    allowed_right = tolerance_plot_max if is_lower_limit else limit
     limit_ax.hlines(
         row_index, allowed_left, allowed_right,
         color=color, linewidth=8.0, alpha=0.22, zorder=1,
@@ -1276,32 +1307,18 @@ ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.grid(axis="x", alpha=0.18)
 ax.grid(axis="y", alpha=0.25)
-ax.tick_params(axis="x", labelbottom=False)
-
-# Small full-domain overview: all nominal constraints and every W/S limit.
-overview_ax = ax.inset_axes([0.035, 0.54, 0.29, 0.39])
-for name, df in constraints.items():
-    overview_ax.plot(
-        df["wing_loading"], df["thrust_to_weight"],
-        color=color_map.get(name, "#64748b"), linewidth=0.9, alpha=0.78,
-    )
-for name, limit, linestyle, _, _ in vertical_band_specs:
-    if limit is not None:
-        overview_ax.axvline(
-            limit, color=color_map[name], linestyle=linestyle,
-            linewidth=0.9, alpha=0.8,
-        )
-overview_ax.scatter(
-    [aircraft_ws, best_ws], [aircraft_tw, best_tw],
-    s=[18, 26], marker="o", color=["#d62728", "#2ca02c"], zorder=4,
+ax.set_xlabel("Design-detail wing loading, W/S [N/m²]")
+ax.text(
+    0.01, 0.985,
+    "Gradient shown only where the relaxed band lies within 25% of the "
+    "governing requirement; faint lines show every nominal constraint.",
+    transform=ax.transAxes, ha="left", va="top", fontsize=8.3,
+    color="#475569",
+    bbox=dict(
+        boxstyle="round,pad=0.25", facecolor="white",
+        edgecolor="none", alpha=0.82,
+    ),
 )
-overview_ax.set_xlim(tolerance_plot_min, tolerance_plot_max)
-overview_ax.set_ylim(y_min, tolerance_y_max)
-overview_ax.set_title("Full range", fontsize=8.5)
-overview_ax.tick_params(labelsize=7)
-overview_ax.grid(alpha=0.14)
-overview_ax.spines["top"].set_visible(False)
-overview_ax.spines["right"].set_visible(False)
 
 ax.legend(
     handles=[
@@ -1310,7 +1327,7 @@ ax.legend(
         best_tolerance_handle,
         Patch(
             facecolor="#7f7f7f", edgecolor="#7f7f7f", alpha=0.35,
-            label="Default width: ±10%",
+            label="Decision-relevant ±10% region",
         ),
     ],
     title="Performance bands",
@@ -1332,6 +1349,7 @@ limit_ax.set_title(
     loc="left", fontsize=10.5, pad=6,
 )
 limit_ax.set_ylim(-0.55, common_row + 0.62)
+limit_ax.set_xlim(tolerance_plot_min, tolerance_plot_max)
 limit_ax.grid(axis="x", alpha=0.18)
 limit_ax.grid(axis="y", visible=False)
 limit_ax.spines["top"].set_visible(False)
