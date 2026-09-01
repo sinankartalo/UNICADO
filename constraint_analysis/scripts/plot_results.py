@@ -89,6 +89,7 @@ def load_xy_csv(filename):
 
 
 plot_allowlist = None
+generate_jet_design_maps = False
 
 
 def save_plot(name, tight=True):
@@ -141,7 +142,7 @@ constraint_tolerances = {
 
 def add_gradient_curve_band(
         ax, x, nominal_y, color, lower_fraction, upper_fraction,
-        layers=14, draw_edges=True):
+        layers=14, draw_edges=True, layer_alpha=0.075):
     """Shade a curve tolerance band darkest at its nominal centreline."""
     x = np.asarray(x, dtype=float)
     nominal_y = np.asarray(nominal_y, dtype=float)
@@ -157,7 +158,7 @@ def add_gradient_curve_band(
             lower_y,
             upper_y,
             color=color,
-            alpha=0.075,
+            alpha=layer_alpha,
             linewidth=0.0,
             zorder=1,
         )
@@ -174,7 +175,7 @@ def add_gradient_curve_band(
 
 def add_gradient_vertical_band(
         ax, nominal_x, color, lower_fraction, upper_fraction, layers=14,
-        draw_edges=True):
+        draw_edges=True, layer_alpha=0.075):
     """Shade a vertical-limit tolerance band darkest at its nominal value."""
     for scale in np.linspace(1.0, 1.0 / layers, layers):
         lower_x = nominal_x * (1.0 - lower_fraction * scale)
@@ -183,7 +184,7 @@ def add_gradient_vertical_band(
             lower_x,
             upper_x,
             color=color,
-            alpha=0.075,
+            alpha=layer_alpha,
             linewidth=0.0,
             zorder=1,
         )
@@ -353,8 +354,6 @@ else:
         "02_active_constraint_regions",
         "03_constraint_utilization_dashboard",
         "04_governing_constraint_gap_map",
-        "05_cd0_k_design_map",
-        "06_mission_runway_design_map",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -1135,9 +1134,9 @@ point_x_high = max(best_ws, aircraft_ws)
 point_x_span = max(point_x_high - point_x_low, 1.0)
 point_x_center = 0.5 * (point_x_low + point_x_high)
 zoom_x_padding = max(
-    0.28 * point_x_span,
-    0.08 * max(point_x_center, 1.0),
-    250.0,
+    0.34 * point_x_span,
+    0.095 * max(point_x_center, 1.0),
+    300.0,
 )
 tolerance_zoom_x_min = max(
     tolerance_plot_min, point_x_low - zoom_x_padding,
@@ -1163,8 +1162,8 @@ zoom_band_values.extend((aircraft_tw, best_tw))
 zoom_y_low = float(np.nanmin(zoom_band_values))
 zoom_y_high = float(np.nanmax(zoom_band_values))
 zoom_y_span = max(zoom_y_high - zoom_y_low, 1.0e-3)
-tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.10 * zoom_y_span)
-tolerance_zoom_y_max = zoom_y_high + 0.12 * zoom_y_span
+tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.14 * zoom_y_span)
+tolerance_zoom_y_max = zoom_y_high + 0.16 * zoom_y_span
 
 fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
@@ -1179,7 +1178,9 @@ for name, df in constraints.items():
         color,
         lower_fraction,
         upper_fraction,
+        layers=6,
         draw_edges=False,
+        layer_alpha=0.12,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor="none", alpha=0.35,
@@ -1231,7 +1232,9 @@ for name, limit, linestyle, linewidth, label in vertical_band_specs:
         color,
         lower_fraction,
         upper_fraction,
+        layers=6,
         draw_edges=False,
+        layer_alpha=0.12,
     )
     tolerance_constraint_handles.append(Patch(
         facecolor=color, edgecolor="none", alpha=0.35,
@@ -2659,7 +2662,7 @@ if not propeller_mode and os.path.exists(study_path):
     aerodynamic_carpet_path = os.path.join(
         output_dir, "jet_cd0_k_carpet.csv"
     )
-    if os.path.exists(aerodynamic_carpet_path):
+    if generate_jet_design_maps and os.path.exists(aerodynamic_carpet_path):
         aero_carpet = pd.read_csv(aerodynamic_carpet_path).dropna()
         cd0_grid_values = np.sort(aero_carpet["cd_0"].unique())
         k_grid_values = np.sort(
@@ -2847,7 +2850,7 @@ if not propeller_mode and os.path.exists(study_path):
             "Mission–Runway Design Map",
             "06_mission_runway_design_map",
         ),
-    ]
+    ] if generate_jet_design_maps else []
     for (
             csv_name, parameter_a, parameter_b, parameter_a_label,
             parameter_b_label, parameter_a_formatter,
