@@ -262,8 +262,7 @@ else:
         "03_cd0_parameter_sensitivity",
         "04_k_parameter_sensitivity",
         "05_classical_carpet_plot",
-        "06_cd0_takeoff_distance_carpet",
-        "07_cd0_thrust_lapse_carpet",
+        "06_acceleration_takeoff_distance_carpet",
     }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -350,6 +349,26 @@ def plot_two_parameter_classical_carpet(
     if len(baseline) != 1:
         raise RuntimeError(f"{plot_name} must contain one nominal point.")
     baseline_row = baseline.iloc[0]
+
+    active_names = sorted(carpet["active_constraint_name"].astype(str).unique())
+    active_handles = []
+    for active_name in active_names:
+        active_label = active_name.replace("jet_", "").replace(
+            "_constraint", ""
+        ).replace("_", " ").title()
+        active_points = carpet[
+            carpet["active_constraint_name"].astype(str) == active_name
+        ]
+        active_color = color_map.get(active_label, "#475569")
+        marker = ax.scatter(
+            active_points["best_wing_loading"],
+            active_points["best_thrust_to_weight"],
+            s=34, color=active_color, edgecolor="white", linewidth=0.45,
+            alpha=0.92, zorder=7,
+            label=f"Active: {active_label}",
+        )
+        active_handles.append(marker)
+
     ax.scatter(
         baseline_row["best_wing_loading"],
         baseline_row["best_thrust_to_weight"],
@@ -383,7 +402,7 @@ def plot_two_parameter_classical_carpet(
     ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
     ax.set_ylabel("Optimum Required T/W [-]")
     clean_axes(ax)
-    ax.legend(handles=handles, frameon=False)
+    ax.legend(handles=handles + active_handles, frameon=False)
     ax.text(
         0.01, 0.02,
         "81 feasible envelope optima; both inputs are swept from 80% to "
@@ -2241,6 +2260,27 @@ if not propeller_mode and os.path.exists(study_path):
             raise RuntimeError(
                 "Jet CD0-k carpet must contain one nominal polar point."
             )
+        active_handles = []
+        active_names = sorted(
+            aero_carpet["active_constraint_name"].astype(str).unique()
+        )
+        for active_name in active_names:
+            active_label = active_name.replace("jet_", "").replace(
+                "_constraint", ""
+            ).replace("_", " ").title()
+            active_points = aero_carpet[
+                aero_carpet["active_constraint_name"].astype(str) ==
+                active_name
+            ]
+            active_marker = ax.scatter(
+                active_points["best_wing_loading"],
+                active_points["best_thrust_to_weight"],
+                s=34, color=color_map.get(active_label, "#475569"),
+                edgecolor="white", linewidth=0.45, alpha=0.92, zorder=7,
+                label=f"Active: {active_label}",
+            )
+            active_handles.append(active_marker)
+
         baseline_row = baseline.iloc[0]
         baseline_active = str(baseline_row["active_constraint_name"])
         ax.scatter(
@@ -2288,7 +2328,7 @@ if not propeller_mode and os.path.exists(study_path):
         ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
         ax.set_ylabel("Optimum Required T/W [-]")
         clean_axes(ax)
-        ax.legend(handles=family_handles, frameon=False)
+        ax.legend(handles=family_handles + active_handles, frameon=False)
         ax.text(
             0.01, 0.02,
             "81 interpolated feasible optima; labels show every other "
@@ -2303,20 +2343,13 @@ if not propeller_mode and os.path.exists(study_path):
     # ============================================================
     additional_carpet_studies = [
         (
-            "jet_cd0_takeoff_distance_carpet.csv",
-            "cd_0", "takeoff_distance_m", "CD₀", "take-off distance",
-            lambda value: f"CD₀ = {value:.4f}",
+            "jet_acceleration_takeoff_distance_carpet.csv",
+            "acceleration_severity_scale", "takeoff_distance_m",
+            "mission acceleration demand", "take-off distance",
+            lambda value: f"Mission demand = {value:.0%}",
             lambda value: f"s_TO = {value:.0f} m",
-            "CD₀–Take-off-Distance Carpet Plot",
-            "06_cd0_takeoff_distance_carpet",
-        ),
-        (
-            "jet_cd0_thrust_lapse_carpet.csv",
-            "cd_0", "thrust_lapse_scale", "CD₀", "thrust-lapse scale",
-            lambda value: f"CD₀ = {value:.4f}",
-            lambda value: f"α_lapse = {value:.0%}",
-            "CD₀–Installed-Thrust-Lapse Carpet Plot",
-            "07_cd0_thrust_lapse_carpet",
+            "Mission-Acceleration–Take-off-Distance Carpet Plot",
+            "06_acceleration_takeoff_distance_carpet",
         ),
     ]
     for (
