@@ -76,6 +76,10 @@ namespace constraint_analysis
             for (double induced_drag_factor : induced_drag_factor_values)
             {
                 constraint_input input = base_input;
+                input.aircraft.operating_cd0_scale =
+                    cd0 / base_input.aircraft.polar.cd_0;
+                input.aircraft.operating_k_scale =
+                    induced_drag_factor / base_input.aircraft.polar.k;
                 input.aircraft.polar.cd_0 = cd0;
                 input.aircraft.polar.k = induced_drag_factor;
 
@@ -286,9 +290,13 @@ namespace constraint_analysis
             switch (parameter)
             {
                 case jet_carpet_parameter::cd0:
+                    input.aircraft.operating_cd0_scale =
+                        value / input.aircraft.polar.cd_0;
                     input.aircraft.polar.cd_0 = value;
                     return;
                 case jet_carpet_parameter::induced_drag_factor:
+                    input.aircraft.operating_k_scale =
+                        value / input.aircraft.polar.k;
                     input.aircraft.polar.k = value;
                     return;
                 case jet_carpet_parameter::takeoff_distance_m:
@@ -472,6 +480,8 @@ namespace constraint_analysis
         {
             constraint_input input = base_input;
 
+            input.aircraft.operating_cd0_scale =
+                cd0 / base_input.aircraft.polar.cd_0;
             input.aircraft.polar.cd_0 = cd0;
 
             const constraint_output output = tool.run(input);
@@ -563,6 +573,8 @@ namespace constraint_analysis
         {
             constraint_input input = base_input;
 
+            input.aircraft.operating_cd0_scale =
+                cd0 / base_input.aircraft.polar.cd_0;
             input.aircraft.polar.cd_0 = cd0;
 
             const constraint_output output = tool.run(input);
@@ -623,6 +635,8 @@ namespace constraint_analysis
         for (double induced_drag_factor : induced_drag_factor_values)
         {
             constraint_input input = base_input;
+            input.aircraft.operating_k_scale =
+                induced_drag_factor / base_input.aircraft.polar.k;
             input.aircraft.polar.k = induced_drag_factor;
             const constraint_output output = tool.run(input);
 
