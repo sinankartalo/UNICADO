@@ -66,6 +66,11 @@ namespace constraint_analysis
         double aerodynamic_minimum_mach = 0.0;
         double aerodynamic_maximum_mach = 0.0;
         drag_polar polar;
+        // Parameter-study multipliers applied after querying the authoritative
+        // Mach/altitude-dependent aerodynamic polar. Nominal analysis keeps
+        // both at unity.
+        double operating_cd0_scale = 1.0;
+        double operating_k_scale = 1.0;
         std::vector<aerodynamic_polar_sample> polar_samples;
     };
 
