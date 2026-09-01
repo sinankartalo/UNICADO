@@ -1077,7 +1077,7 @@ if gust_ws_limit is not None:
 ax.set_title(
     analysis_title("Constraint Analysis Matching Chart"),
     pad=12,
-    fontweight="semibold",
+    fontweight="bold",
 )
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
@@ -1124,7 +1124,37 @@ save_plot("01_matching_chart_professional")
 # ============================================================
 # Plot 1b: Matching chart with gradient tolerance bands
 # ============================================================
-fig, ax = plt.subplots(figsize=(13.5, 6.8))
+fig = plt.figure(figsize=(14.2, 8.0))
+grid = fig.add_gridspec(
+    2, 1, height_ratios=(5.0, 1.15), hspace=0.08,
+    left=0.08, right=0.78, top=0.90, bottom=0.10,
+)
+ax = fig.add_subplot(grid[0])
+limit_ax = fig.add_subplot(grid[1], sharex=ax)
+
+# The main panel is a design-detail view. The inset below preserves the full
+# numerical domain, so no valid constraint data are hidden by this crop.
+focus_anchor = min(best_ws, aircraft_ws)
+focus_x_min = max(tolerance_plot_min, 0.55 * focus_anchor)
+focus_x_max = min(
+    tolerance_plot_max,
+    max(1.15 * feasible_ws_max, 1.08 * max(best_ws, aircraft_ws)),
+)
+if focus_x_min >= focus_x_max:
+    focus_x_min, focus_x_max = tolerance_plot_min, tolerance_plot_max
+
+focus_samples = np.linspace(focus_x_min, focus_x_max, 400)
+focus_curve_values = np.concatenate([
+    np.interp(
+        focus_samples,
+        df["wing_loading"].to_numpy(dtype=float),
+        df["thrust_to_weight"].to_numpy(dtype=float),
+    ) * (1.0 + constraint_tolerances[name][1])
+    for name, df in constraints.items()
+])
+focus_y_max = 1.20 * max(
+    float(np.nanmax(focus_curve_values)), aircraft_tw, best_tw,
+)
 
 tolerance_constraint_handles = []
 for name, df in constraints.items():
@@ -1138,14 +1168,15 @@ for name, df in constraints.items():
         lower_fraction,
         upper_fraction,
     )
+    ax.plot(
+        df["wing_loading"], df["thrust_to_weight"],
+        color=color, linewidth=1.25, alpha=0.92, zorder=3,
+    )
     tolerance_constraint_handles.append(Patch(
-        facecolor=color, edgecolor="none", alpha=0.35,
-        label=f"{name} relaxed region",
+        facecolor=color, edgecolor=color, alpha=0.35, label=name,
     ))
 
-shade_feasible_design_region(ax, tolerance_y_max)
-
-ax.scatter(
+aircraft_tolerance_handle = ax.scatter(
     aircraft_ws,
     aircraft_tw,
     s=85,
@@ -1153,9 +1184,9 @@ ax.scatter(
     edgecolor="white",
     linewidth=1.4,
     zorder=6,
-    label="Aircraft point from aero Sref",
+    label="Aircraft point",
 )
-ax.scatter(
+best_tolerance_handle = ax.scatter(
     best_ws,
     best_tw,
     s=115,
@@ -1164,7 +1195,7 @@ ax.scatter(
     edgecolor="white",
     linewidth=1.2,
     zorder=7,
-    label="Best nominal design point",
+    label="Best nominal point",
 )
 
 vertical_band_specs = (
@@ -1172,27 +1203,55 @@ vertical_band_specs = (
     ("Stall speed", stall_ws_limit, ":", 2.0, "Stall max"),
     ("Gust", gust_ws_limit, "-.", 1.7, "Gust min"),
 )
-for name, limit, linestyle, linewidth, label in vertical_band_specs:
+
+# Keep the vertical limits out of the performance panel. Their admissible
+# intervals and uncertainty widths are shown independently in the strip.
+strip_rows = []
+for name, limit, _, _, label in vertical_band_specs:
     if limit is None:
         continue
+    row_index = len(strip_rows)
+    strip_rows.append((row_index, name, limit, label))
     color = color_map[name]
-    add_gradient_vertical_band(
-        ax,
-        limit,
-        color,
-        *constraint_tolerances[name],
+    is_lower_limit = name == "Gust"
+    allowed_left = limit if is_lower_limit else focus_x_min
+    allowed_right = focus_x_max if is_lower_limit else limit
+    limit_ax.hlines(
+        row_index, allowed_left, allowed_right,
+        color=color, linewidth=8.0, alpha=0.22, zorder=1,
     )
-    tolerance_constraint_handles.append(Patch(
-        facecolor=color, edgecolor="none", alpha=0.35,
-        label=f"{label} relaxed region ({limit:.0f})",
-    ))
+    lower_fraction, upper_fraction = constraint_tolerances[name]
+    for scale in np.linspace(1.0, 0.125, 8):
+        lower_x = limit * (1.0 - lower_fraction * scale)
+        upper_x = limit * (1.0 + upper_fraction * scale)
+        limit_ax.fill_betweenx(
+            [row_index - 0.24, row_index + 0.24], lower_x, upper_x,
+            color=color, alpha=0.11, linewidth=0.0, zorder=2,
+        )
+    limit_ax.plot(
+        [limit, limit], [row_index - 0.28, row_index + 0.28],
+        color=color, linewidth=1.5, zorder=3,
+    )
+    limit_ax.text(
+        limit, row_index + 0.31, f"{limit:.0f}",
+        color=color, ha="center", va="bottom", fontsize=8.2,
+    )
 
-ax.set_title(
-    analysis_title("Constraint Analysis Matching Chart — Tolerance Bands"),
-    pad=12,
-    fontweight="semibold",
+common_row = len(strip_rows)
+if feasible_ws_min < feasible_ws_max:
+    limit_ax.hlines(
+        common_row, feasible_ws_min, feasible_ws_max,
+        color="#15803d", linewidth=11.0, alpha=0.62, zorder=2,
+    )
+    limit_ax.plot(
+        [feasible_ws_min, feasible_ws_max], [common_row, common_row],
+        color="#166534", linewidth=1.2, zorder=3,
+    )
+
+fig.suptitle(
+    analysis_title("Constraint Tolerance Regions"),
+    fontsize=16, fontweight="bold",
 )
-ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
 if propeller_climb_coverage_note:
     ax.text(
@@ -1211,33 +1270,76 @@ if propeller_climb_coverage_note:
         ),
         zorder=10,
     )
-ax.set_xlim(tolerance_plot_min, tolerance_plot_max)
-ax.set_ylim(y_min, tolerance_y_max)
+ax.set_xlim(focus_x_min, focus_x_max)
+ax.set_ylim(y_min, focus_y_max)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.grid(axis="x", alpha=0.18)
 ax.grid(axis="y", alpha=0.25)
+ax.tick_params(axis="x", labelbottom=False)
 
-tolerance_handles, tolerance_labels = ax.get_legend_handles_labels()
-tolerance_handles = tolerance_constraint_handles + tolerance_handles
-tolerance_handles.append(Patch(
-    facecolor="#7f7f7f",
-    edgecolor="none",
-    alpha=0.42,
-    label="Region width: default ±10%",
-))
+# Small full-domain overview: all nominal constraints and every W/S limit.
+overview_ax = ax.inset_axes([0.035, 0.54, 0.29, 0.39])
+for name, df in constraints.items():
+    overview_ax.plot(
+        df["wing_loading"], df["thrust_to_weight"],
+        color=color_map.get(name, "#64748b"), linewidth=0.9, alpha=0.78,
+    )
+for name, limit, linestyle, _, _ in vertical_band_specs:
+    if limit is not None:
+        overview_ax.axvline(
+            limit, color=color_map[name], linestyle=linestyle,
+            linewidth=0.9, alpha=0.8,
+        )
+overview_ax.scatter(
+    [aircraft_ws, best_ws], [aircraft_tw, best_tw],
+    s=[18, 26], marker="o", color=["#d62728", "#2ca02c"], zorder=4,
+)
+overview_ax.set_xlim(tolerance_plot_min, tolerance_plot_max)
+overview_ax.set_ylim(y_min, tolerance_y_max)
+overview_ax.set_title("Full range", fontsize=8.5)
+overview_ax.tick_params(labelsize=7)
+overview_ax.grid(alpha=0.14)
+overview_ax.spines["top"].set_visible(False)
+overview_ax.spines["right"].set_visible(False)
+
 ax.legend(
-    handles=tolerance_handles,
+    handles=[
+        *tolerance_constraint_handles,
+        aircraft_tolerance_handle,
+        best_tolerance_handle,
+        Patch(
+            facecolor="#7f7f7f", edgecolor="#7f7f7f", alpha=0.35,
+            label="Default width: ±10%",
+        ),
+    ],
+    title="Performance bands",
     loc="upper left",
-    bbox_to_anchor=(1.015, 1.0),
+    bbox_to_anchor=(1.02, 1.0),
     borderaxespad=0.0,
     frameon=False,
     handlelength=2.4,
-    labelspacing=0.7,
+    labelspacing=0.55,
 )
 
-fig.subplots_adjust(right=0.79)
-save_plot("01_matching_chart_with_tolerance_bands")
+limit_ax.set_yticks(
+    [row[0] for row in strip_rows] + [common_row],
+    [row[3] for row in strip_rows] + ["Common feasible W/S"],
+)
+limit_ax.set_xlabel("Wing Loading, W/S [N/m²]")
+limit_ax.set_title(
+    "Wing-loading feasibility and boundary uncertainty",
+    loc="left", fontsize=10.5, pad=6,
+)
+limit_ax.set_ylim(-0.55, common_row + 0.62)
+limit_ax.grid(axis="x", alpha=0.18)
+limit_ax.grid(axis="y", visible=False)
+limit_ax.spines["top"].set_visible(False)
+limit_ax.spines["right"].set_visible(False)
+limit_ax.spines["left"].set_visible(False)
+limit_ax.tick_params(axis="y", length=0, labelsize=9)
+
+save_plot("01_matching_chart_with_tolerance_bands", tight=False)
 
 
 # ============================================================
