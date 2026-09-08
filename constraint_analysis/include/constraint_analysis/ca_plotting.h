@@ -69,6 +69,8 @@ namespace constraint_analysis
         cd0,
         induced_drag_factor,
         takeoff_distance_m,
+        acceleration_ms2,
+        climb_rate_ms,
         acceleration_severity_scale,
         thrust_lapse_scale
     };
@@ -78,7 +80,8 @@ namespace constraint_analysis
         double parameter_a_value = 0.0;
         double parameter_b_value = 0.0;
         double best_wing_loading = 0.0;
-        double best_thrust_to_weight = 0.0;
+        // T/W for jets and shaft P/W [W/N] for propellers.
+        double best_required_loading = 0.0;
         bool is_baseline = false;
         std::string active_constraint_name;
         std::string second_constraint_name;

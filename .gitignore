@@ -30,6 +30,8 @@ compile_commands.json
 *.log
 *.bak
 *~
+__pycache__/
+*.pyc
 
 # Generated analysis outputs
 constraint_analysis/output/

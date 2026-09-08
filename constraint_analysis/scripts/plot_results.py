@@ -3,7 +3,6 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
@@ -234,79 +233,6 @@ def add_gradient_vertical_band(
         )
 
 
-def add_curve_family_region(
-        ax, family, parameter_column, parameter_values, color, label):
-    """Convert a parameter curve family into a centre-dark gradient area."""
-    curves = []
-    reference_x = None
-    for value in parameter_values:
-        curve = family[np.isclose(
-            family[parameter_column], value,
-            rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("wing_loading")
-        x = curve["wing_loading"].to_numpy(dtype=float)
-        y = curve["thrust_to_weight"].to_numpy(dtype=float)
-        if reference_x is None:
-            reference_x = x
-        elif len(x) != len(reference_x) or not np.allclose(x, reference_x):
-            raise RuntimeError(
-                f"{label} sensitivity curves do not share one W/S grid."
-            )
-        curves.append(y)
-
-    curve_matrix = np.asarray(curves)
-    for inward_index in range(len(parameter_values) // 2):
-        lower = np.minimum(
-            curve_matrix[inward_index], curve_matrix[-1 - inward_index]
-        )
-        upper = np.maximum(
-            curve_matrix[inward_index], curve_matrix[-1 - inward_index]
-        )
-        ax.fill_between(
-            reference_x, lower, upper, color=color,
-            alpha=0.13, linewidth=0.0, zorder=1,
-        )
-
-    outer_lower = np.min(curve_matrix, axis=0)
-    outer_upper = np.max(curve_matrix, axis=0)
-    ax.plot(reference_x, outer_lower, color=color, linewidth=1.25,
-            alpha=0.9, zorder=2)
-    ax.plot(reference_x, outer_upper, color=color, linewidth=1.25,
-            alpha=0.9, zorder=2)
-    return Patch(
-        facecolor=color, edgecolor=color, linewidth=1.0, alpha=0.42,
-        label=label,
-    )
-
-
-def set_feasible_sensitivity_xlim(ax, family, lower_limit, upper_limit):
-    """Frame a sensitivity family around the physically feasible W/S window."""
-    data_min = float(family["wing_loading"].min())
-    data_max = float(family["wing_loading"].max())
-    left = max(data_min, float(lower_limit))
-    right = min(data_max, float(upper_limit))
-    if not np.isfinite(left) or not np.isfinite(right) or left >= right:
-        left, right = data_min, data_max
-    padding = 0.035 * max(right - left, 1.0)
-    ax.set_xlim(max(data_min, left - padding), min(data_max, right + padding))
-
-
-def add_vertical_family_region(ax, values, color, label):
-    """Draw a centre-dark region for a family of vertical limits."""
-    values = np.sort(np.asarray(values, dtype=float))
-    for inward_index in range(len(values) // 2):
-        ax.axvspan(
-            values[inward_index], values[-1 - inward_index],
-            color=color, alpha=0.13, linewidth=0.0, zorder=1,
-        )
-    ax.axvline(values[0], color=color, linewidth=1.25, alpha=0.9, zorder=2)
-    ax.axvline(values[-1], color=color, linewidth=1.25, alpha=0.9, zorder=2)
-    return Patch(
-        facecolor=color, edgecolor=color, linewidth=1.0, alpha=0.42,
-        label=label,
-    )
-
-
 def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
     point = ax.scatter(
         x, y, marker="*", s=165, color="#007f5f", edgecolor="white",
@@ -440,27 +366,15 @@ if propeller_mode:
                 "inside supplied propeller deck"
             )
 
-# Keep the deliverable aligned with the lecture workflow.  The existing
-# matching chart and active-constraint figure remain part of the output; the
-# added work is limited to sensitivity plots and classical carpet studies.
-if propeller_mode:
-    plot_allowlist = {
-        "01_matching_chart_professional",
-        "01_matching_chart_with_tolerance_bands",
-        "02_active_constraint_regions",
-        "03_constraint_utilization_dashboard",
-        "04_governing_constraint_gap_map",
-        "03_propeller_performance_map",
-        "06_classical_carpet_plot",
-    }
-else:
-    plot_allowlist = {
-        "01_matching_chart_professional",
-        "01_matching_chart_with_tolerance_bands",
-        "02_active_constraint_regions",
-        "03_constraint_utilization_dashboard",
-        "04_governing_constraint_gap_map",
-    }
+# The review package intentionally contains five decision plots. Every figure
+# must answer a different sizing question without duplicating another plot.
+plot_allowlist = {
+    "01_design_matching_chart",
+    "02_governing_constraint_envelope",
+    "03_design_point_margins",
+    "04_performance_carpet_plot",
+    "05_tolerance_robustness",
+}
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
         continue
@@ -474,250 +388,136 @@ def analysis_title(title):
 
 def readable_constraint_name(raw_name):
     return str(raw_name).replace("jet_", "").replace(
+        "propeller_", ""
+    ).replace(
         "_constraint", ""
     ).replace("_", " ").title()
 
 
-def draw_design_map(
-        ax, carpet, parameter_a, parameter_b,
-        parameter_a_label, parameter_b_label):
-    """Draw an engineering design map without connecting optimum points."""
-    values_a = np.sort(carpet[parameter_a].unique())
-    values_b = np.sort(carpet[parameter_b].unique())
-    ws_grid = carpet.pivot(
-        index=parameter_b, columns=parameter_a,
-        values="best_wing_loading",
-    ).loc[values_b, values_a].to_numpy()
-    tw_grid = carpet.pivot(
-        index=parameter_b, columns=parameter_a,
-        values="best_thrust_to_weight",
-    ).loc[values_b, values_a].to_numpy()
-
-    active_names = sorted(carpet["active_constraint_name"].astype(str).unique())
-    active_index = {name: index for index, name in enumerate(active_names)}
-    active_grid = carpet.assign(
-        _active_index=carpet["active_constraint_name"].astype(str).map(
-            active_index
-        )
-    ).pivot(
-        index=parameter_b, columns=parameter_a, values="_active_index"
-    ).loc[values_b, values_a].to_numpy()
-    active_colors = [
-        color_map.get(readable_constraint_name(name), "#94a3b8")
-        for name in active_names
-    ]
-    ax.pcolormesh(
-        values_a, values_b, active_grid,
-        shading="nearest",
-        cmap=mpl.colors.ListedColormap(active_colors),
-        vmin=-0.5, vmax=max(len(active_names) - 0.5, 0.5),
-        alpha=0.16, zorder=0,
-    )
-
-    ws_contours = ax.contour(
-        values_a, values_b, ws_grid, levels=6,
-        colors="#2563eb", linewidths=1.8, zorder=3,
-    )
-    tw_contours = ax.contour(
-        values_a, values_b, tw_grid, levels=6,
-        colors="#dc2626", linewidths=1.7, linestyles="--", zorder=3,
-    )
-    ax.clabel(ws_contours, inline=True, fontsize=8.0, fmt="W/S %.0f")
-    ax.clabel(tw_contours, inline=True, fontsize=8.0, fmt="T/W %.3f")
-
-    baseline = carpet[carpet["is_baseline"] == 1]
-    if len(baseline) != 1:
-        raise RuntimeError("Design map must contain exactly one nominal point.")
-    baseline_row = baseline.iloc[0]
-    ax.scatter(
-        baseline_row[parameter_a], baseline_row[parameter_b],
-        marker="*", s=190, color="#fbbf24", edgecolor="#0f172a",
-        linewidth=0.95, zorder=8,
-    )
-    ax.annotate(
-        "Nominal case\n"
-        f"W/S = {float(baseline_row['best_wing_loading']):.0f} N/m²\n"
-        f"T/W = {float(baseline_row['best_thrust_to_weight']):.3f}\n"
-        f"Active: {readable_constraint_name(baseline_row['active_constraint_name'])}",
-        (baseline_row[parameter_a], baseline_row[parameter_b]),
-        xytext=(12, 15), textcoords="offset points", fontsize=8.3,
-        color="#334155",
-        bbox=dict(boxstyle="round,pad=0.28", facecolor="white",
-                  edgecolor="#cbd5e1", alpha=0.95),
-        arrowprops=dict(arrowstyle="->", color="#64748b", linewidth=1.0),
-    )
-
-    handles = [
-        Line2D([0], [0], color="#2563eb", linewidth=1.8,
-               label="Optimum W/S contours"),
-        Line2D([0], [0], color="#dc2626", linewidth=1.7, linestyle="--",
-               label="Required T/W contours"),
-        Line2D([0], [0], marker="*", color="none",
-               markerfacecolor="#fbbf24", markeredgecolor="#0f172a",
-               markersize=11, label="Nominal case"),
-    ]
-    handles.extend(
-        Patch(
-            facecolor=color, edgecolor="none", alpha=0.22,
-            label=f"Active region: {readable_constraint_name(name)}",
-        )
-        for name, color in zip(active_names, active_colors)
-    )
-    ax.set_xlabel(parameter_a_label)
-    ax.set_ylabel(parameter_b_label)
-    if parameter_a.endswith("_scale"):
-        ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=1.0))
-    if parameter_b.endswith("_scale"):
-        ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=1.0))
-    clean_axes(ax)
-    return handles
-
-
-def plot_two_parameter_classical_carpet(
+def plot_performance_carpet(
         carpet, parameter_a, parameter_b, parameter_a_label,
-        parameter_b_label, parameter_a_formatter, parameter_b_formatter,
-        title, plot_name):
+        parameter_b_label, parameter_a_formatter, parameter_b_formatter):
+    """Plot two performance-requirement families in the design plane."""
     required = {
         parameter_a, parameter_b, "best_wing_loading",
-        "best_thrust_to_weight", "is_baseline",
+        "best_required_loading", "is_baseline",
         "active_constraint_name", "second_constraint_name",
         "constraint_margin",
     }
     if not required.issubset(carpet.columns):
+        missing = sorted(required.difference(carpet.columns))
         raise RuntimeError(
-            f"{plot_name} CSV schema is incomplete; rerun the C++ application."
+            "Performance carpet CSV is outdated; rerun C++ with "
+            f"--with-studies. Missing: {', '.join(missing)}"
         )
     values_a = np.sort(carpet[parameter_a].unique())
     values_b = np.sort(carpet[parameter_b].unique())
     if len(values_a) != 9 or len(values_b) != 9 or len(carpet) != 81:
-        raise RuntimeError(f"{plot_name} must contain a complete 9x9 grid.")
+        raise RuntimeError("Performance carpet must contain a complete 9x9 grid.")
 
-    fig, ax = plt.subplots(figsize=(10.0, 7.0))
-    color_a = "#10b981"
-    color_b = "#ef4444"
+    fig, ax = plt.subplots(figsize=(11.0, 7.0))
+    family_a_color = "#2563eb"
+    family_b_color = "#dc2626"
     label_indices = {0, 4, 8}
 
-    # First family: parameter A is constant while parameter B varies.
+    # Each blue line holds requirement A constant; each red line holds B
+    # constant. Their intersections are complete sizing solutions.
     for index, value_a in enumerate(values_a):
         family = carpet[np.isclose(
-            carpet[parameter_a], value_a,
-            rtol=1.0e-9, atol=1.0e-12,
+            carpet[parameter_a], value_a, rtol=1.0e-9, atol=1.0e-12,
         )].sort_values(parameter_b)
+        emphasized = index in label_indices
         ax.plot(
-            family["best_wing_loading"],
-            family["best_thrust_to_weight"],
-            color=color_a,
-            linewidth=2.4 if index in label_indices else 1.25,
-            alpha=1.0 if index in label_indices else 0.42,
+            family["best_wing_loading"], family["best_required_loading"],
+            color=family_a_color, linewidth=2.3 if emphasized else 1.0,
+            alpha=0.95 if emphasized else 0.28, zorder=2,
         )
-        if index in label_indices:
-            row = family.iloc[index]
+        if emphasized:
+            row = family.iloc[-1]
             ax.annotate(
                 parameter_a_formatter(value_a),
-                (row["best_wing_loading"], row["best_thrust_to_weight"]),
-                xytext=(7, 5), textcoords="offset points",
-                fontsize=8.2, color="#047857",
+                (row["best_wing_loading"], row["best_required_loading"]),
+                xytext=(6, 5), textcoords="offset points", fontsize=8.2,
+                color="#1d4ed8",
             )
 
-    # Second family: parameter B is constant while parameter A varies.
     for index, value_b in enumerate(values_b):
         family = carpet[np.isclose(
-            carpet[parameter_b], value_b,
-            rtol=1.0e-9, atol=1.0e-12,
+            carpet[parameter_b], value_b, rtol=1.0e-9, atol=1.0e-12,
         )].sort_values(parameter_a)
+        emphasized = index in label_indices
         ax.plot(
-            family["best_wing_loading"],
-            family["best_thrust_to_weight"],
-            color=color_b,
-            linewidth=2.2 if index in label_indices else 1.2,
-            alpha=1.0 if index in label_indices else 0.38,
-            marker="o", markersize=4.0,
-            markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+            family["best_wing_loading"], family["best_required_loading"],
+            color=family_b_color, linewidth=2.1 if emphasized else 0.95,
+            alpha=0.92 if emphasized else 0.25, zorder=2,
         )
-        if index in label_indices:
-            row = family.iloc[index]
+        if emphasized:
+            row = family.iloc[0]
             ax.annotate(
                 parameter_b_formatter(value_b),
-                (row["best_wing_loading"], row["best_thrust_to_weight"]),
-                xytext=(7, -7), textcoords="offset points",
-                fontsize=8.2, color="#b91c1c",
+                (row["best_wing_loading"], row["best_required_loading"]),
+                xytext=(6, -10), textcoords="offset points", fontsize=8.2,
+                color="#b91c1c",
             )
-
-    baseline = carpet[carpet["is_baseline"] == 1]
-    if len(baseline) != 1:
-        raise RuntimeError(f"{plot_name} must contain one nominal point.")
-    baseline_row = baseline.iloc[0]
-
-    def readable_constraint_name(raw_name):
-        return str(raw_name).replace("jet_", "").replace(
-            "_constraint", ""
-        ).replace("_", " ").title()
 
     active_names = sorted(carpet["active_constraint_name"].astype(str).unique())
     active_handles = []
     for active_name in active_names:
-        active_label = active_name.replace("jet_", "").replace(
-            "_constraint", ""
-        ).replace("_", " ").title()
+        active_label = readable_constraint_name(active_name)
         active_points = carpet[
             carpet["active_constraint_name"].astype(str) == active_name
         ]
         active_color = color_map.get(active_label, "#475569")
-        marker = ax.scatter(
+        active_handles.append(ax.scatter(
             active_points["best_wing_loading"],
-            active_points["best_thrust_to_weight"],
-            s=34, color=active_color, edgecolor="white", linewidth=0.45,
-            alpha=0.92, zorder=7,
-            label=f"Active: {active_label}",
-        )
-        active_handles.append(marker)
+            active_points["best_required_loading"],
+            s=26, color=active_color, edgecolor="white", linewidth=0.4,
+            alpha=0.9, zorder=5, label=f"Controls: {active_label}",
+        ))
 
+    baseline = carpet[carpet["is_baseline"] == 1]
+    if len(baseline) != 1:
+        raise RuntimeError("Performance carpet must contain one nominal point.")
+    row = baseline.iloc[0]
     ax.scatter(
-        baseline_row["best_wing_loading"],
-        baseline_row["best_thrust_to_weight"],
-        marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
-        linewidth=0.9, zorder=9,
+        row["best_wing_loading"], row["best_required_loading"],
+        marker="*", s=190, color="#fbbf24", edgecolor="#0f172a",
+        linewidth=0.9, zorder=8,
     )
     ax.annotate(
-        "Nominal inputs\n"
-        f"Control: {readable_constraint_name(baseline_row['active_constraint_name'])} / "
-        f"{readable_constraint_name(baseline_row['second_constraint_name'])}\n"
-        f"Margin: {float(baseline_row['constraint_margin']):.3g}",
-        (baseline_row["best_wing_loading"],
-         baseline_row["best_thrust_to_weight"]),
-        xytext=(0.98, 0.13), textcoords="axes fraction",
-        ha="right", va="bottom", fontsize=8.3,
-        color="#334155",
+        "Nominal performance inputs\n"
+        f"W/S = {float(row['best_wing_loading']):.0f} N/m²\n"
+        f"{y_symbol} = {float(row['best_required_loading']):.3f}\n"
+        f"Control: {readable_constraint_name(row['active_constraint_name'])}",
+        (row["best_wing_loading"], row["best_required_loading"]),
+        xytext=(14, 15), textcoords="offset points", fontsize=8.7,
         arrowprops=dict(arrowstyle="->", color="#64748b", linewidth=1.0),
-        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                  edgecolor="#cbd5e1", alpha=0.92),
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                  edgecolor="#cbd5e1", alpha=0.96), zorder=9,
     )
 
     handles = [
-        Line2D([0], [0], color=color_a, linewidth=2.4,
+        Line2D([0], [0], color=family_a_color, linewidth=2.3,
                label=f"Constant {parameter_a_label}"),
-        Line2D([0], [0], color=color_b, linewidth=2.2, marker="o",
-               markerfacecolor="#0f172a", markeredgecolor="#0f172a",
+        Line2D([0], [0], color=family_b_color, linewidth=2.1,
                label=f"Constant {parameter_b_label}"),
-        Line2D([0], [0], color="#fbbf24", marker="*",
-               markeredgecolor="#0f172a", linestyle="None",
+        Line2D([0], [0], marker="*", color="none",
+               markerfacecolor="#fbbf24", markeredgecolor="#0f172a",
                markersize=11, label="Nominal inputs"),
+        *active_handles,
     ]
-    ax.clear()
-    handles = draw_design_map(
-        ax, carpet, parameter_a, parameter_b,
-        parameter_a_label, parameter_b_label,
-    )
-    ax.set_title(analysis_title(title))
-    ax.legend(handles=handles, frameon=False, loc="best")
+    ax.set_title(analysis_title("Performance-Requirement Carpet Plot"))
+    ax.set_xlabel("Selected optimum wing loading, W/S [N/m²]")
+    ax.set_ylabel(y_axis_label.replace("Required ", "Selected "))
+    clean_axes(ax)
+    ax.legend(handles=handles, frameon=False, loc="best", fontsize=8.5)
     ax.text(
         0.01, 0.02,
-        "Pastel areas show the governing constraint; solid blue contours "
-        "show optimum W/S and dashed red contours show required T/W.",
-        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-        va="bottom",
+        "Each intersection is a complete sizing solution; marker colour "
+        "identifies the governing design criterion.",
+        transform=ax.transAxes, fontsize=8.8, color="#475569", va="bottom",
     )
-    save_plot(plot_name)
+    save_plot("04_performance_carpet_plot")
 
 if propeller_mode:
     constraint_files = {
@@ -878,6 +678,27 @@ if aircraft_power_MW is not None:
 if best_power_MW is not None:
     best_annotation += f"\nP required = {best_power_MW:.2f} MW"
 
+best_constraint_values = {
+    name: float(np.interp(
+        best_ws,
+        curve["wing_loading"].to_numpy(dtype=float),
+        curve["thrust_to_weight"].to_numpy(dtype=float),
+    ))
+    for name, curve in constraints.items()
+}
+best_constraint_ranking = sorted(
+    best_constraint_values, key=best_constraint_values.get, reverse=True,
+)
+best_governing_name = best_constraint_ranking[0]
+best_runner_up_name = (
+    best_constraint_ranking[1]
+    if len(best_constraint_ranking) > 1 else "None"
+)
+best_annotation += (
+    f"\nPower control: {best_governing_name}"
+    f"\nRunner-up: {best_runner_up_name}"
+)
+
 
 def read_vertical_limit(filename):
     path = os.path.join(output_dir, filename)
@@ -902,6 +723,19 @@ vertical_prefix = "propeller" if propeller_mode else "jet"
 landing_ws_limit = read_vertical_limit(f"{vertical_prefix}_landing_limit.csv")
 stall_ws_limit = read_vertical_limit(f"{vertical_prefix}_stall_speed_limit.csv")
 gust_ws_limit = read_vertical_limit(f"{vertical_prefix}_gust_limit.csv")
+
+wing_control_candidates = []
+for control_name, limit in (
+        ("Landing", landing_ws_limit), ("Stall", stall_ws_limit),
+        ("Gust", gust_ws_limit)):
+    if limit is not None and limit > 0.0:
+        wing_control_candidates.append(
+            (abs(best_ws - limit) / limit, control_name)
+        )
+if wing_control_candidates:
+    best_annotation += (
+        f"\nWing-loading control: {min(wing_control_candidates)[1]}"
+    )
 
 
 # Axis limits. Build the visible domain from every finite curve point, every
@@ -1010,14 +844,17 @@ color_map.update({
 })
 
 for name, df in constraints.items():
+    is_governing = name == best_governing_name
+    is_runner_up = name == best_runner_up_name
     ax.plot(
         df["wing_loading"],
         df["thrust_to_weight"],
         label=name,
-        color=color_map.get(name, None),
-        alpha=0.68,
-        linewidth=1.5,
-        zorder=2,
+        color=("#b91c1c" if is_governing else
+               "#f59e0b" if is_runner_up else "#94a3b8"),
+        alpha=1.0 if (is_governing or is_runner_up) else 0.48,
+        linewidth=2.8 if is_governing else 2.0 if is_runner_up else 1.0,
+        zorder=4 if is_governing else 3 if is_runner_up else 2,
     )
 
 # Wing loading must remain between the lower and upper vertical limits.
@@ -1183,7 +1020,7 @@ if gust_ws_limit is not None:
     )
 
 ax.set_title(
-    analysis_title("Constraint Analysis Matching Chart"),
+    analysis_title("Design Matching Chart"),
     pad=12,
     fontweight="semibold",
 )
@@ -1228,7 +1065,7 @@ ax.legend(
 
 add_selected_inputs_sidebar(fig)
 fig.subplots_adjust(right=0.77)
-save_plot("01_matching_chart_professional")
+save_plot("01_design_matching_chart")
 
 
 # ============================================================
@@ -1272,6 +1109,61 @@ zoom_y_high = float(np.nanmax(zoom_band_values))
 zoom_y_span = max(zoom_y_high - zoom_y_low, 1.0e-3)
 tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.18 * zoom_y_span)
 tolerance_zoom_y_max = zoom_y_high + 0.20 * zoom_y_span
+
+# Conservative design point: upper performance demand bands together with
+# tightened vertical limits. This converts the tolerance picture into a clear
+# robustness decision rather than showing uncertainty bands alone.
+robust_ws_min = (
+    gust_ws_limit * (1.0 + constraint_tolerances["Gust"][1])
+    if gust_ws_limit is not None else feasible_ws_min
+)
+robust_upper_limits = []
+if landing_ws_limit is not None:
+    robust_upper_limits.append(
+        landing_ws_limit * (1.0 - constraint_tolerances["Landing"][0])
+    )
+if stall_ws_limit is not None:
+    robust_upper_limits.append(
+        stall_ws_limit * (1.0 - constraint_tolerances["Stall speed"][0])
+    )
+robust_ws_max = (
+    min(robust_upper_limits) if robust_upper_limits else feasible_ws_max
+)
+robust_grid = envelope["wing_loading"].to_numpy(dtype=float)
+robust_curve_values = np.vstack([
+    np.interp(
+        robust_grid,
+        curve["wing_loading"].to_numpy(dtype=float),
+        curve["thrust_to_weight"].to_numpy(dtype=float),
+    ) * (1.0 + constraint_tolerances[name][1])
+    for name, curve in constraints.items()
+])
+robust_envelope = np.max(robust_curve_values, axis=0)
+robust_mask = (
+    (robust_grid >= robust_ws_min) & (robust_grid <= robust_ws_max)
+)
+robust_design_available = np.any(robust_mask)
+if robust_design_available:
+    robust_indices = np.flatnonzero(robust_mask)
+    robust_index = robust_indices[np.argmin(robust_envelope[robust_mask])]
+    robust_best_ws = float(robust_grid[robust_index])
+    robust_best_y = float(robust_envelope[robust_index])
+    robust_governing_index = int(np.argmax(
+        robust_curve_values[:, robust_index]
+    ))
+    robust_governing_name = list(constraints)[robust_governing_index]
+    robust_loading_shift_percent = 100.0 * (robust_best_y / best_tw - 1.0)
+    tolerance_zoom_x_min = max(
+        tolerance_plot_min,
+        min(tolerance_zoom_x_min, robust_best_ws - 0.08 * point_x_center),
+    )
+    tolerance_zoom_x_max = min(
+        tolerance_plot_max,
+        max(tolerance_zoom_x_max, robust_best_ws + 0.08 * point_x_center),
+    )
+    tolerance_zoom_y_max = max(
+        tolerance_zoom_y_max, 1.12 * robust_best_y,
+    )
 
 fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
@@ -1319,6 +1211,24 @@ ax.scatter(
     zorder=7,
     label="Best nominal design point",
 )
+if robust_design_available:
+    ax.scatter(
+        robust_best_ws, robust_best_y,
+        s=92, marker="D", color="#7c3aed", edgecolor="white",
+        linewidth=1.1, zorder=8, label="Robust design point",
+    )
+    ax.annotate(
+        f"Robust design\nW/S = {robust_best_ws:.0f} N/m²\n"
+        f"{y_symbol} = {robust_best_y:.3f}\n"
+        f"Control: {robust_governing_name}\n"
+        f"Loading increase: {robust_loading_shift_percent:+.1f}%",
+        (robust_best_ws, robust_best_y),
+        xytext=(12, 16), textcoords="offset points", fontsize=8.8,
+        color="#4c1d95",
+        arrowprops=dict(arrowstyle="->", color="#7c3aed", linewidth=1.0),
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                  edgecolor="#c4b5fd", alpha=0.96), zorder=9,
+    )
 
 vertical_band_specs = (
     ("Landing", landing_ws_limit, "--", 1.7, "Landing max"),
@@ -1352,7 +1262,7 @@ for name, limit, linestyle, linewidth, label in vertical_band_specs:
     ))
 
 ax.set_title(
-    analysis_title("Constraint Tolerance Bands — Design-Point Detail"),
+    analysis_title("Tolerance and Robust Design"),
     pad=12,
     fontweight="semibold",
 )
@@ -1403,7 +1313,7 @@ ax.legend(
 
 add_selected_inputs_sidebar(fig)
 fig.subplots_adjust(right=0.77)
-save_plot("01_matching_chart_with_tolerance_bands")
+save_plot("05_tolerance_robustness")
 
 
 # ============================================================
@@ -1550,7 +1460,7 @@ if gust_ws_limit is not None:
     )
     reference_legend_handles.append(gust_handle)
 
-ax.set_title(analysis_title("Active Constraint Regions"))
+ax.set_title(analysis_title("Governing Constraint Envelope"))
 ax.set_xlabel("Wing Loading, W/S [N/m²]")
 ax.set_ylabel(y_axis_label)
 ax.set_xlim(x_plot_min, x_plot_max)
@@ -1576,1409 +1486,105 @@ ax.legend(
 
 clean_axes(ax)
 fig.subplots_adjust(right=0.76)
-save_plot("02_active_constraint_regions")
+save_plot("02_governing_constraint_envelope")
 
 
 # ============================================================
-# Plot 3: Constraint utilization at the two decision points
+# Plot 3: Design-point constraint margins
 # ============================================================
-def constraint_requirements_at(wing_loading):
-    return {
-        name: float(np.interp(
-            wing_loading,
-            curve["wing_loading"].to_numpy(dtype=float),
-            curve["thrust_to_weight"].to_numpy(dtype=float),
-        ))
-        for name, curve in constraints.items()
-    }
-
-
-def utilization_color(value):
-    if value >= 99.5:
-        return "#dc2626"
-    if value >= 90.0:
-        return "#f59e0b"
-    return "#2563eb"
-
-
-decision_points = [
-    ("Best feasible design", best_ws, best_tw),
-    ("Aircraft reference-area point", aircraft_ws, aircraft_tw),
-]
-fig, utilization_axes = plt.subplots(
-    1, 2, figsize=(13.2, 6.4), sharex=True, sharey=True,
-)
-all_utilizations = []
-for utilization_ax, (point_name, point_ws, point_y) in zip(
-        utilization_axes, decision_points):
-    requirements = constraint_requirements_at(point_ws)
-    ordered = sorted(
-        requirements.items(), key=lambda item: item[1], reverse=True,
-    )
-    names = [item[0] for item in ordered][::-1]
-    utilization = np.asarray([
-        100.0 * item[1] / point_y if point_y > 0.0 else np.nan
-        for item in ordered
-    ])[::-1]
-    all_utilizations.extend(utilization[np.isfinite(utilization)])
-    bars = utilization_ax.barh(
-        names, utilization,
-        color=[utilization_color(value) for value in utilization],
-        alpha=0.88, height=0.66,
-    )
-    utilization_ax.axvline(
-        100.0, color="#111827", linewidth=1.4, linestyle="--",
-    )
-    for bar, value in zip(bars, utilization):
-        utilization_ax.text(
-            value + 1.0,
-            bar.get_y() + 0.5 * bar.get_height(),
-            f"{value:.1f}%",
-            va="center", fontsize=8.7, color="#334155",
-        )
-    utilization_ax.set_title(
-        f"{point_name}\nW/S = {point_ws:.0f} N/m², {y_symbol} = {point_y:.3f}",
-        fontsize=12,
-    )
-    utilization_ax.set_xlabel("Constraint utilization [%]")
-    clean_axes(utilization_ax)
-
-utilization_max = max(all_utilizations, default=100.0)
-for utilization_ax in utilization_axes:
-    utilization_ax.set_xlim(0.0, max(112.0, 1.10 * utilization_max))
-
-fig.suptitle(analysis_title("Constraint Utilization Dashboard"))
-fig.text(
-    0.5, 0.015,
-    "100% identifies the governing boundary; values above 100% are infeasible.",
-    ha="center", fontsize=9.2, color="#475569",
-)
-fig.tight_layout(rect=(0.0, 0.04, 1.0, 0.94))
-save_plot("03_constraint_utilization_dashboard")
-
-
-# ============================================================
-# Plot 4: Governing constraint and runner-up separation
-# ============================================================
-feasible_mask = (
-    (x_env >= feasible_ws_min) & (x_env <= feasible_ws_max)
-)
-if not np.any(feasible_mask):
-    feasible_mask = np.ones_like(x_env, dtype=bool)
-
-gap_x = x_env[feasible_mask]
-constraint_matrix = np.vstack([
-    interp_values[name][feasible_mask] for name in constraints
+requirements = best_constraint_values
+ordered = sorted(requirements.items(), key=lambda item: item[1])
+names = [item[0] for item in ordered]
+margin_percent = np.asarray([
+    100.0 * (best_tw - required) / best_tw
+    if best_tw > 0.0 else np.nan
+    for _, required in ordered
 ])
-constraint_names = list(constraints)
-ranked_indices = np.argsort(constraint_matrix, axis=0)
-governing_indices = ranked_indices[-1]
-runner_up_indices = ranked_indices[-2]
-governing_values = np.take_along_axis(
-    constraint_matrix, governing_indices[np.newaxis, :], axis=0,
-).ravel()
-runner_up_values = np.take_along_axis(
-    constraint_matrix, runner_up_indices[np.newaxis, :], axis=0,
-).ravel()
-separation_percent = np.where(
-    governing_values > 0.0,
-    100.0 * (governing_values - runner_up_values) / governing_values,
-    np.nan,
+
+
+def margin_color(value):
+    if value < -0.05:
+        return "#991b1b"
+    if value <= 5.0:
+        return "#dc2626"
+    if value <= 15.0:
+        return "#f59e0b"
+    return "#16a34a"
+
+
+fig, ax = plt.subplots(figsize=(10.5, 6.4))
+bars = ax.barh(
+    names, margin_percent,
+    color=[margin_color(value) for value in margin_percent],
+    alpha=0.9, height=0.66,
 )
-
-fig, (governing_ax, gap_ax) = plt.subplots(
-    2, 1, figsize=(13.0, 7.4), sharex=True,
-    gridspec_kw={"height_ratios": [2.0, 1.0]},
+ax.axvline(0.0, color="#111827", linewidth=1.4)
+for bar, value in zip(bars, margin_percent):
+    ax.text(
+        value + (0.7 if value >= 0.0 else -0.7),
+        bar.get_y() + 0.5 * bar.get_height(),
+        f"{value:+.1f}%",
+        va="center", ha="left" if value >= 0.0 else "right",
+        fontsize=9.0, color="#334155",
+    )
+ax.set_title(analysis_title(
+    f"Design-Point Margins — Governing: {best_governing_name}"
+))
+ax.set_xlabel("Available margin at selected design [%]")
+ax.set_ylabel("Performance requirement")
+finite_margins = margin_percent[np.isfinite(margin_percent)]
+margin_left = min(-5.0, float(np.min(finite_margins)) - 4.0)
+margin_right = max(20.0, float(np.max(finite_margins)) + 8.0)
+ax.set_xlim(margin_left, margin_right)
+clean_axes(ax)
+ax.text(
+    0.99, 0.02,
+    "0% = governing boundary | negative = infeasible | larger = more reserve",
+    transform=ax.transAxes, ha="right", va="bottom",
+    fontsize=8.8, color="#475569",
 )
-governing_ax.plot(
-    gap_x, governing_values, color="#111827", linewidth=1.0, alpha=0.35,
-)
+fig.tight_layout()
+save_plot("03_design_point_margins")
 
-segment_start = 0
-transition_points = []
-for index in range(1, len(gap_x) + 1):
-    if (index == len(gap_x) or
-            governing_indices[index] != governing_indices[segment_start]):
-        segment_end = index
-        constraint_name = constraint_names[governing_indices[segment_start]]
-        plot_start = max(segment_start - 1, 0)
-        governing_ax.plot(
-            gap_x[plot_start:segment_end],
-            governing_values[plot_start:segment_end],
-            color=color_map.get(constraint_name, "#111827"),
-            linewidth=5.0, solid_capstyle="round",
-        )
-        middle = (segment_start + segment_end - 1) // 2
-        governing_ax.annotate(
-            constraint_name,
-            (gap_x[middle], governing_values[middle]),
-            xytext=(0, 11), textcoords="offset points",
-            ha="center", fontsize=9.3, weight="bold",
-            color=color_map.get(constraint_name, "#111827"),
-            bbox=dict(
-                boxstyle="round,pad=0.2", facecolor="white",
-                edgecolor="none", alpha=0.84,
-            ),
-        )
-        if segment_end < len(gap_x):
-            transition_points.append(segment_end)
-        segment_start = index
 
-for transition_index in transition_points:
-    transition_ws = gap_x[transition_index]
-    for target_ax in (governing_ax, gap_ax):
-        target_ax.axvline(
-            transition_ws, color="#64748b", linestyle=":",
-            linewidth=1.0, alpha=0.8,
-        )
-
-governing_ax.scatter(
-    [best_ws, aircraft_ws], [best_tw, aircraft_tw],
-    marker="*", s=[130, 110], color=["#16a34a", "#dc2626"],
-    edgecolor="white", linewidth=0.9, zorder=5,
-)
-governing_ax.set_ylabel(y_axis_label)
-governing_ax.set_title("Governing requirement across the feasible W/S corridor")
-clean_axes(governing_ax)
-
-gap_ax.fill_between(
-    gap_x, 0.0, separation_percent,
-    color="#7c3aed", alpha=0.34, linewidth=0.0,
-)
-gap_ax.plot(gap_x, separation_percent, color="#6d28d9", linewidth=1.4)
-gap_ax.axhline(5.0, color="#f59e0b", linestyle="--", linewidth=1.0)
-gap_ax.text(
-    0.99, 5.0, "5% close competition", transform=gap_ax.get_yaxis_transform(),
-    ha="right", va="bottom", fontsize=8.5, color="#b45309",
-)
-gap_ax.set_xlabel("Wing Loading, W/S [N/m²]")
-gap_ax.set_ylabel("Lead over runner-up [%]")
-gap_ax.set_ylim(bottom=0.0)
-clean_axes(gap_ax)
-
-fig.suptitle(analysis_title("Governing Constraint Gap Map"))
-fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.95))
-save_plot("04_governing_constraint_gap_map")
-
+# ============================================================
+# Plot 4: User-performance carpet (generated with --with-studies)
+# ============================================================
 if propeller_mode:
-    # ============================================================
-    # Plot 3: Integrated takeoff history
-    # ============================================================
-    takeoff_profile_path = os.path.join(
-        output_dir, "propeller_takeoff_profile.csv"
+    performance_carpet_filename = "propeller_performance_carpet.csv"
+    performance_carpet_parameters = (
+        "climb_rate_ms", "takeoff_distance_m",
+        "climb rate", "take-off distance",
+        lambda value: f"ROC = {value:.1f} m/s",
+        lambda value: f"s_TO = {value:.0f} m",
     )
-    if os.path.exists(takeoff_profile_path):
-        takeoff = pd.read_csv(takeoff_profile_path)
-        fig, ax1 = plt.subplots(figsize=(10.5, 6.0))
-        ax1.plot(
-            takeoff["speed_ms"],
-            takeoff["distance_m"],
-            color="#1f77b4",
-            linewidth=2.4,
-            label="Integrated ground roll",
-        )
-        ax1.set_xlabel("Ground Speed, V [m/s]")
-        ax1.set_ylabel("Ground-Roll Distance [m]", color="#1f77b4")
-        ax1.tick_params(axis="y", labelcolor="#1f77b4")
-        ax2 = ax1.twinx()
-        ax2.plot(
-            takeoff["speed_ms"],
-            takeoff["acceleration_ms2"],
-            color="#d62728",
-            linewidth=2.0,
-            linestyle="--",
-            label="Acceleration",
-        )
-        ax2.set_ylabel("Acceleration [m/s²]", color="#d62728")
-        ax2.tick_params(axis="y", labelcolor="#d62728")
-        ax1.set_title(analysis_title("Integrated Takeoff Ground Roll"))
-        lines1, labels1 = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
-        save_plot("03_propeller_takeoff_profile")
-
-    # ============================================================
-    # Plot 4: Required power versus both availability definitions
-    # ============================================================
-    capacity_path = os.path.join(
-        output_dir, "propeller_capacity_check.csv"
-    )
-    if os.path.exists(capacity_path):
-        capacity = pd.read_csv(capacity_path)
-        x = np.arange(len(capacity))
-        width = 0.36
-        fig, ax = plt.subplots(figsize=(11.0, 6.0))
-        ax.bar(
-            x - width / 2,
-            capacity["required_total_shaft_power_W"] / 1.0e6,
-            width,
-            label="Required",
-            color="#d62728",
-        )
-        ax.bar(
-            x + width / 2,
-            capacity["deck_total_shaft_power_W"] / 1.0e6,
-            width,
-            label="Supplied propeller-deck output",
-            color="#1f77b4",
-        )
-        ax.set_xticks(x, capacity["case"].str.title())
-        ax.set_ylabel("Total Shaft Power [MW]")
-        ax.set_title(
-            analysis_title("Required Power and Supplied Propeller-Map Reference")
-        )
-        ax.legend(frameon=False)
-        save_plot("04_propeller_capacity_check")
-
-    # ============================================================
-    # Plot 5: Propeller power-loading constraint carpet
-    # ============================================================
-    propeller_carpet_path = os.path.join(
-        output_dir, "propeller_constraint_carpet.csv"
-    )
-    if os.path.exists(propeller_carpet_path):
-        carpet = pd.read_csv(propeller_carpet_path)
-        fig, ax = plt.subplots(figsize=(13.0, 7.0))
-        carpet_colors = {
-            "Acceleration": "#0072B2",
-            "Climb": "#009E73",
-            "Cruise": "#E69F00",
-            "Subsonic Climb": "#009E73",
-            "Subsonic Cruise": "#E69F00",
-            "Transonic Climb": "#9467BD",
-            "Transonic Cruise": "#17BECF",
-            "Supersonic Climb": "#006D2C",
-            "Supersonic Cruise": "#D95F02",
-            "Takeoff": "#D55E00",
-            "Turn": "#CC79A7",
-        }
-        for constraint_name, group in carpet.groupby("constraint"):
-            group = group.sort_values("wing_loading_N_m2")
-            display_name = constraint_name.replace("propeller_", "").replace(
-                "_constraint", ""
-            ).replace("_", " ").title()
-            ax.plot(
-                group["wing_loading_N_m2"],
-                group["required_shaft_power_to_weight_W_N"],
-                linewidth=1.8,
-                color=carpet_colors.get(display_name),
-                alpha=0.80,
-                label=display_name,
-            )
-
-        ax.plot(
-            envelope["wing_loading"],
-            envelope["thrust_to_weight"],
-            color="black",
-            linewidth=3.0,
-            label="Constraint envelope",
-            zorder=5,
-        )
-        optimum_label = (
-            f"W/S = {best_ws:.0f} N/m²\nP/W = {best_tw:.3f} W/N"
-        )
-        if best_power_MW is not None:
-            optimum_label += f"\nP = {best_power_MW:.2f} MW"
-        if best_area_m2 is not None:
-            optimum_label += f"\nS = {best_area_m2:.1f} m²"
-        add_design_point(
-            ax, best_ws, best_tw, "Best feasible design point",
-            optimum_label, offset=(-24, -72),
-        )
-        if gust_ws_limit is not None:
-            ax.axvline(
-                gust_ws_limit,
-                color="#7f7f7f",
-                linestyle="-.",
-                linewidth=1.8,
-                label=f"Gust min ({gust_ws_limit:.0f})",
-            )
-        if landing_ws_limit is not None:
-            ax.axvline(
-                landing_ws_limit,
-                color="#9467bd",
-                linestyle="--",
-                linewidth=1.8,
-                label=f"Landing max ({landing_ws_limit:.0f})",
-            )
-        if stall_ws_limit is not None:
-            ax.axvline(
-                stall_ws_limit,
-                color="#bcbd22",
-                linestyle=":",
-                linewidth=1.8,
-                label=f"Stall max ({stall_ws_limit:.0f})",
-            )
-
-        carpet_y_max = max(
-            carpet["required_shaft_power_to_weight_W_N"].max(),
-            envelope["thrust_to_weight"].max(),
-        ) * 1.08
-        shade_feasible_design_region(ax, carpet_y_max)
-
-        if takeoff_weight_N is not None:
-            secondary = ax.secondary_yaxis(
-                "right",
-                functions=(
-                    lambda power_loading: power_loading * takeoff_weight_N / 1.0e6,
-                    lambda power_MW: power_MW * 1.0e6 / takeoff_weight_N,
-                ),
-            )
-            secondary.set_ylabel("Required Total Shaft Power [MW]")
-
-        ax.set_title(analysis_title("Power-Loading Constraint Family"))
-        ax.text(
-            0.01, 0.02,
-            "Feasible designs lie above the black envelope and inside the wing-loading limits.",
-            transform=ax.transAxes, fontsize=9, color="#4d4d4d", va="bottom",
-        )
-        ax.set_xlabel("Wing Loading, W/S [N/m²]")
-        ax.set_ylabel("Shaft Power Loading, P/W [W/N]")
-        ax.set_xlim(x_plot_min, x_plot_max)
-        ax.set_ylim(0.0, carpet_y_max)
-        clean_axes(ax)
-        ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0),
-                  frameon=False, title="Constraints and limits")
-        fig.subplots_adjust(right=0.79)
-        save_plot("05_propeller_constraint_carpet")
-    # ============================================================
-    # Propeller-deck evidence and aircraft-level aerodynamic studies
-    # ============================================================
-    performance_map_path = os.path.join(
-        output_dir, "propeller_performance_map.csv"
-    )
-    if os.path.exists(performance_map_path):
-        prop_map = pd.read_csv(performance_map_path).dropna()
-        valid_map = prop_map[
-            (prop_map["efficiency"] >= 0.0) &
-            (prop_map["efficiency"] <= 1.0)
-        ].copy()
-        if len(valid_map) < 3:
-            raise RuntimeError(
-                "Propeller performance map has too few physically valid points."
-            )
-
-        pitch_values = np.sort(valid_map["pitch_deg"].unique())
-        best_map_row = valid_map.loc[valid_map["efficiency"].idxmax()]
-
-        fig, ax = plt.subplots(figsize=(10.0, 6.0))
-        pitch_colors = mpl.colormaps["viridis"](
-            np.linspace(0.18, 0.82, len(pitch_values))
-        )
-        for color, pitch in zip(pitch_colors, pitch_values):
-            pitch_slice = valid_map[
-                valid_map["pitch_deg"] == pitch
-            ].sort_values("advance_ratio")
-            ax.plot(
-                pitch_slice["advance_ratio"], pitch_slice["efficiency"],
-                color=color, marker="o", markersize=4.0, linewidth=2.2,
-                label=f"Constant pitch = {pitch:g}°",
-            )
-        ax.scatter(
-            best_map_row["advance_ratio"], best_map_row["efficiency"],
-            marker="*", s=165, color="#fbbf24", edgecolor="#0f172a",
-            linewidth=0.9, label="Best supplied map point", zorder=8,
-        )
-        ax.annotate(
-            f"η = {best_map_row['efficiency']:.3f}\n"
-            f"J = {best_map_row['advance_ratio']:.3f}, "
-            f"pitch = {best_map_row['pitch_deg']:g}°",
-            (best_map_row["advance_ratio"], best_map_row["efficiency"]),
-            xytext=(10, 12), textcoords="offset points", fontsize=8.5,
-            color="#334155",
-            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                      edgecolor="#cbd5e1", alpha=0.92),
-        )
-        ax.set_title(analysis_title("Propeller Performance Map"))
-        ax.set_xlabel("Advance Ratio, J [-]")
-        ax.set_ylabel("Propeller Efficiency, η [-]")
-        ax.set_ylim(0.0, 1.0)
-        ax.text(
-            0.01, 0.02,
-            "Lines connect physically valid points supplied by the propeller "
-            "deck; no pitch interpolation is shown.",
-            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-            va="bottom",
-        )
-        clean_axes(ax)
-        ax.legend(frameon=False)
-        save_plot("03_propeller_performance_map")
-
-    prop_aero_carpet_path = os.path.join(
-        output_dir, "propeller_cd0_k_carpet.csv"
-    )
-    prop_cd0_path = os.path.join(
-        output_dir, "propeller_cd0_sensitivity_curves.csv"
-    )
-    prop_k_path = os.path.join(
-        output_dir, "propeller_k_sensitivity_curves.csv"
-    )
-    missing_study_paths = [
-        required_path for required_path in (
-            prop_aero_carpet_path, prop_cd0_path, prop_k_path
-        )
-        if not os.path.exists(required_path)
-    ]
-    if missing_study_paths:
-        print()
-        print(
-            "Optional propeller parameter-study CSV files are absent; "
-            "main-result plots are complete and study plots were skipped."
-        )
-        print(
-            "Run the C++ application with --with-studies, then rerun this "
-            "script to generate sensitivity and carpet plots."
-        )
-        print()
-        print("Plot generation completed.")
-        print(
-            f"Aircraft point: W/S = {aircraft_ws:.0f} N/m², "
-            f"{y_symbol} = {aircraft_tw:.4f}"
-        )
-        print(
-            f"Best design point: W/S = {best_ws:.0f} N/m², "
-            f"{y_symbol} = {best_tw:.4f}"
-        )
-        print(f"Plots saved to: {save_dir}")
-        raise SystemExit(0)
-
-    prop_aero_carpet = pd.read_csv(prop_aero_carpet_path).dropna()
-    prop_cd0_sensitivity = pd.read_csv(prop_cd0_path).dropna()
-    prop_k_sensitivity = pd.read_csv(prop_k_path).dropna()
-    required_diagnostic_columns = {
-        "active_constraint_value", "second_constraint_name",
-        "second_constraint_value", "constraint_margin",
-    }
-    if not required_diagnostic_columns.issubset(prop_aero_carpet.columns):
-        raise RuntimeError(
-            "Rerun the C++ application: carpet diagnostic schema is outdated."
-        )
-
-    cd0_values = np.sort(prop_aero_carpet["cd_0"].unique())
-    k_values = np.sort(
-        prop_aero_carpet["induced_drag_factor"].unique()
-    )
-    if (len(cd0_values) != 9 or len(k_values) != 9 or
-            len(prop_aero_carpet) != 81):
-        raise RuntimeError(
-            "Propeller aerodynamic carpet must be a complete 9x9 grid."
-        )
-
-    prop_baseline = prop_aero_carpet[
-        prop_aero_carpet["is_baseline"] == 1
-    ]
-    if len(prop_baseline) != 1:
-        raise RuntimeError(
-            "Propeller aerodynamic carpet must contain one nominal point."
-        )
-    prop_baseline_row = prop_baseline.iloc[0]
-    nominal_cd0 = float(prop_baseline_row["cd_0"])
-    nominal_k = float(prop_baseline_row["induced_drag_factor"])
-    label_indices = {0, 2, 4, 6, 8}
-
-    # CD0 sensitivity: the acceleration P/W family at fixed nominal k.
-    acceleration_cd0 = prop_cd0_sensitivity[
-        prop_cd0_sensitivity["constraint_name"].str.contains(
-            "acceleration", case=False, na=False
-        )
-    ].copy()
-    if len(acceleration_cd0["cd_0"].unique()) != 9:
-        raise RuntimeError(
-            "Propeller CD0 sensitivity must contain nine acceleration curves."
-        )
-
-    fig, ax = plt.subplots(figsize=(10.5, 6.2))
-    cd0_norm = mpl.colors.Normalize(
-        vmin=cd0_values.min(), vmax=cd0_values.max()
-    )
-    cd0_cmap = mpl.colormaps["Greens"]
-    for cd0_index, cd0 in enumerate(cd0_values):
-        curve = acceleration_cd0[np.isclose(
-            acceleration_cd0["cd_0"], cd0,
-            rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("wing_loading")
-        is_nominal = np.isclose(
-            cd0, nominal_cd0, rtol=1.0e-9, atol=1.0e-12
-        )
-        ax.plot(
-            curve["wing_loading"], curve["thrust_to_weight"],
-            color="#064e3b" if is_nominal else cd0_cmap(cd0_norm(cd0)),
-            linewidth=3.0 if is_nominal else 1.45,
-            alpha=1.0 if is_nominal else 0.72,
-            label=(f"Nominal CD₀ = {cd0:.5f}" if is_nominal else None),
-            zorder=4 if is_nominal else 2,
-        )
-        if cd0_index in label_indices:
-            label_row = curve.iloc[-1]
-            ax.annotate(
-                f"{cd0 / nominal_cd0:.0%}",
-                (label_row["wing_loading"], label_row["thrust_to_weight"]),
-                xytext=(5, 0), textcoords="offset points",
-                fontsize=8.5, color="#166534", va="center",
-            )
-
-    ax.clear()
-    cd0_region_handle = add_curve_family_region(
-        ax, acceleration_cd0, "cd_0", cd0_values,
-        "#15803d", "Acceleration P/W region (CD₀: 80–120%)",
-    )
-    set_feasible_sensitivity_xlim(
-        ax, acceleration_cd0, feasible_ws_min, feasible_ws_max
-    )
-    ax.set_title(analysis_title("CD₀ Sensitivity Region"))
-    ax.set_xlabel("Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Required Shaft Power Loading, P/W [W/N]")
-    ax.text(
-        0.01, 0.02,
-        "Only CD₀ varies (80–120%); k, propeller deck, mission and all "
-        "other aircraft parameters remain constant.",
-        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-        va="bottom",
-    )
-    clean_axes(ax)
-    ax.legend(handles=[cd0_region_handle], loc="upper right", frameon=False)
-    save_plot("04_cd0_parameter_sensitivity")
-
-    # k sensitivity: acceleration P/W curves and the associated gust limits.
-    required_k_columns = {
-        "induced_drag_factor", "constraint_name", "wing_loading",
-        "thrust_to_weight", "gust_wing_loading_limit",
-    }
-    if not required_k_columns.issubset(prop_k_sensitivity.columns):
-        raise RuntimeError("Propeller k sensitivity CSV schema is outdated.")
-    sensitivity_k_values = np.sort(
-        prop_k_sensitivity["induced_drag_factor"].unique()
-    )
-    if len(sensitivity_k_values) != 9:
-        raise RuntimeError(
-            "Propeller k sensitivity must contain nine parameter levels."
-        )
-
-    fig, ax = plt.subplots(figsize=(10.5, 6.2))
-    k_norm = mpl.colors.Normalize(
-        vmin=sensitivity_k_values.min(), vmax=sensitivity_k_values.max()
-    )
-    k_cmap = mpl.colormaps["Blues"]
-    gust_cmap = mpl.colormaps["Oranges"]
-    for k_index, induced_drag_factor in enumerate(sensitivity_k_values):
-        curve = prop_k_sensitivity[np.isclose(
-            prop_k_sensitivity["induced_drag_factor"],
-            induced_drag_factor, rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("wing_loading")
-        is_nominal = np.isclose(
-            induced_drag_factor, nominal_k,
-            rtol=1.0e-9, atol=1.0e-12,
-        )
-        ax.plot(
-            curve["wing_loading"], curve["thrust_to_weight"],
-            color="#1e3a8a" if is_nominal
-            else k_cmap(k_norm(induced_drag_factor)),
-            linewidth=3.0 if is_nominal else 1.45,
-            alpha=1.0 if is_nominal else 0.72,
-            label=(f"Nominal k = {induced_drag_factor:.5f}"
-                   if is_nominal else None),
-            zorder=4 if is_nominal else 2,
-        )
-        gust_limit = float(curve["gust_wing_loading_limit"].iloc[0])
-        ax.axvline(
-            gust_limit,
-            color="#9a3412" if is_nominal
-            else gust_cmap(k_norm(induced_drag_factor)),
-            linewidth=2.2 if is_nominal else 0.9,
-            alpha=0.95 if is_nominal else 0.42,
-            linestyle="--" if is_nominal else "-",
-            label=(f"Nominal gust limit = {gust_limit:.0f} N/m²"
-                   if is_nominal else None),
-            zorder=3,
-        )
-        if k_index in label_indices:
-            label_row = curve.iloc[-1]
-            ax.annotate(
-                f"{induced_drag_factor / nominal_k:.0%}",
-                (label_row["wing_loading"], label_row["thrust_to_weight"]),
-                xytext=(5, 0), textcoords="offset points",
-                fontsize=8.5, color="#1d4ed8", va="center",
-            )
-
-    ax.clear()
-    k_region_handle = add_curve_family_region(
-        ax, prop_k_sensitivity, "induced_drag_factor",
-        sensitivity_k_values, "#2563eb",
-        "Acceleration P/W region (k: 80–120%)",
-    )
-    set_feasible_sensitivity_xlim(
-        ax, prop_k_sensitivity, feasible_ws_min, feasible_ws_max
-    )
-    prop_gust_limits = prop_k_sensitivity.groupby(
-        "induced_drag_factor"
-    )["gust_wing_loading_limit"].first().to_numpy()
-    gust_region_handle = add_vertical_family_region(
-        ax, prop_gust_limits, "#ea580c", "Gust-limit region (k: 80–120%)",
-    )
-    ax.set_title(analysis_title(
-        f"Acceleration and Gust-Limit P/W Sensitivity to k "
-        f"at Nominal CD₀ = {nominal_cd0:.5f}"
-    ))
-    ax.set_xlabel("Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Required Shaft Power Loading, P/W [W/N]")
-    ax.text(
-        0.01, 0.02,
-        "Only k varies (80–120%); CD₀, propeller deck, mission and all "
-        "other aircraft parameters remain constant.",
-        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-        va="bottom",
-    )
-    clean_axes(ax)
-    ax.legend(handles=[k_region_handle, gust_region_handle],
-              loc="upper right", frameon=False)
-    save_plot("05_k_parameter_sensitivity")
-
-    # Classical aircraft-level carpet: optimum W/S and P/W responses.
-    fig, ax = plt.subplots(figsize=(10.0, 7.0))
-    cd0_color = "#10b981"
-    k_color = "#ef4444"
-    for cd0_index, cd0 in enumerate(cd0_values):
-        family = prop_aero_carpet[np.isclose(
-            prop_aero_carpet["cd_0"], cd0,
-            rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("induced_drag_factor")
-        ax.plot(
-            family["best_wing_loading"],
-            family["best_thrust_to_weight"],
-            color=cd0_color,
-            linewidth=2.4 if cd0_index in label_indices else 1.25,
-            alpha=1.0 if cd0_index in label_indices else 0.42,
-        )
-        if cd0_index in label_indices:
-            label_row = family.iloc[-1]
-            ax.annotate(
-                f"CD₀ = {cd0:.4f}",
-                (label_row["best_wing_loading"],
-                 label_row["best_thrust_to_weight"]),
-                xytext=(7, 5), textcoords="offset points",
-                fontsize=8.5, color="#047857",
-            )
-
-    for k_index, induced_drag_factor in enumerate(k_values):
-        family = prop_aero_carpet[np.isclose(
-            prop_aero_carpet["induced_drag_factor"],
-            induced_drag_factor, rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("cd_0")
-        ax.plot(
-            family["best_wing_loading"],
-            family["best_thrust_to_weight"],
-            color=k_color,
-            linewidth=2.2 if k_index in label_indices else 1.2,
-            alpha=1.0 if k_index in label_indices else 0.38,
-            marker="o", markersize=4.2,
-            markerfacecolor="#0f172a", markeredgecolor="#0f172a",
-        )
-        if k_index in label_indices:
-            label_row = family.iloc[-1]
-            ax.annotate(
-                f"k = {induced_drag_factor:.4f}",
-                (label_row["best_wing_loading"],
-                 label_row["best_thrust_to_weight"]),
-                xytext=(7, -7), textcoords="offset points",
-                fontsize=8.5, color="#b91c1c",
-            )
-
-    baseline_active = str(
-        prop_baseline_row["active_constraint_name"]
-    )
-    ax.scatter(
-        prop_baseline_row["best_wing_loading"],
-        prop_baseline_row["best_thrust_to_weight"],
-        marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
-        linewidth=0.9, zorder=9,
-    )
-    ax.annotate(
-        f"Nominal polar\nActive: {baseline_active}",
-        (prop_baseline_row["best_wing_loading"],
-         prop_baseline_row["best_thrust_to_weight"]),
-        xytext=(12, 14), textcoords="offset points", fontsize=8.5,
-        color="#334155",
-        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                  edgecolor="#cbd5e1", alpha=0.92),
+else:
+    performance_carpet_filename = "jet_performance_carpet.csv"
+    performance_carpet_parameters = (
+        "acceleration_ms2", "takeoff_distance_m",
+        "acceleration", "take-off distance",
+        lambda value: f"a = {value:.2f} m/s²",
+        lambda value: f"s_TO = {value:.0f} m",
     )
 
-    family_handles = [
-        Line2D([0], [0], color=cd0_color, linewidth=2.4,
-               label="Constant CD₀"),
-        Line2D([0], [0], color=k_color, linewidth=2.2,
-               marker="o", markerfacecolor="#0f172a",
-               markeredgecolor="#0f172a", label="Constant k"),
-        Line2D([0], [0], color="#fbbf24", marker="*",
-               markeredgecolor="#0f172a", linestyle="None",
-               markersize=11, label="Imported nominal polar"),
-    ]
-    ax.set_title(analysis_title(
-        "Classical Aerodynamic Power-Loading Carpet Plot"
-    ))
-    ax.set_xlabel("Optimum Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Optimum Required P/W [W/N]")
-    clean_axes(ax)
-    ax.legend(handles=family_handles, frameon=False)
-    ax.text(
-        0.01, 0.02,
-        "81 propeller constraint solutions; labels show every other CD₀ "
-        "and k level (80–120% of the imported polar).",
-        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-        va="bottom",
+performance_carpet_path = os.path.join(
+    output_dir, performance_carpet_filename,
+)
+if os.path.exists(performance_carpet_path):
+    plot_performance_carpet(
+        pd.read_csv(performance_carpet_path).dropna(),
+        *performance_carpet_parameters,
     )
-    save_plot("06_classical_carpet_plot")
-
-# ============================================================
-# Jet CD₀ sensitivity plots
-# ============================================================
-study_path = os.path.join(output_dir, "carpet_plot_study.csv")
-
-if not propeller_mode and os.path.exists(study_path):
-
-    study = pd.read_csv(study_path)
-
-    # ========================================================
-    # Lecture-style one-parameter constraint-family sensitivity
-    # ========================================================
-    aerodynamic_carpet_path = os.path.join(
-        output_dir, "jet_cd0_k_carpet.csv"
+else:
+    stale_carpet_plot = os.path.join(
+        save_dir, "04_performance_carpet_plot.png",
     )
-    if not os.path.exists(aerodynamic_carpet_path):
-        raise FileNotFoundError(
-            "jet_cd0_k_carpet.csv not found; rerun the C++ application."
-        )
-    sensitivity_carpet = pd.read_csv(aerodynamic_carpet_path).dropna()
-    required_sensitivity_columns = {
-        "cd_0", "induced_drag_factor", "best_thrust_to_weight",
-        "is_baseline", "active_constraint_name",
-    }
-    if not required_sensitivity_columns.issubset(
-            sensitivity_carpet.columns):
-        raise RuntimeError(
-            "Rerun the C++ application: carpet CSV schema is outdated."
-        )
-
-    baseline_rows = sensitivity_carpet[
-        sensitivity_carpet["is_baseline"] == 1
-    ]
-    if len(baseline_rows) != 1:
-        raise RuntimeError(
-            "Jet carpet must contain exactly one nominal polar point."
-        )
-    baseline_row = baseline_rows.iloc[0]
-    nominal_k = float(baseline_row["induced_drag_factor"])
-    sensitivity_cd0_values = np.sort(
-        sensitivity_carpet["cd_0"].unique()
+    if os.path.exists(stale_carpet_plot):
+        os.remove(stale_carpet_plot)
+    print(
+        f"Warning: {performance_carpet_filename} is missing. Run the C++ "
+        "application with --with-studies to create the five-plot package."
     )
-    if len(sensitivity_cd0_values) != 9:
-        raise RuntimeError(
-            "CD0 sensitivity must contain nine parameter levels."
-        )
-
-    curve_family_path = os.path.join(
-        output_dir, "true_carpet_constraints.csv"
-    )
-    if not os.path.exists(curve_family_path):
-        raise FileNotFoundError(
-            "true_carpet_constraints.csv not found; rerun the C++ application."
-        )
-    curve_family = pd.read_csv(curve_family_path).dropna()
-    required_curve_columns = {
-        "cd_0", "constraint_name", "wing_loading", "thrust_to_weight"
-    }
-    if not required_curve_columns.issubset(curve_family.columns):
-        raise RuntimeError("Constraint-family CSV schema is outdated.")
-
-    acceleration_family = curve_family[
-        curve_family["constraint_name"].str.contains(
-            "acceleration", case=False, na=False
-        )
-    ].copy()
-    if len(acceleration_family["cd_0"].unique()) != 9:
-        raise RuntimeError(
-            "Acceleration sensitivity must contain nine CD0 curves."
-        )
-
-    fig, ax = plt.subplots(figsize=(10.5, 6.2))
-    normalization = mpl.colors.Normalize(
-        vmin=sensitivity_cd0_values.min(),
-        vmax=sensitivity_cd0_values.max(),
-    )
-    sensitivity_cmap = mpl.colormaps["Greens"]
-    label_indices = {0, 2, 4, 6, 8}
-    nominal_cd0 = float(baseline_row["cd_0"])
-
-    for cd0_index, cd0 in enumerate(sensitivity_cd0_values):
-        curve = acceleration_family[np.isclose(
-            acceleration_family["cd_0"], cd0,
-            rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("wing_loading")
-        is_nominal = np.isclose(
-            cd0, nominal_cd0, rtol=1.0e-9, atol=1.0e-12
-        )
-        ax.plot(
-            curve["wing_loading"], curve["thrust_to_weight"],
-            color="#064e3b" if is_nominal
-            else sensitivity_cmap(normalization(cd0)),
-            linewidth=3.0 if is_nominal else 1.45,
-            alpha=1.0 if is_nominal else 0.72,
-            label=(f"Nominal CD₀ = {cd0:.5f}"
-                   if is_nominal else None),
-            zorder=4 if is_nominal else 2,
-        )
-        if cd0_index in label_indices:
-            label_row = curve.iloc[-1]
-            ax.annotate(
-                f"{cd0 / nominal_cd0:.0%}",
-                (label_row["wing_loading"],
-                 label_row["thrust_to_weight"]),
-                xytext=(5, 0), textcoords="offset points",
-                fontsize=8.5, color="#166534", va="center",
-            )
-
-    middle_ws = float(acceleration_family["wing_loading"].median())
-    low_curve = acceleration_family[np.isclose(
-        acceleration_family["cd_0"], sensitivity_cd0_values[0],
-        rtol=1.0e-9, atol=1.0e-12,
-    )].sort_values("wing_loading")
-    high_curve = acceleration_family[np.isclose(
-        acceleration_family["cd_0"], sensitivity_cd0_values[-1],
-        rtol=1.0e-9, atol=1.0e-12,
-    )].sort_values("wing_loading")
-    low_y = np.interp(
-        middle_ws, low_curve["wing_loading"], low_curve["thrust_to_weight"]
-    )
-    high_y = np.interp(
-        middle_ws, high_curve["wing_loading"], high_curve["thrust_to_weight"]
-    )
-    ax.annotate(
-        "Increasing CD₀",
-        xy=(middle_ws, high_y), xytext=(middle_ws, low_y),
-        ha="center", va="bottom", fontsize=9.5, color="#334155",
-        arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
-    )
-
-    ax.clear()
-    cd0_region_handle = add_curve_family_region(
-        ax, acceleration_family, "cd_0", sensitivity_cd0_values,
-        "#15803d", "Acceleration T/W region (CD₀: 80–120%)",
-    )
-    set_feasible_sensitivity_xlim(
-        ax, acceleration_family, feasible_ws_min, feasible_ws_max
-    )
-    ax.set_title(analysis_title("CD₀ Sensitivity Region"))
-    ax.set_xlabel("Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
-    ax.text(
-        0.01, 0.02,
-        "Only CD₀ varies (80–120%); k and the vertical wing-loading "
-        "limits remain constant.",
-        transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-        va="bottom",
-    )
-
-    clean_axes(ax)
-    ax.legend(handles=[cd0_region_handle], loc="upper right", frameon=False)
-    save_plot("03_cd0_parameter_sensitivity")
-
-    # ========================================================
-    # k sensitivity with a moving gust-limit family
-    # ========================================================
-    k_sensitivity_path = os.path.join(
-        output_dir, "jet_k_sensitivity_curves.csv"
-    )
-    if not os.path.exists(k_sensitivity_path):
-        raise FileNotFoundError(
-            "jet_k_sensitivity_curves.csv not found; rerun the C++ application."
-        )
-    k_sensitivity = pd.read_csv(k_sensitivity_path).dropna()
-    required_k_columns = {
-        "induced_drag_factor", "constraint_name", "wing_loading",
-        "thrust_to_weight", "gust_wing_loading_limit",
-    }
-    if not required_k_columns.issubset(k_sensitivity.columns):
-        raise RuntimeError("k sensitivity CSV schema is outdated.")
-
-    k_values = np.sort(k_sensitivity["induced_drag_factor"].unique())
-    if len(k_values) != 9:
-        raise RuntimeError("k sensitivity must contain nine parameter levels.")
-
-    fig, ax = plt.subplots(figsize=(10.5, 6.2))
-    k_normalization = mpl.colors.Normalize(
-        vmin=k_values.min(), vmax=k_values.max()
-    )
-    k_curve_cmap = mpl.colormaps["Blues"]
-    gust_cmap = mpl.colormaps["Oranges"]
-    gust_limit_family = []
-
-    for k_index, induced_drag_factor in enumerate(k_values):
-        curve = k_sensitivity[np.isclose(
-            k_sensitivity["induced_drag_factor"], induced_drag_factor,
-            rtol=1.0e-9, atol=1.0e-12,
-        )].sort_values("wing_loading")
-        is_nominal = np.isclose(
-            induced_drag_factor, nominal_k,
-            rtol=1.0e-9, atol=1.0e-12,
-        )
-        curve_color = (
-            "#1e3a8a" if is_nominal
-            else k_curve_cmap(k_normalization(induced_drag_factor))
-        )
-        ax.plot(
-            curve["wing_loading"], curve["thrust_to_weight"],
-            color=curve_color, linewidth=3.0 if is_nominal else 1.45,
-            alpha=1.0 if is_nominal else 0.72,
-            label=(f"Nominal k = {induced_drag_factor:.5f}"
-                   if is_nominal else None),
-            zorder=4 if is_nominal else 2,
-        )
-
-        gust_limit = float(curve["gust_wing_loading_limit"].iloc[0])
-        gust_limit_family.append((
-            k_index, induced_drag_factor, gust_limit, is_nominal
-        ))
-        ax.axvline(
-            gust_limit,
-            color="#9a3412" if is_nominal
-            else gust_cmap(k_normalization(induced_drag_factor)),
-            linewidth=2.2 if is_nominal else 0.85,
-            alpha=0.95 if is_nominal else 0.34,
-            linestyle="--" if is_nominal else "-",
-            label=(f"Nominal gust limit = {gust_limit:.0f} N/m²"
-                   if is_nominal else None),
-            zorder=3,
-        )
-
-        if k_index in label_indices:
-            label_row = curve.iloc[-1]
-            ax.annotate(
-                f"{induced_drag_factor / nominal_k:.0%}",
-                (label_row["wing_loading"],
-                 label_row["thrust_to_weight"]),
-                xytext=(5, 0), textcoords="offset points",
-                fontsize=8.5, color="#1d4ed8", va="center",
-            )
-
-    gust_limits = np.array([
-        item[2] for item in gust_limit_family
-    ], dtype=float)
-    gust_span = float(gust_limits.max() - gust_limits.min())
-    gust_padding = max(0.18 * gust_span, 2.0)
-    gust_inset = ax.inset_axes([0.57, 0.57, 0.29, 0.29])
-    for k_index, induced_drag_factor, gust_limit, is_nominal in (
-            gust_limit_family):
-        gust_inset.axvline(
-            gust_limit,
-            color="#9a3412" if is_nominal
-            else gust_cmap(k_normalization(induced_drag_factor)),
-            linewidth=2.5 if is_nominal else 1.25,
-            linestyle="--" if is_nominal else "-",
-            alpha=1.0 if is_nominal else 0.78,
-        )
-    selected_gust_items = [
-        item for item in gust_limit_family if item[0] in label_indices
-    ]
-    gust_inset.set_xlim(
-        gust_limits.min() - gust_padding,
-        gust_limits.max() + gust_padding,
-    )
-    gust_inset.set_ylim(0.0, 1.0)
-    gust_inset.set_yticks([])
-    gust_inset.set_xticks([item[2] for item in selected_gust_items])
-    gust_inset.set_xticklabels(
-        [f"{item[1] / nominal_k:.0%}" for item in selected_gust_items],
-        rotation=40, ha="right", fontsize=7.5,
-    )
-    gust_inset.set_title("Gust-limit shift", fontsize=9)
-    gust_inset.set_xlabel("W/S [N/m²]", fontsize=8)
-    gust_inset.grid(axis="x", alpha=0.18)
-    gust_inset.spines["top"].set_visible(False)
-    gust_inset.spines["right"].set_visible(False)
-
-    low_k_curve = k_sensitivity[np.isclose(
-        k_sensitivity["induced_drag_factor"], k_values[0],
-        rtol=1.0e-9, atol=1.0e-12,
-    )].sort_values("wing_loading")
-    high_k_curve = k_sensitivity[np.isclose(
-        k_sensitivity["induced_drag_factor"], k_values[-1],
-        rtol=1.0e-9, atol=1.0e-12,
-    )].sort_values("wing_loading")
-    k_middle_ws = float(k_sensitivity["wing_loading"].median())
-    low_k_y = np.interp(
-        k_middle_ws, low_k_curve["wing_loading"],
-        low_k_curve["thrust_to_weight"],
-    )
-    high_k_y = np.interp(
-        k_middle_ws, high_k_curve["wing_loading"],
-        high_k_curve["thrust_to_weight"],
-    )
-    ax.annotate(
-        "Increasing k",
-        xy=(k_middle_ws, high_k_y),
-        xytext=(k_middle_ws, low_k_y),
-        ha="center", va="bottom", fontsize=9.5, color="#334155",
-        arrowprops=dict(arrowstyle="->", color="#334155", linewidth=1.4),
-    )
-
-    gust_inset.remove()
-    plt.close(fig)
-    fig, (ax, gust_ax) = plt.subplots(
-        1, 2, figsize=(13.2, 5.8),
-        gridspec_kw={"width_ratios": [1.65, 1.0]},
-    )
-    k_region_handle = add_curve_family_region(
-        ax, k_sensitivity, "induced_drag_factor", k_values,
-        "#2563eb", "Acceleration T/W region (k: 80–120%)",
-    )
-    set_feasible_sensitivity_xlim(
-        ax, k_sensitivity, feasible_ws_min, feasible_ws_max
-    )
-    ax.set_title("Acceleration T/W region")
-    ax.set_xlabel("Wing Loading, W/S [N/m²]")
-    ax.set_ylabel("Required Thrust-to-Weight Ratio, T/W [-]")
-    clean_axes(ax)
-    ax.legend(handles=[k_region_handle], loc="upper right", frameon=False)
-
-    k_percent = 100.0 * k_values / nominal_k
-    nominal_index = int(np.argmin(np.abs(k_values - nominal_k)))
-    nominal_gust = float(gust_limits[nominal_index])
-    gust_delta = gust_limits - nominal_gust
-    for scale in np.linspace(1.0, 0.125, 8):
-        gust_ax.fill_between(
-            k_percent, nominal_gust, nominal_gust + scale * gust_delta,
-            color="#ea580c", alpha=0.12, linewidth=0.0,
-        )
-    gust_ax.plot(k_percent, gust_limits, color="#c2410c", linewidth=1.35)
-    gust_ax.axhline(
-        nominal_gust, color="#9a3412", linestyle="--", linewidth=1.0,
-    )
-    gust_ax.scatter(
-        [100.0], [nominal_gust], marker="*", s=120,
-        facecolor="#facc15", edgecolor="#111827", zorder=4,
-    )
-    gust_span = float(np.ptp(gust_limits))
-    gust_padding = max(0.18 * gust_span, 0.005 * abs(nominal_gust), 1.0)
-    gust_ax.set_ylim(
-        float(gust_limits.min()) - gust_padding,
-        float(gust_limits.max()) + gust_padding,
-    )
-    gust_ax.set_xlabel("k / nominal k [%]")
-    gust_ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=100.0))
-    gust_ax.set_ylabel("Gust W/S limit [N/m²]")
-    gust_ax.set_title("Gust-limit response")
-    clean_axes(gust_ax)
-    gust_ax.legend(
-        handles=[Patch(
-            facecolor="#ea580c", edgecolor="#c2410c", alpha=0.42,
-            label="Gust W/S region (k: 80–120%)",
-        )],
-        loc="best", frameon=False,
-    )
-
-    fig.suptitle(analysis_title("k Sensitivity: Acceleration and Gust"))
-    fig.text(
-        0.5, 0.015,
-        "Only k varies (80–120%); CD₀, mission, propulsion and all "
-        "other aircraft parameters remain constant.",
-        ha="center", fontsize=8.8, color="#4d4d4d",
-    )
-    fig.tight_layout(rect=(0.0, 0.04, 1.0, 0.94))
-    save_plot("04_k_parameter_sensitivity")
-
-
-    # ========================================================
-    # Plot 5: Best W/S vs CD0
-    # ========================================================
-    fig, ax = plt.subplots(figsize=(9, 5.5))
-
-    ax.plot(
-        study["cd_0"],
-        study["best_wing_loading"],
-        marker="o",
-        color="black",
-        linewidth=2.2,
-    )
-
-    ax.set_title(analysis_title("Sensitivity of Optimum W/S to CD₀"))
-    ax.set_xlabel("Zero-Lift Drag Coefficient, CD₀ [-]")
-    ax.set_ylabel("Optimum Wing Loading, W/S [N/m²]")
-
-    for _, row in study.iterrows():
-        ax.annotate(
-            f"{row['best_wing_loading']:.0f}",
-            xy=(row["cd_0"], row["best_wing_loading"]),
-            xytext=(0, 8),
-            textcoords="offset points",
-            ha="center",
-            fontsize=9,
-        )
-
-    save_plot("05_optimum_ws_vs_cd0")
-
-    # ============================================================
-    # Plot 6: Range fuel fraction and L/D
-    # ============================================================
-    range_path = os.path.join(output_dir, "jet_range_fuel_fraction_constraint.csv")
-
-    if os.path.exists(range_path):
-
-        range_df = pd.read_csv(range_path)
-
-        fig, ax1 = plt.subplots(figsize=(10, 6))
-
-        ax1.plot(
-            range_df["wing_loading"],
-            range_df["required_fuel_fraction"],
-            marker="o",
-            linewidth=2.2,
-            color="black",
-            label="Required fuel fraction"
-        )
-
-        ax1.set_xlabel("Wing Loading, W/S [N/m²]")
-        ax1.set_ylabel("Required Fuel Fraction [-]")
-
-        ax1.grid(True, alpha=0.35)
-
-        ax2 = ax1.twinx()
-
-        ax2.plot(
-            range_df["wing_loading"],
-            range_df["lift_to_drag"],
-            marker="s",
-            linewidth=2.0,
-            linestyle="--",
-            color="gray",
-            label="L/D"
-        )
-
-        ax2.set_ylabel("Lift-to-Drag Ratio, L/D [-]")
-
-        plt.title(analysis_title("Range Constraint: Fuel Fraction and L/D"))
-
-        lines_1, labels_1 = ax1.get_legend_handles_labels()
-        lines_2, labels_2 = ax2.get_legend_handles_labels()
-
-        ax1.legend(
-            lines_1 + lines_2,
-            labels_1 + labels_2,
-            loc="center right",
-            frameon=True
-        )
-
-        save_plot("06_range_fuel_fraction_and_ld")
-
-    # ============================================================
-    # Lecture-style two-family CD0-k aerodynamic carpet
-    # ============================================================
-    aerodynamic_carpet_path = os.path.join(
-        output_dir, "jet_cd0_k_carpet.csv"
-    )
-    if generate_jet_design_maps and os.path.exists(aerodynamic_carpet_path):
-        aero_carpet = pd.read_csv(aerodynamic_carpet_path).dropna()
-        cd0_grid_values = np.sort(aero_carpet["cd_0"].unique())
-        k_grid_values = np.sort(
-            aero_carpet["induced_drag_factor"].unique()
-        )
-
-        expected_points = len(cd0_grid_values) * len(k_grid_values)
-        if (len(cd0_grid_values) != 9 or len(k_grid_values) != 9 or
-                len(aero_carpet) != expected_points):
-            raise RuntimeError(
-                "Jet CD0-k carpet must be a complete 9x9 grid."
-            )
-        if (np.ptp(aero_carpet["best_wing_loading"].to_numpy()) < 1.0e-9 and
-                np.ptp(aero_carpet["best_thrust_to_weight"].to_numpy()) <
-                1.0e-12):
-            raise RuntimeError(
-                "Jet CD0-k carpet contains no aerodynamic response. Rerun "
-                "the updated C++ application with --with-studies; the CSV "
-                "was generated before operating-polar scaling was fixed."
-            )
-
-        fig, ax = plt.subplots(figsize=(10.0, 7.0))
-        cd0_color = "#10b981"
-        k_color = "#ef4444"
-
-        # Green family: CD0 remains constant while k varies.
-        label_indices = {0, 4, 8}
-        for cd0_index, cd0 in enumerate(cd0_grid_values):
-            family = aero_carpet[
-                aero_carpet["cd_0"] == cd0
-            ].sort_values("induced_drag_factor")
-            ax.plot(
-                family["best_wing_loading"],
-                family["best_thrust_to_weight"],
-                color=cd0_color,
-                linewidth=2.4 if cd0_index in label_indices else 1.25,
-                alpha=1.0 if cd0_index in label_indices else 0.42,
-            )
-            if cd0_index in label_indices:
-                label_row = family.iloc[-1]
-                ax.annotate(
-                    f"CD₀ = {cd0:.4f}",
-                    (label_row["best_wing_loading"],
-                     label_row["best_thrust_to_weight"]),
-                    xytext=(7, 5), textcoords="offset points",
-                    fontsize=8.5, color="#047857",
-                )
-
-        # Red family: k remains constant while CD0 varies.
-        for k_index, induced_drag_factor in enumerate(k_grid_values):
-            family = aero_carpet[
-                aero_carpet["induced_drag_factor"] == induced_drag_factor
-            ].sort_values("cd_0")
-            ax.plot(
-                family["best_wing_loading"],
-                family["best_thrust_to_weight"],
-                color=k_color,
-                linewidth=2.2 if k_index in label_indices else 1.2,
-                alpha=1.0 if k_index in label_indices else 0.38,
-                marker="o", markersize=4.2,
-                markerfacecolor="#0f172a", markeredgecolor="#0f172a",
-            )
-            if k_index in label_indices:
-                label_row = family.iloc[-1]
-                ax.annotate(
-                    f"k = {induced_drag_factor:.4f}",
-                    (label_row["best_wing_loading"],
-                     label_row["best_thrust_to_weight"]),
-                    xytext=(7, -7), textcoords="offset points",
-                    fontsize=8.5, color="#b91c1c",
-                )
-
-        required_columns = {
-            "is_baseline", "active_constraint_name",
-            "active_constraint_value", "second_constraint_name",
-            "second_constraint_value", "constraint_margin",
-        }
-        if not required_columns.issubset(aero_carpet.columns):
-            raise RuntimeError(
-                "Rerun the C++ application: carpet CSV schema is outdated."
-            )
-        baseline = aero_carpet[aero_carpet["is_baseline"] == 1]
-        if len(baseline) != 1:
-            raise RuntimeError(
-                "Jet CD0-k carpet must contain one nominal polar point."
-            )
-        active_handles = []
-        active_names = sorted(
-            aero_carpet["active_constraint_name"].astype(str).unique()
-        )
-        for active_name in active_names:
-            active_label = active_name.replace("jet_", "").replace(
-                "_constraint", ""
-            ).replace("_", " ").title()
-            active_points = aero_carpet[
-                aero_carpet["active_constraint_name"].astype(str) ==
-                active_name
-            ]
-            active_marker = ax.scatter(
-                active_points["best_wing_loading"],
-                active_points["best_thrust_to_weight"],
-                s=34, color=color_map.get(active_label, "#475569"),
-                edgecolor="white", linewidth=0.45, alpha=0.92, zorder=7,
-                label=f"Active: {active_label}",
-            )
-            active_handles.append(active_marker)
-
-        baseline_row = baseline.iloc[0]
-        baseline_active = str(baseline_row["active_constraint_name"]).replace(
-            "jet_", ""
-        ).replace("_constraint", "").replace("_", " ").title()
-        ax.scatter(
-            baseline_row["best_wing_loading"],
-            baseline_row["best_thrust_to_weight"],
-            marker="*", s=180, color="#fbbf24", edgecolor="#0f172a",
-            linewidth=0.9, label="Imported nominal polar", zorder=9,
-        )
-        ax.annotate(
-            f"Nominal polar\nActive: {baseline_active}",
-            (baseline_row["best_wing_loading"],
-             baseline_row["best_thrust_to_weight"]),
-            xytext=(0.98, 0.13), textcoords="axes fraction",
-            ha="right", va="bottom", fontsize=8.5,
-            color="#334155",
-            arrowprops=dict(
-                arrowstyle="->", color="#64748b", linewidth=1.0
-            ),
-            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                      edgecolor="#cbd5e1", alpha=0.92),
-        )
-
-        infeasible = aero_carpet[aero_carpet["range_feasible"] == 0]
-        if not infeasible.empty:
-            ax.scatter(
-                infeasible["best_wing_loading"],
-                infeasible["best_thrust_to_weight"],
-                marker="x", s=65, linewidth=1.8, color="#D55E00",
-                label="Range infeasible", zorder=8,
-            )
-
-        family_handles = [
-            Line2D([0], [0], color=cd0_color, linewidth=2.4,
-                   label="Constant CD₀"),
-            Line2D([0], [0], color=k_color, linewidth=2.2,
-                   marker="o", markerfacecolor="#0f172a",
-                   markeredgecolor="#0f172a", label="Constant k"),
-            Line2D([0], [0], color="#fbbf24", marker="*",
-                   markeredgecolor="#0f172a", linestyle="None",
-                   markersize=11, label="Imported nominal polar"),
-        ]
-        if not infeasible.empty:
-            family_handles.append(Line2D(
-                [0], [0], color="#D55E00", marker="x", linestyle="None",
-                markersize=7, label="Range infeasible",
-            ))
-
-        ax.clear()
-        family_handles = draw_design_map(
-            ax, aero_carpet, "cd_0", "induced_drag_factor",
-            "Zero-lift drag coefficient, CD₀ [-]",
-            "Induced drag factor, k [-]",
-        )
-        ax.set_title(analysis_title("CD₀–k Aerodynamic Design Map"))
-        ax.legend(handles=family_handles, frameon=False, loc="best")
-        ax.text(
-            0.01, 0.02,
-            "Pastel areas show the governing constraint; solid blue "
-            "contours show optimum W/S and dashed red contours show T/W.",
-            transform=ax.transAxes, fontsize=8.8, color="#4d4d4d",
-            va="bottom",
-        )
-        save_plot("05_cd0_k_design_map")
-
-    # ============================================================
-    # Additional case-specific, two-parameter classical carpets
-    # ============================================================
-    additional_carpet_studies = [
-        (
-            "jet_acceleration_takeoff_distance_carpet.csv",
-            "acceleration_severity_scale", "takeoff_distance_m",
-            "Mission acceleration demand scale [-]",
-            "Take-off distance [m]",
-            lambda value: f"Mission demand = {value:.0%}",
-            lambda value: f"s_TO = {value:.0f} m",
-            "Mission–Runway Design Map",
-            "06_mission_runway_design_map",
-        ),
-    ] if generate_jet_design_maps else []
-    for (
-            csv_name, parameter_a, parameter_b, parameter_a_label,
-            parameter_b_label, parameter_a_formatter,
-            parameter_b_formatter, title, plot_name,
-    ) in additional_carpet_studies:
-        carpet_path = os.path.join(output_dir, csv_name)
-        if not os.path.exists(carpet_path):
-            raise FileNotFoundError(
-                f"{csv_name} not found; rerun the C++ application."
-            )
-        plot_two_parameter_classical_carpet(
-            pd.read_csv(carpet_path).dropna(),
-            parameter_a, parameter_b, parameter_a_label,
-            parameter_b_label, parameter_a_formatter,
-            parameter_b_formatter, title, plot_name,
-        )
 
 print()
 print("Plot generation completed.")
@@ -2990,4 +1596,5 @@ print(
     f"Best design point: W/S = {best_ws:.0f} N/m², "
     f"{y_symbol} = {best_tw:.4f}"
 )
-print(f"Plots saved to: {save_dir}")
+print(f"Governing performance constraint: {best_governing_name}")
+print(f"Five decision plots saved to: {save_dir}")
