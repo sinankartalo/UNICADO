@@ -1563,18 +1563,18 @@ save_plot("03_design_point_margins")
 if propeller_mode:
     performance_carpet_filename = "propeller_performance_carpet.csv"
     performance_carpet_parameters = (
-        "climb_rate_ms", "climb_speed_ms",
-        "climb rate", "climb speed",
+        "climb_rate_ms", "takeoff_distance_m",
+        "climb rate", "take-off distance",
         lambda value: f"ROC = {value:.1f} m/s",
-        lambda value: f"V_climb = {value:.0f} m/s",
+        lambda value: f"s_TO = {value:.0f} m",
     )
 else:
     performance_carpet_filename = "jet_performance_carpet.csv"
     performance_carpet_parameters = (
-        "acceleration_ms2", "acceleration_speed_ms",
-        "acceleration", "acceleration speed",
+        "acceleration_ms2", "takeoff_distance_m",
+        "acceleration", "take-off distance",
         lambda value: f"a = {value:.2f} m/s²",
-        lambda value: f"V_acc = {value:.0f} m/s",
+        lambda value: f"s_TO = {value:.0f} m",
     )
 
 performance_carpet_path = os.path.join(

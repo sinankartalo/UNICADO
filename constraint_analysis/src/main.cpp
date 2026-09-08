@@ -172,37 +172,23 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_directory =
             output_root / active_case_id;
         std::filesystem::create_directories(output_directory);
-        std::filesystem::remove(
-            output_directory / "carpet_plot_full.csv");
-        // Remove superseded carpet schemas before producing fresh study data.
-        std::filesystem::remove(
-            output_directory / "jet_cd0_takeoff_distance_carpet.csv");
-        std::filesystem::remove(
-            output_directory / "jet_cd0_thrust_lapse_carpet.csv");
-        std::filesystem::remove(
-            output_directory / "jet_acceleration_takeoff_distance_carpet.csv");
-        std::filesystem::remove(
-            output_directory / "jet_performance_carpet.csv");
-        std::filesystem::remove(
-            output_directory / "propeller_performance_carpet.csv");
-        if (!run_parameter_studies)
+        // Remove every earlier study schema before producing fresh carpet data.
+        for (const char* study_file : {
+                 "carpet_plot_full.csv",
+                 "carpet_plot_study.csv",
+                 "true_carpet_constraints.csv",
+                 "jet_cd0_k_carpet.csv",
+                 "jet_cd0_takeoff_distance_carpet.csv",
+                 "jet_cd0_thrust_lapse_carpet.csv",
+                 "jet_acceleration_takeoff_distance_carpet.csv",
+                 "jet_performance_carpet.csv",
+                 "propeller_performance_carpet.csv",
+                 "jet_k_sensitivity_curves.csv",
+                 "propeller_cd0_sensitivity_curves.csv",
+                 "propeller_cd0_k_carpet.csv",
+                 "propeller_k_sensitivity_curves.csv"})
         {
-            for (const char* study_file : {
-                     "carpet_plot_study.csv",
-                     "true_carpet_constraints.csv",
-                     "jet_cd0_k_carpet.csv",
-                     "jet_cd0_takeoff_distance_carpet.csv",
-                     "jet_cd0_thrust_lapse_carpet.csv",
-                     "jet_acceleration_takeoff_distance_carpet.csv",
-                     "jet_performance_carpet.csv",
-                     "propeller_performance_carpet.csv",
-                     "jet_k_sensitivity_curves.csv",
-                     "propeller_cd0_sensitivity_curves.csv",
-                     "propeller_cd0_k_carpet.csv",
-                     "propeller_k_sensitivity_curves.csv"})
-            {
-                std::filesystem::remove(output_directory / study_file);
-            }
+            std::filesystem::remove(output_directory / study_file);
         }
         for (const auto& entry :
              std::filesystem::directory_iterator(output_directory))
@@ -705,151 +691,79 @@ int main(int argc, char* argv[])
         }
 
         // ============================================================
-        // 4. CARPET PLOT PARAMETER STUDY
+        // 4. DESIGNER PERFORMANCE CARPET
         // ============================================================
-        // All single- and two-parameter aerodynamic studies use the same
-        // relative band around the imported aircraft polar.
-        const std::vector<double> sensitivity_factors = {
-            0.80, 0.85, 0.90, 0.95, 1.00,
-            1.05, 1.10, 1.15, 1.20};
-        std::vector<double> cd0_values;
-        for (double factor : sensitivity_factors)
-        {
-            cd0_values.push_back(input.aircraft.polar.cd_0 * factor);
-        }
-
-        std::vector<carpet_study_point> carpet_points;
-        std::vector<true_carpet_constraint_point> true_carpet_points;
-        std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
-        std::vector<k_sensitivity_curve_point> k_sensitivity_points;
+        // A normal run produces the selected matching chart. --with-studies
+        // adds one 9x9 requirement trade study. The wide requirement ranges
+        // are deliberate: the carpet should expose changes in the governing
+        // constraint, not only tiny perturbations around one nominal point.
         std::vector<jet_two_parameter_carpet_point> performance_carpet_points;
-
-        // Use the same imported-polar-relative grid for both propulsion
-        // architectures.  The analysis tool selects T/W or P/W equations
-        // from the configured propulsion type; the sweep itself is common.
-        std::vector<double> cd0_carpet_values;
-        std::vector<double> induced_drag_factor_values;
-        for (double factor : sensitivity_factors)
+        if (run_parameter_studies)
         {
-            cd0_carpet_values.push_back(
-                input.aircraft.polar.cd_0 * factor);
-            induced_drag_factor_values.push_back(
-                input.aircraft.polar.k * factor);
-        }
+            if (input.condition_source != "performance")
+            {
+                throw std::runtime_error(
+                    "Designer carpet requires condition_source='performance'.");
+            }
 
-        if (run_parameter_studies && !is_propeller)
-        {
-            carpet_plot_study study{atm};
-            carpet_points = study.run(input, cd0_values);
-            carpet_plot_study::write_to_csv(
-                carpet_points,
-                (output_directory / "carpet_plot_study.csv").string());
-
-            true_carpet_constraints true_carpet{atm};
-            true_carpet_points = true_carpet.run(input, cd0_values);
-            true_carpet_constraints::write_to_csv(
-                true_carpet_points,
-                (output_directory / "true_carpet_constraints.csv").string());
-
-            // Use a relative sensitivity band around the authoritative polar
-            // rather than replacing it with unrelated absolute assumptions.
-            jet_aerodynamic_carpet_study aero_carpet{atm};
-            jet_aero_carpet_points = aero_carpet.run(
-                input, cd0_carpet_values, induced_drag_factor_values);
-            jet_aerodynamic_carpet_study::write_to_csv(
-                jet_aero_carpet_points,
-                (output_directory / "jet_cd0_k_carpet.csv").string());
-
-            const auto scaled_values = [&sensitivity_factors](double nominal)
+            const auto runway_values = [&input]()
             {
                 std::vector<double> values;
-                values.reserve(sensitivity_factors.size());
-                for (double factor : sensitivity_factors)
-                    values.push_back(nominal * factor);
+                for (int index = 0; index < 9; ++index)
+                    values.push_back(
+                        input.takeoff.runway_m * (0.5 + index / 8.0));
                 return values;
-            };
-            if (input.condition_source == "performance")
+            }();
+
+            jet_two_parameter_carpet_study study{atm};
+            if (!is_propeller)
             {
-                const auto acceleration_values = scaled_values(
-                    input.acceleration.mission_points.front().acceleration_ms2);
-                const auto acceleration_speed_values = scaled_values(
-                    input.acceleration.mission_points.front().speed_ms);
-                jet_two_parameter_carpet_study paired_carpet{atm};
-                performance_carpet_points = paired_carpet.run(
+                const auto acceleration_values = [&input]()
+                {
+                    std::vector<double> values;
+                    const double nominal = input.acceleration.mission_points
+                                               .front().acceleration_ms2;
+                    for (int index = 0; index < 9; ++index)
+                        values.push_back(
+                            nominal * (1.0 / 3.0 + index / 12.0));
+                    return values;
+                }();
+                performance_carpet_points = study.run(
                     input,
                     jet_carpet_parameter::acceleration_ms2,
                     acceleration_values,
-                    jet_carpet_parameter::acceleration_speed_ms,
-                    acceleration_speed_values);
+                    jet_carpet_parameter::takeoff_distance_m,
+                    runway_values);
                 jet_two_parameter_carpet_study::write_to_csv(
                     performance_carpet_points,
-                    "acceleration_ms2", "acceleration_speed_ms",
+                    "acceleration_ms2", "takeoff_distance_m",
                     (output_directory / "jet_performance_carpet.csv").string());
             }
-
-            k_sensitivity_study k_sensitivity{atm};
-            k_sensitivity_points = k_sensitivity.run(
-                input, induced_drag_factor_values);
-            k_sensitivity_study::write_to_csv(
-                k_sensitivity_points,
-                (output_directory /
-                    "jet_k_sensitivity_curves.csv").string());
-        }
-        else if (run_parameter_studies)
-        {
-            if (input.condition_source == "performance")
+            else
             {
-                const auto scaled_values = [&sensitivity_factors](double nominal)
+                const auto climb_rate_values = [&input]()
                 {
                     std::vector<double> values;
-                    values.reserve(sensitivity_factors.size());
-                    for (double factor : sensitivity_factors)
-                        values.push_back(nominal * factor);
+                    const double nominal =
+                        input.climb.mission_points.front().roc_ms;
+                    for (int index = 0; index < 9; ++index)
+                        values.push_back(nominal * (0.4 + 0.15 * index));
                     return values;
-                };
-                const auto climb_rate_values = scaled_values(
-                    input.climb.mission_points.front().roc_ms);
-                const auto climb_speed_values = scaled_values(
-                    input.climb.mission_points.front().speed_ms);
-                jet_two_parameter_carpet_study paired_carpet{atm};
-                performance_carpet_points = paired_carpet.run(
+                }();
+                performance_carpet_points = study.run(
                     input,
                     jet_carpet_parameter::climb_rate_ms,
                     climb_rate_values,
-                    jet_carpet_parameter::climb_speed_ms,
-                    climb_speed_values);
+                    jet_carpet_parameter::takeoff_distance_m,
+                    runway_values);
                 jet_two_parameter_carpet_study::write_to_csv(
                     performance_carpet_points,
-                    "climb_rate_ms", "climb_speed_ms",
+                    "climb_rate_ms", "takeoff_distance_m",
                     (output_directory /
                         "propeller_performance_carpet.csv").string());
             }
-            std::cout << "Running propeller CD0 sensitivity (9 analyses)...\n";
-            true_carpet_constraints cd0_sensitivity{atm};
-            true_carpet_points = cd0_sensitivity.run(
-                input, cd0_carpet_values);
-            true_carpet_constraints::write_to_csv(
-                true_carpet_points,
-                (output_directory /
-                    "propeller_cd0_sensitivity_curves.csv").string());
-
-            std::cout << "Running propeller CD0-k carpet (81 analyses)...\n";
-            jet_aerodynamic_carpet_study aero_carpet{atm};
-            jet_aero_carpet_points = aero_carpet.run(
-                input, cd0_carpet_values, induced_drag_factor_values);
-            jet_aerodynamic_carpet_study::write_to_csv(
-                jet_aero_carpet_points,
-                (output_directory /
-                    "propeller_cd0_k_carpet.csv").string());
-
-            std::cout << "Running propeller k sensitivity (9 analyses)...\n";
-            k_sensitivity_study k_sensitivity{atm};
-            k_sensitivity_points = k_sensitivity.run(
-                input, induced_drag_factor_values);
-            k_sensitivity_study::write_to_csv(
-                k_sensitivity_points,
-                (output_directory /
-                    "propeller_k_sensitivity_curves.csv").string());
+            std::cout << "Designer performance carpet points written: "
+                      << performance_carpet_points.size() << '\n';
         }
 
         // ============================================================
@@ -1252,37 +1166,6 @@ int main(int argc, char* argv[])
                     << "  feasible = " << (point.feasible ? "yes" : "no")
                     << '\n';
             }
-        }
-
-        if (!is_propeller && run_parameter_studies)
-        {
-        std::cout << "\n=== carpet_plot_study ===\n";
-
-        for (const auto& point : carpet_points)
-        {
-            std::cout
-                << "CD0 = " << point.cd_0
-                << "  best W/S = " << point.best_wing_loading
-                << "  best T/W = " << point.best_thrust_to_weight
-                << "  range feasible = " << (point.range_feasible ? "yes" : "no")
-                << '\n';
-        }
-
-        std::cout << "\n=== true_carpet_constraints ===\n";
-        std::cout
-            << "True carpet constraint points written: "
-            << true_carpet_points.size()
-            << '\n';
-        std::cout << "CSV: "
-                  << (output_directory / "true_carpet_constraints.csv").string()
-                  << "\n";
-
-        std::cout << "\n=== jet_cd0_k_carpet ===\n";
-        std::cout << "Aerodynamic carpet points written: "
-                  << jet_aero_carpet_points.size() << '\n';
-        std::cout << "CSV: "
-                  << (output_directory / "jet_cd0_k_carpet.csv").string()
-                  << "\n";
         }
 
         if (is_propeller)

@@ -70,9 +70,7 @@ namespace constraint_analysis
         induced_drag_factor,
         takeoff_distance_m,
         acceleration_ms2,
-        acceleration_speed_ms,
         climb_rate_ms,
-        climb_speed_ms,
         acceleration_severity_scale,
         thrust_lapse_scale
     };
