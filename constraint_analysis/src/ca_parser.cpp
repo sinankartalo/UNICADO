@@ -420,12 +420,8 @@ namespace constraint_analysis
         // Keep mission history on a separate verification-only data path.
         // In performance mode none of these points may define a matching-chart
         // constraint; they are evaluated only after the design is selected.
-        input.mission_verification.acceleration_points =
-            mission_data.get_acceleration_conditions();
-        input.mission_verification.cruise_points =
-            mission_data.get_cruise_conditions();
-        input.mission_verification.climb_points =
-            mission_data.get_climb_conditions();
+        input.mission_verification.points =
+            mission_data.get_mission_verification_points();
 
         input.aircraft.wing_area_m2 = aero_values.wing_area_m2;
         input.aircraft.aerodynamic_polar_xml_path =
@@ -1033,6 +1029,77 @@ namespace constraint_analysis
             throw std::runtime_error(
                 "Mission CSV contains no valid cruise points.");
         return conditions;
+    }
+
+    std::vector<mission_verification_point>
+    readMission::get_mission_verification_points() const
+    {
+        std::vector<mission_verification_point> points;
+        for (std::size_t i = 0; i < this->altitude.size(); ++i)
+        {
+            const std::string mode = trim_copy(this->mode_name[i]);
+            std::string segment;
+            if (mode == "accelerate" || mode == "change_speed_to_CAS" ||
+                mode == "change_speed_to_Mach")
+                segment = "acceleration";
+            else if (mode == "cruise")
+                segment = "cruise";
+            else if (mode != "takeoff" && mode != "landing" &&
+                     this->climb_rate_ms[i] > 0.0)
+                segment = "climb";
+            else
+                continue;
+
+            std::size_t lower = i;
+            std::size_t upper = i;
+            if (i > 0 && trim_copy(this->mode_name[i - 1]) == mode)
+                lower = i - 1;
+            if (i + 1 < this->altitude.size() &&
+                trim_copy(this->mode_name[i + 1]) == mode)
+                upper = i + 1;
+
+            double acceleration_ms2 = 0.0;
+            const double time_delta = this->time_s[upper] - this->time_s[lower];
+            if (segment != "cruise")
+            {
+                if (lower == upper || time_delta <= 0.0)
+                    continue;
+                acceleration_ms2 =
+                    (this->tas[upper] - this->tas[lower]) / time_delta;
+            }
+            if (segment == "acceleration" && acceleration_ms2 <= 1.0e-6)
+                continue;
+
+            mission_verification_point sample;
+            sample.segment = segment;
+            sample.condition.altitude_m = this->altitude[i];
+            sample.condition.speed_ms = this->tas[i];
+            sample.condition.roc_ms =
+                segment == "cruise" ? 0.0 : this->climb_rate_ms[i];
+            sample.condition.acceleration_ms2 = acceleration_ms2;
+            sample.condition.beta_climb =
+                this->total_mass[i] / this->total_mass.front();
+            sample.time_s = this->time_s[i];
+            sample.range_m = this->range[i];
+            sample.source_index = i;
+
+            const auto& point = sample.condition;
+            if (std::isfinite(point.altitude_m) &&
+                std::isfinite(point.speed_ms) && point.speed_ms > 0.0 &&
+                std::isfinite(point.roc_ms) &&
+                std::isfinite(point.acceleration_ms2) &&
+                std::isfinite(point.beta_climb) &&
+                point.beta_climb > 0.0 && point.beta_climb <= 1.0 &&
+                std::isfinite(sample.time_s) &&
+                std::isfinite(sample.range_m))
+            {
+                points.push_back(sample);
+            }
+        }
+        if (points.empty())
+            throw std::runtime_error(
+                "Mission CSV contains no points suitable for verification.");
+        return points;
     }
 
     double readMission::get_segment_reference_altitude(

@@ -622,12 +622,12 @@ int main(int argc, char* argv[])
             std::ofstream verification(
                 output_directory / "mission_verification.csv");
             verification
-                << "segment,mission_point_index,altitude_m,speed_ms,mach,"
+                << "segment,mission_point_index,time_s,range_m,altitude_m,speed_ms,mach,"
                    "roc_ms,acceleration_ms2,beta,wing_loading_N_m2,"
                 << (is_propeller
                         ? "required_shaft_power_to_weight_W_N,available_shaft_power_to_weight_W_N,"
                         : "required_thrust_to_weight,available_thrust_to_weight,")
-                << "absolute_margin,margin_percent,status,model_note\n";
+                << "absolute_margin,margin_percent,utilization_percent,status,model_note\n";
 
             std::size_t evaluated_points = 0;
             std::size_t failed_points = 0;
@@ -637,18 +637,23 @@ int main(int argc, char* argv[])
             std::string critical_segment = "none";
             std::size_t critical_index = 0;
 
-            const auto verify_segment = [&](
-                const std::string& segment,
-                const std::vector<climb_mission_point>& mission_points)
+            const auto verify_point = [&](
+                const mission_verification_point& sample)
             {
-                for (std::size_t index = 0; index < mission_points.size(); ++index)
-                {
-                    const auto& point = mission_points[index];
+                    const auto& segment = sample.segment;
+                    const auto& point = sample.condition;
                     const double mach = point.speed_ms /
                         atm.getSpeedOfSound(point.altitude_m);
                     try
                     {
                         constraint_input point_input = input;
+                        // Verification needs only the already-selected W/S,
+                        // not a complete matching-chart grid for every
+                        // mission sample.
+                        point_input.wing_loading_min =
+                            feasible_best_point.wing_loading;
+                        point_input.wing_loading_max =
+                            feasible_best_point.wing_loading;
                         constraint_curve curve;
                         if (segment == "acceleration")
                         {
@@ -704,6 +709,8 @@ int main(int argc, char* argv[])
                         const double margin = available - required;
                         const double margin_percent =
                             100.0 * margin / required;
+                        const double utilization_percent =
+                            100.0 * required / available;
                         const bool passed = margin >= -1.0e-10;
                         ++evaluated_points;
                         if (!passed)
@@ -712,10 +719,11 @@ int main(int argc, char* argv[])
                         {
                             minimum_margin_percent = margin_percent;
                             critical_segment = segment;
-                            critical_index = index;
+                            critical_index = sample.source_index;
                         }
                         verification
-                            << segment << "," << index << ","
+                            << segment << "," << sample.source_index << ","
+                            << sample.time_s << "," << sample.range_m << ","
                             << point.altitude_m << "," << point.speed_ms << ","
                             << mach << "," << point.roc_ms << ","
                             << point.acceleration_ms2 << ","
@@ -723,6 +731,7 @@ int main(int argc, char* argv[])
                             << feasible_best_point.wing_loading << ","
                             << required << "," << available << ","
                             << margin << "," << margin_percent << ","
+                            << utilization_percent << ","
                             << (passed ? "PASS" : "FAIL")
                             << ",evaluated_against_fixed_performance_design\n";
                     }
@@ -735,23 +744,20 @@ int main(int argc, char* argv[])
                         std::replace(
                             model_note.begin(), model_note.end(), '\n', ' ');
                         verification
-                            << segment << "," << index << ","
+                            << segment << "," << sample.source_index << ","
+                            << sample.time_s << "," << sample.range_m << ","
                             << point.altitude_m << "," << point.speed_ms << ","
                             << mach << "," << point.roc_ms << ","
                             << point.acceleration_ms2 << ","
                             << point.beta_climb << ","
                             << feasible_best_point.wing_loading
-                            << ",,,,,OUTSIDE_MODEL_DOMAIN," << model_note
+                            << ",,,,,,OUTSIDE_MODEL_DOMAIN," << model_note
                             << "\n";
                     }
-                }
             };
 
-            verify_segment(
-                "acceleration",
-                input.mission_verification.acceleration_points);
-            verify_segment("cruise", input.mission_verification.cruise_points);
-            verify_segment("climb", input.mission_verification.climb_points);
+            for (const auto& sample : input.mission_verification.points)
+                verify_point(sample);
 
             std::cout << "\n=== mission_verification ===\n"
                       << "design_source = performance requirements\n"

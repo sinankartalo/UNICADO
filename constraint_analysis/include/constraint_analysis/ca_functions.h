@@ -177,14 +177,20 @@ namespace constraint_analysis
         double available_fuel_fraction = 0.25;
     };
 
+    struct mission_verification_point
+    {
+        std::string segment;
+        climb_mission_point condition;
+        double time_s = 0.0;
+        double range_m = 0.0;
+        std::size_t source_index = 0;
+    };
+
     struct mission_verification_data
     {
-        // These points are never used to construct the primary matching
-        // chart. They are retained only to check the performance-sized
-        // design against the supplied mission history afterwards.
-        std::vector<climb_mission_point> acceleration_points;
-        std::vector<climb_mission_point> cruise_points;
-        std::vector<climb_mission_point> climb_points;
+        // Chronological mission samples retained only for post-design
+        // verification. They never construct the performance matching chart.
+        std::vector<mission_verification_point> points;
     };
 
     struct constraint_input
