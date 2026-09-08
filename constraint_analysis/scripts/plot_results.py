@@ -374,6 +374,7 @@ plot_allowlist = {
     "03_design_point_margins",
     "04_performance_carpet_plot",
     "05_tolerance_robustness",
+    "06_mission_verification",
 }
 for existing_plot in os.listdir(save_dir):
     if not existing_plot.endswith(".png"):
@@ -1596,6 +1597,86 @@ else:
         "application with --with-studies to create the five-plot package."
     )
 
+
+# ============================================================
+# Plot 6: Independent mission verification
+# ============================================================
+mission_verification_path = os.path.join(
+    output_dir, "mission_verification.csv",
+)
+if os.path.exists(mission_verification_path):
+    verification = pd.read_csv(mission_verification_path)
+    evaluated = verification[
+        verification["status"].isin(["PASS", "FAIL"])
+    ].copy()
+    if not evaluated.empty:
+        fig, ax = plt.subplots(figsize=(11.0, 6.6))
+        segment_styles = {
+            "acceleration": ("#dc2626", "Acceleration"),
+            "climb": ("#2563eb", "Climb"),
+            "cruise": ("#16a34a", "Cruise"),
+        }
+        for segment, (color, label) in segment_styles.items():
+            points = evaluated[evaluated["segment"] == segment].sort_values(
+                "mission_point_index"
+            )
+            if points.empty:
+                continue
+            ax.plot(
+                points["mission_point_index"], points["margin_percent"],
+                marker="o", markersize=3.8, linewidth=1.5,
+                color=color, alpha=0.9, label=label,
+            )
+
+        critical = evaluated.loc[evaluated["margin_percent"].idxmin()]
+        critical_label = str(critical["segment"]).title()
+        ax.scatter(
+            [critical["mission_point_index"]],
+            [critical["margin_percent"]], marker="*", s=180,
+            color="#fbbf24", edgecolor="#111827", linewidth=0.8,
+            zorder=6, label="Critical mission point",
+        )
+        ax.annotate(
+            f"Critical: {critical_label} #{int(critical['mission_point_index'])}\n"
+            f"h = {float(critical['altitude_m']):.0f} m, "
+            f"V = {float(critical['speed_ms']):.1f} m/s\n"
+            f"Margin = {float(critical['margin_percent']):+.1f}%",
+            (critical["mission_point_index"], critical["margin_percent"]),
+            xytext=(14, 14), textcoords="offset points", fontsize=8.8,
+            arrowprops=dict(arrowstyle="->", color="#64748b"),
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                      edgecolor="#cbd5e1", alpha=0.96),
+        )
+        ax.axhline(0.0, color="#111827", linewidth=1.4)
+        ax.fill_between(
+            ax.get_xlim(), 0.0, ax.get_ylim()[0], color="#fee2e2",
+            alpha=0.35, zorder=0,
+        )
+        ax.set_title(analysis_title(
+            "Mission Verification of the Performance-Sized Design"
+        ))
+        ax.set_xlabel("Mission point index within each segment")
+        ax.set_ylabel("Available margin at fixed selected design [%]")
+        clean_axes(ax)
+        ax.legend(frameon=False, loc="best")
+        outside_count = int(
+            (verification["status"] == "OUTSIDE_MODEL_DOMAIN").sum()
+        )
+        fig.text(
+            0.5, 0.025,
+            "Positive margin = mission point satisfied; negative = failed. "
+            f"Points outside the model/deck domain: {outside_count}.",
+            ha="center", fontsize=8.8, color="#475569",
+        )
+        fig.tight_layout(rect=(0.0, 0.06, 1.0, 1.0))
+        save_plot("06_mission_verification", tight=False)
+else:
+    stale_verification_plot = os.path.join(
+        save_dir, "06_mission_verification.png",
+    )
+    if os.path.exists(stale_verification_plot):
+        os.remove(stale_verification_plot)
+
 print()
 print("Plot generation completed.")
 print(
@@ -1607,4 +1688,4 @@ print(
     f"{y_symbol} = {best_tw:.4f}"
 )
 print(f"Governing performance constraint: {best_governing_name}")
-print(f"Five decision plots saved to: {save_dir}")
+print(f"Decision plots saved to: {save_dir}")

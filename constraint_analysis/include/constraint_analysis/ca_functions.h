@@ -177,6 +177,16 @@ namespace constraint_analysis
         double available_fuel_fraction = 0.25;
     };
 
+    struct mission_verification_data
+    {
+        // These points are never used to construct the primary matching
+        // chart. They are retained only to check the performance-sized
+        // design against the supplied mission history afterwards.
+        std::vector<climb_mission_point> acceleration_points;
+        std::vector<climb_mission_point> cruise_points;
+        std::vector<climb_mission_point> climb_points;
+    };
+
     struct constraint_input
     {
         // "performance" evaluates user-defined sizing conditions; "mission"
@@ -204,6 +214,7 @@ namespace constraint_analysis
         stall_speed_constraint stall_speed;
         gust_constraint gust;
         range_constraint range;
+        mission_verification_data mission_verification;
 
         double wing_loading_min = 0.0;
         double wing_loading_max = 0.0;

@@ -417,6 +417,16 @@ namespace constraint_analysis
 
         readMission mission_data(mission_csv_path);
 
+        // Keep mission history on a separate verification-only data path.
+        // In performance mode none of these points may define a matching-chart
+        // constraint; they are evaluated only after the design is selected.
+        input.mission_verification.acceleration_points =
+            mission_data.get_acceleration_conditions();
+        input.mission_verification.cruise_points =
+            mission_data.get_cruise_conditions();
+        input.mission_verification.climb_points =
+            mission_data.get_climb_conditions();
+
         input.aircraft.wing_area_m2 = aero_values.wing_area_m2;
         input.aircraft.aerodynamic_polar_xml_path =
             aerodynamic_polar_xml_path.string();
@@ -551,7 +561,8 @@ namespace constraint_analysis
         input.cruise.altitude_m = representative_cruise_it->altitude_m;
         input.cruise.speed_ms = representative_cruise_it->speed_ms;
         input.cruise.beta_cruise = representative_cruise_it->beta_climb;
-        if (input.propulsion == propulsion_type::propeller)
+        if (input.propulsion == propulsion_type::propeller &&
+            input.condition_source == "mission")
         {
             input.cruise.altitude_m = xml_double(
                 config, "propeller_cruise_fallback_altitude_m");

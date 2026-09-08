@@ -186,7 +186,8 @@ int main(int argc, char* argv[])
                  "jet_k_sensitivity_curves.csv",
                  "propeller_cd0_sensitivity_curves.csv",
                  "propeller_cd0_k_carpet.csv",
-                 "propeller_k_sensitivity_curves.csv"})
+                 "propeller_k_sensitivity_curves.csv",
+                 "mission_verification.csv"})
         {
             std::filesystem::remove(output_directory / study_file);
         }
@@ -611,7 +612,166 @@ int main(int argc, char* argv[])
             active_constraint_analyzer::analyze(output);
 
         // ============================================================
-        // 3. WRITE MAIN CSV OUTPUTS
+        // 3. MISSION VERIFICATION OF THE PERFORMANCE-SIZED DESIGN
+        // ============================================================
+        // The selected design remains the result of the user-defined
+        // performance requirements. Mission history is used only here, as an
+        // independent pass/fail check at that fixed design point.
+        if (input.condition_source == "performance")
+        {
+            std::ofstream verification(
+                output_directory / "mission_verification.csv");
+            verification
+                << "segment,mission_point_index,altitude_m,speed_ms,mach,"
+                   "roc_ms,acceleration_ms2,beta,wing_loading_N_m2,"
+                << (is_propeller
+                        ? "required_shaft_power_to_weight_W_N,available_shaft_power_to_weight_W_N,"
+                        : "required_thrust_to_weight,available_thrust_to_weight,")
+                << "absolute_margin,margin_percent,status,model_note\n";
+
+            std::size_t evaluated_points = 0;
+            std::size_t failed_points = 0;
+            std::size_t outside_domain_points = 0;
+            double minimum_margin_percent =
+                std::numeric_limits<double>::infinity();
+            std::string critical_segment = "none";
+            std::size_t critical_index = 0;
+
+            const auto verify_segment = [&](
+                const std::string& segment,
+                const std::vector<climb_mission_point>& mission_points)
+            {
+                for (std::size_t index = 0; index < mission_points.size(); ++index)
+                {
+                    const auto& point = mission_points[index];
+                    const double mach = point.speed_ms /
+                        atm.getSpeedOfSound(point.altitude_m);
+                    try
+                    {
+                        constraint_input point_input = input;
+                        constraint_curve curve;
+                        if (segment == "acceleration")
+                        {
+                            point_input.acceleration.mission_points = {point};
+                            if (is_propeller)
+                            {
+                                propeller_constraint_analysis analysis{atm};
+                                curve = analysis.compute_acceleration_constraint(
+                                    point_input);
+                            }
+                            else
+                            {
+                                jet_constraint_analysis analysis{atm};
+                                curve = analysis.compute_acceleration_constraint(
+                                    point_input);
+                            }
+                        }
+                        else if (segment == "cruise")
+                        {
+                            point_input.cruise.mission_points = {point};
+                            point_input.cruise.allow_configured_fallback = false;
+                            if (is_propeller)
+                            {
+                                propeller_constraint_analysis analysis{atm};
+                                curve = analysis.compute_cruise_constraint(point_input);
+                            }
+                            else
+                            {
+                                jet_constraint_analysis analysis{atm};
+                                curve = analysis.compute_cruise_constraint(point_input);
+                            }
+                        }
+                        else
+                        {
+                            point_input.climb.mission_points = {point};
+                            if (is_propeller)
+                            {
+                                propeller_constraint_analysis analysis{atm};
+                                curve = analysis.compute_climb_constraint(point_input);
+                            }
+                            else
+                            {
+                                jet_constraint_analysis analysis{atm};
+                                curve = analysis.compute_climb_constraint(point_input);
+                            }
+                        }
+
+                        const double required =
+                            interpolate_envelope_thrust_to_weight(
+                                curve, feasible_best_point.wing_loading);
+                        const double available =
+                            feasible_best_point.thrust_to_weight;
+                        const double margin = available - required;
+                        const double margin_percent =
+                            100.0 * margin / required;
+                        const bool passed = margin >= -1.0e-10;
+                        ++evaluated_points;
+                        if (!passed)
+                            ++failed_points;
+                        if (margin_percent < minimum_margin_percent)
+                        {
+                            minimum_margin_percent = margin_percent;
+                            critical_segment = segment;
+                            critical_index = index;
+                        }
+                        verification
+                            << segment << "," << index << ","
+                            << point.altitude_m << "," << point.speed_ms << ","
+                            << mach << "," << point.roc_ms << ","
+                            << point.acceleration_ms2 << ","
+                            << point.beta_climb << ","
+                            << feasible_best_point.wing_loading << ","
+                            << required << "," << available << ","
+                            << margin << "," << margin_percent << ","
+                            << (passed ? "PASS" : "FAIL")
+                            << ",evaluated_against_fixed_performance_design\n";
+                    }
+                    catch (const std::exception& error)
+                    {
+                        ++outside_domain_points;
+                        std::string model_note = error.what();
+                        std::replace(
+                            model_note.begin(), model_note.end(), ',', ';');
+                        std::replace(
+                            model_note.begin(), model_note.end(), '\n', ' ');
+                        verification
+                            << segment << "," << index << ","
+                            << point.altitude_m << "," << point.speed_ms << ","
+                            << mach << "," << point.roc_ms << ","
+                            << point.acceleration_ms2 << ","
+                            << point.beta_climb << ","
+                            << feasible_best_point.wing_loading
+                            << ",,,,,OUTSIDE_MODEL_DOMAIN," << model_note
+                            << "\n";
+                    }
+                }
+            };
+
+            verify_segment(
+                "acceleration",
+                input.mission_verification.acceleration_points);
+            verify_segment("cruise", input.mission_verification.cruise_points);
+            verify_segment("climb", input.mission_verification.climb_points);
+
+            std::cout << "\n=== mission_verification ===\n"
+                      << "design_source = performance requirements\n"
+                      << "evaluated_points = " << evaluated_points << "\n"
+                      << "failed_points = " << failed_points << "\n"
+                      << "outside_model_domain_points = "
+                      << outside_domain_points << "\n";
+            if (evaluated_points > 0)
+            {
+                std::cout << "critical_point = " << critical_segment << "["
+                          << critical_index << "]\n"
+                          << "minimum_margin_percent = "
+                          << minimum_margin_percent << "\n"
+                          << "overall_status = "
+                          << (failed_points == 0 ? "PASS" : "FAIL") << "\n";
+            }
+        }
+
+        // ============================================================
+        // 4. WRITE MAIN CSV OUTPUTS
         // ============================================================
         constraint_output_writer::write_all_curves_to_csv(
             output, output_directory.string());
