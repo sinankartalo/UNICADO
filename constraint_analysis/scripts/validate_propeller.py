@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import math
 from pathlib import Path
@@ -29,28 +30,48 @@ G0 = 9.80665
 TIP_MACH_LIMIT = 0.95
 
 
-def case_ground_roll_requirement_m(case_id: str) -> float:
-    """Read the selected case's takeoff ground-roll requirement from XML."""
+def constraint_set() -> ET.Element:
+    """Resolve the propeller case's shared requirements, as the C++ parser does."""
     root = ET.parse(CONFIG_XML).getroot()
-    case = root.find(
-        f".//constraint_case[@ID='{case_id}']"
-    )
+    case = root.find(".//constraint_case[@ID='PROPELLER_UNICADO_BASELINE']")
     if case is None:
-        raise ValueError(f"Constraint case not found: {case_id}")
+        raise ValueError("Propeller constraint case not found")
     set_ref = case.findtext("./constraints/constraint_set_ref/value")
-    standard_set = root.find(
-        f".//standard_set[@ID='{set_ref}']"
-    )
-    if standard_set is None:
+    result = root.find(f".//standard_set[@ID='{set_ref}']")
+    if result is None:
         raise ValueError(f"Constraint set not found: {set_ref}")
-    value = standard_set.findtext(
-        "./takeoff_ground_roll/takeoff_ground_roll_m/value"
-    )
+    return result
+
+
+def requirement(settings: ET.Element, constraint: str, field: str) -> float:
+    value = settings.findtext(f"./{constraint}/{field}/value")
     if value is None:
-        raise ValueError(
-            f"Takeoff ground-roll requirement missing from set: {set_ref}"
-        )
-    return float(value)
+        raise ValueError(f"Missing XML requirement: {constraint}/{field}")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"Non-finite XML requirement: {constraint}/{field}")
+    return result
+
+
+def performance_checks(settings: ET.Element) -> dict[str, float]:
+    checks = {}
+    for output, constraint in (
+        ("acceleration", "horizontal_acceleration"),
+        ("subsonic_cruise", "cruise"),
+        ("subsonic_climb", "climb"),
+        ("turn", "constant_speed_turn"),
+    ):
+        def value(field: str) -> float:
+            return requirement(settings, constraint, field)
+
+        energy_condition = constraint in {"horizontal_acceleration", "climb"}
+        checks[f"propeller_{output}_constraint"] = airborne_power_loading(
+            value("altitude"), value("speed"), value("weight_fraction"),
+            load_factor=value("load_factor") if output == "turn" else 1.0,
+            roc_ms=value("climb_rate") if energy_condition else 0.0,
+            acceleration_ms2=value("acceleration") if energy_condition else 0.0,
+        )[0]
+    return checks
 
 
 def propeller_cruise_fallback() -> tuple[float, float]:
@@ -364,22 +385,26 @@ def mission_mode_power_loading(
     return worst, valid, invalid
 
 
-def takeoff_distance(power_loading: float, beta: float) -> float:
-    rho = isa_density(0.0)
+def takeoff_distance(power_loading: float, beta: float, settings: ET.Element) -> float:
+    def value(field: str) -> float:
+        return requirement(settings, "takeoff_ground_roll", field)
+
+    altitude = value("altitude")
+    rho = isa_density(altitude)
     stall_speed = math.sqrt(2.0 * beta * WS / (rho * CLMAX_TO))
-    takeoff_speed = 1.2 * stall_speed
+    takeoff_speed = value("k_TO") * stall_speed
     steps = 240
     dv = takeoff_speed / steps
     distance = 0.0
     for index in range(steps):
         speed = (index + 0.5) * dv
-        ct, cp, _, rpm, _, _ = best_takeoff_prop_row(0.0, speed)
+        ct, cp, _, rpm, _, _ = best_takeoff_prop_row(altitude, speed)
         n = rpm / 60.0
         thrust_to_weight = power_loading / ((cp / ct) * n * DIAMETER_M)
         q = 0.5 * rho * speed**2
         lift_to_weight = q * (0.8 * CLMAX_TO) / WS
-        drag_to_weight = q * 0.04 / WS
-        rolling_to_weight = 0.02 * max(0.0, beta - lift_to_weight)
+        drag_to_weight = q * value("ground_drag_coefficient") / WS
+        rolling_to_weight = value("friction_coefficient") * max(0.0, beta - lift_to_weight)
         acceleration = (
             G0 / beta
             * (thrust_to_weight - drag_to_weight - rolling_to_weight)
@@ -390,25 +415,24 @@ def takeoff_distance(power_loading: float, beta: float) -> float:
     return distance
 
 
-def takeoff_power_loading(beta: float, required_ground_roll_m: float) -> float:
+def takeoff_power_loading(beta: float, required_ground_roll_m: float, settings: ET.Element) -> float:
     lower = 0.0
     upper = 1.0
-    while takeoff_distance(upper, beta) > required_ground_roll_m:
+    while takeoff_distance(upper, beta, settings) > required_ground_roll_m:
         upper *= 2.0
+        if upper > 1.0e8:
+            raise ValueError("No finite takeoff solution within search range")
     for _ in range(70):
         trial = 0.5 * (lower + upper)
-        if takeoff_distance(trial, beta) > required_ground_roll_m:
+        if takeoff_distance(trial, beta, settings) > required_ground_roll_m:
             lower = trial
         else:
             upper = trial
     return upper
 
 
-def main() -> None:
+def mission_checks() -> dict[str, float]:
     beta = mission_betas()
-    takeoff_ground_roll_m = case_ground_roll_requirement_m(
-        "PROPELLER_UNICADO_BASELINE"
-    )
     climb_power_loading, climb_valid, climb_invalid = (
         mission_climb_power_loading()
     )
@@ -431,63 +455,85 @@ def main() -> None:
         cruise_valid = 0
         cruise_invalid = 0
         cruise_mode = "explicit_configured_fallback"
-    checks = {
-        "propeller_takeoff_constraint": takeoff_power_loading(
-            beta["takeoff"], takeoff_ground_roll_m
-        ),
+    return {
         "propeller_acceleration_constraint": acceleration_power_loading,
         "propeller_subsonic_cruise_constraint": cruise_power_loading,
         "propeller_subsonic_climb_constraint": climb_power_loading,
-        "propeller_turn_constraint": airborne_power_loading(
-            3000.0, 120.0, beta["cruise"], load_factor=2.5
-        )[0],
     }
 
-    print(f"Independent hand checks at W/S = {WS:.0f} N/m^2")
-    print(
-        "Mission climb deck coverage: "
-        f"valid={climb_valid}, invalid={climb_invalid}"
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--hand-only", action="store_true",
+                        help="Calculate references only; does not validate C++ outputs")
+    args = parser.parse_args()
+    settings = constraint_set()
+    mode = settings.findtext("./condition_source/value", "").strip().lower()
+    if mode not in {"performance", "mission"}:
+        raise ValueError(f"Unsupported condition_source: {mode!r}")
+
+    # Hardware inputs must follow the selected XML, too.
+    global DIAMETER_M, TIP_MACH_LIMIT, PROP_CSV, MISSION_CSV
+    case = ET.parse(CONFIG_XML).getroot().find(
+        ".//constraint_case[@ID='PROPELLER_UNICADO_BASELINE']")
+    DIAMETER_M = float(case.findtext("./engine/propeller/diameter/value"))
+    TIP_MACH_LIMIT = float(case.findtext("./engine/propeller/tip_mach_limit/value"))
+    PROP_CSV = CONFIG_XML.parents[1] / case.findtext("./engine/propeller/deck_path/value")
+    MISSION_CSV = CONFIG_XML.parents[1] / case.findtext("./mission/mission_csv_path/value")
+    if DIAMETER_M <= 0.0 or not 0.0 < TIP_MACH_LIMIT <= 1.5:
+        raise ValueError("Invalid propeller diameter or tip Mach limit")
+
+    if not args.hand_only:
+        with (OUTPUT / "analysis_metadata.csv").open() as stream:
+            metadata = next(csv.DictReader(stream))
+        if (metadata["case_id"] != "PROPELLER_UNICADO_BASELINE" or
+                metadata["condition_source"] != mode):
+            raise AssertionError("Output case/mode differs from XML; rerun C++ analysis")
+
+    checks = performance_checks(settings) if mode == "performance" else mission_checks()
+    checks["propeller_turn_constraint"] = airborne_power_loading(
+        requirement(settings, "constant_speed_turn", "altitude"),
+        requirement(settings, "constant_speed_turn", "speed"),
+        requirement(settings, "constant_speed_turn", "weight_fraction"),
+        load_factor=requirement(settings, "constant_speed_turn", "load_factor"),
+    )[0]
+    checks["propeller_takeoff_constraint"] = takeoff_power_loading(
+        requirement(settings, "takeoff_ground_roll", "weight_fraction"),
+        requirement(settings, "takeoff_ground_roll", "takeoff_ground_roll_m"), settings,
     )
-    print(
-        "Mission acceleration deck coverage: "
-        f"valid={acceleration_valid}, invalid={acceleration_invalid}"
-    )
-    print(
-        "Mission cruise deck coverage: "
-        f"valid={cruise_valid}, invalid={cruise_invalid}, mode={cruise_mode}"
-    )
+    print(f"Independent hand checks at W/S = {WS:.0f} N/m^2; mode={mode}")
+    print("Aerodynamic reference: CD0=0.00455002, k=0.0217487, CLmax_TO=2.111")
+    if args.hand_only:
+        print("HAND ONLY: C++ outputs are not being validated")
     for name, expected in checks.items():
         output_path = OUTPUT / f"{name}.csv"
-        status = "program output not present"
-        if output_path.exists():
+        status = "hand-only reference"
+        if not args.hand_only:
             with output_path.open() as stream:
                 rows = list(csv.DictReader(stream))
-            matching = min(rows, key=lambda row: abs(float(row["x"]) - WS))
+            matching = next((row for row in rows
+                             if math.isclose(float(row["x"]), WS, abs_tol=1e-8)), None)
+            if matching is None:
+                raise AssertionError(f"{name}: no output at W/S={WS}; rerun with this grid point")
             actual = float(matching["y"])
             error = abs(actual - expected)
             status = f"program={actual:.8f}, abs_error={error:.3e}"
-            if error > 2.0e-3:
+            if not math.isfinite(actual) or error > 2.0e-3:
                 raise AssertionError(f"{name}: {status}")
         print(f"{name}: hand={expected:.8f} W/N, {status}")
 
     if not all(math.isfinite(value) and value > 0.0 for value in checks.values()):
         raise AssertionError("All propeller power-loading checks must be finite and positive")
-    if not (checks["propeller_subsonic_climb_constraint"] >
-            checks["propeller_acceleration_constraint"] >
-            checks["propeller_turn_constraint"] >
-            checks["propeller_subsonic_cruise_constraint"]):
-        raise AssertionError("Airborne constraint ordering is physically inconsistent")
-
     required_envelope_W_N = max(checks.values())
     required_total_shaft_power_W = required_envelope_W_N * takeoff_weight_N()
     print(
-        "required shaft-power check: "
+        "maximum of the five checked constraints (not the full envelope): "
         f"envelope={required_envelope_W_N:.8f} W/N, "
         f"total={required_total_shaft_power_W / 1.0e6:.8f} MW"
     )
 
     operating_points_path = OUTPUT / "propeller_operating_points.csv"
-    if operating_points_path.exists():
+    if not args.hand_only:
         with operating_points_path.open() as stream:
             operating_points = list(csv.DictReader(stream))
         for row in operating_points:
