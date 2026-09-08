@@ -772,18 +772,18 @@ int main(int argc, char* argv[])
             {
                 const auto acceleration_values = scaled_values(
                     input.acceleration.mission_points.front().acceleration_ms2);
-                const auto takeoff_distance_values =
-                    scaled_values(input.takeoff.runway_m);
+                const auto acceleration_speed_values = scaled_values(
+                    input.acceleration.mission_points.front().speed_ms);
                 jet_two_parameter_carpet_study paired_carpet{atm};
                 performance_carpet_points = paired_carpet.run(
                     input,
                     jet_carpet_parameter::acceleration_ms2,
                     acceleration_values,
-                    jet_carpet_parameter::takeoff_distance_m,
-                    takeoff_distance_values);
+                    jet_carpet_parameter::acceleration_speed_ms,
+                    acceleration_speed_values);
                 jet_two_parameter_carpet_study::write_to_csv(
                     performance_carpet_points,
-                    "acceleration_ms2", "takeoff_distance_m",
+                    "acceleration_ms2", "acceleration_speed_ms",
                     (output_directory / "jet_performance_carpet.csv").string());
             }
 
@@ -809,18 +809,18 @@ int main(int argc, char* argv[])
                 };
                 const auto climb_rate_values = scaled_values(
                     input.climb.mission_points.front().roc_ms);
-                const auto takeoff_distance_values =
-                    scaled_values(input.takeoff.runway_m);
+                const auto climb_speed_values = scaled_values(
+                    input.climb.mission_points.front().speed_ms);
                 jet_two_parameter_carpet_study paired_carpet{atm};
                 performance_carpet_points = paired_carpet.run(
                     input,
                     jet_carpet_parameter::climb_rate_ms,
                     climb_rate_values,
-                    jet_carpet_parameter::takeoff_distance_m,
-                    takeoff_distance_values);
+                    jet_carpet_parameter::climb_speed_ms,
+                    climb_speed_values);
                 jet_two_parameter_carpet_study::write_to_csv(
                     performance_carpet_points,
-                    "climb_rate_ms", "takeoff_distance_m",
+                    "climb_rate_ms", "climb_speed_ms",
                     (output_directory /
                         "propeller_performance_carpet.csv").string());
             }

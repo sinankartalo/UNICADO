@@ -414,6 +414,18 @@ def plot_performance_carpet(
     values_b = np.sort(carpet[parameter_b].unique())
     if len(values_a) != 9 or len(values_b) != 9 or len(carpet) != 81:
         raise RuntimeError("Performance carpet must contain a complete 9x9 grid.")
+    ws_values = carpet["best_wing_loading"].to_numpy(dtype=float)
+    loading_values = carpet["best_required_loading"].to_numpy(dtype=float)
+    if np.ptp(ws_values) < max(1.0, 0.002 * abs(np.mean(ws_values))):
+        raise RuntimeError(
+            "Selected carpet inputs do not move the optimum W/S enough to "
+            "form two visible curve families. Choose a performance input "
+            "that changes the operating speed or a wing-loading boundary."
+        )
+    if np.ptp(loading_values) < max(1.0e-4, 0.002 * abs(np.mean(loading_values))):
+        raise RuntimeError(
+            "Selected carpet inputs do not change the required loading enough."
+        )
 
     fig, ax = plt.subplots(figsize=(11.0, 7.0))
     family_a_color = "#2563eb"
@@ -511,13 +523,14 @@ def plot_performance_carpet(
     ax.set_ylabel(y_axis_label.replace("Required ", "Selected "))
     clean_axes(ax)
     ax.legend(handles=handles, frameon=False, loc="best", fontsize=8.5)
-    ax.text(
-        0.01, 0.02,
+    fig.text(
+        0.5, 0.025,
         "Each intersection is a complete sizing solution; marker colour "
         "identifies the governing design criterion.",
-        transform=ax.transAxes, fontsize=8.8, color="#475569", va="bottom",
+        fontsize=8.8, color="#475569", ha="center", va="bottom",
     )
-    save_plot("04_performance_carpet_plot")
+    fig.tight_layout(rect=(0.0, 0.07, 1.0, 1.0))
+    save_plot("04_performance_carpet_plot", tight=False)
 
 if propeller_mode:
     constraint_files = {
@@ -1553,18 +1566,18 @@ save_plot("03_design_point_margins")
 if propeller_mode:
     performance_carpet_filename = "propeller_performance_carpet.csv"
     performance_carpet_parameters = (
-        "climb_rate_ms", "takeoff_distance_m",
-        "climb rate", "take-off distance",
+        "climb_rate_ms", "climb_speed_ms",
+        "climb rate", "climb speed",
         lambda value: f"ROC = {value:.1f} m/s",
-        lambda value: f"s_TO = {value:.0f} m",
+        lambda value: f"V_climb = {value:.0f} m/s",
     )
 else:
     performance_carpet_filename = "jet_performance_carpet.csv"
     performance_carpet_parameters = (
-        "acceleration_ms2", "takeoff_distance_m",
-        "acceleration", "take-off distance",
+        "acceleration_ms2", "acceleration_speed_ms",
+        "acceleration", "acceleration speed",
         lambda value: f"a = {value:.2f} m/s²",
-        lambda value: f"s_TO = {value:.0f} m",
+        lambda value: f"V_acc = {value:.0f} m/s",
     )
 
 performance_carpet_path = os.path.join(

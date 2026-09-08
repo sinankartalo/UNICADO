@@ -274,11 +274,21 @@ namespace constraint_analysis
                         throw std::runtime_error(
                             "Acceleration carpet requires one explicit performance condition.");
                     return input.acceleration.mission_points.front().acceleration_ms2;
+                case jet_carpet_parameter::acceleration_speed_ms:
+                    if (input.acceleration.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Acceleration-speed carpet requires one explicit performance condition.");
+                    return input.acceleration.mission_points.front().speed_ms;
                 case jet_carpet_parameter::climb_rate_ms:
                     if (input.climb.mission_points.size() != 1)
                         throw std::runtime_error(
                             "Climb-rate carpet requires one explicit performance condition.");
                     return input.climb.mission_points.front().roc_ms;
+                case jet_carpet_parameter::climb_speed_ms:
+                    if (input.climb.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Climb-speed carpet requires one explicit performance condition.");
+                    return input.climb.mission_points.front().speed_ms;
                 case jet_carpet_parameter::acceleration_severity_scale:
                     return 1.0;
                 case jet_carpet_parameter::thrust_lapse_scale:
@@ -319,11 +329,26 @@ namespace constraint_analysis
                     input.acceleration.mission_points.front().acceleration_ms2 = value;
                     input.acceleration.acceleration_ms2 = value;
                     return;
+                case jet_carpet_parameter::acceleration_speed_ms:
+                    if (input.acceleration.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Acceleration-speed carpet requires performance condition_source.");
+                    input.acceleration.mission_points.front().speed_ms = value;
+                    input.acceleration.speed_ms = value;
+                    return;
                 case jet_carpet_parameter::climb_rate_ms:
                     if (input.climb.mission_points.size() != 1)
                         throw std::runtime_error(
                             "Climb-rate carpet requires performance condition_source.");
                     input.climb.mission_points.front().roc_ms = value;
+                    input.climb.representative_point =
+                        input.climb.mission_points.front();
+                    return;
+                case jet_carpet_parameter::climb_speed_ms:
+                    if (input.climb.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Climb-speed carpet requires performance condition_source.");
+                    input.climb.mission_points.front().speed_ms = value;
                     input.climb.representative_point =
                         input.climb.mission_points.front();
                     return;
