@@ -857,17 +857,14 @@ color_map.update({
 })
 
 for name, df in constraints.items():
-    is_governing = name == best_governing_name
-    is_runner_up = name == best_runner_up_name
     ax.plot(
         df["wing_loading"],
         df["thrust_to_weight"],
         label=name,
-        color=("#b91c1c" if is_governing else
-               "#f59e0b" if is_runner_up else "#94a3b8"),
-        alpha=1.0 if (is_governing or is_runner_up) else 0.48,
-        linewidth=2.8 if is_governing else 2.0 if is_runner_up else 1.0,
-        zorder=4 if is_governing else 3 if is_runner_up else 2,
+        color=color_map.get(name, "#475569"),
+        alpha=0.88,
+        linewidth=1.8,
+        zorder=2,
     )
 
 # Wing loading must remain between the lower and upper vertical limits.
