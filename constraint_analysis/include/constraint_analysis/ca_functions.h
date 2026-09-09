@@ -193,11 +193,26 @@ namespace constraint_analysis
         std::vector<mission_verification_point> points;
     };
 
+    struct constraint_activation
+    {
+        bool takeoff_ground_roll = true;
+        bool landing_field_length = true;
+        bool stall_speed = true;
+        bool gust = true;
+        bool max_mach = true;
+        bool horizontal_acceleration = true;
+        bool cruise = true;
+        bool climb = true;
+        bool constant_speed_turn = true;
+        bool range_fuel_fraction = true;
+    };
+
     struct constraint_input
     {
         // "performance" evaluates user-defined sizing conditions; "mission"
         // scans the mission history. The former is the matching-chart default.
         std::string condition_source = "performance";
+        constraint_activation active;
         propulsion_type propulsion = propulsion_type::jet;
         aircraft_data aircraft;
 

@@ -283,6 +283,17 @@ analysis_label = case_labels.get(
 )
 
 
+def constraint_is_active(name):
+    """Read optional C++ activation metadata; old outputs default to active."""
+    column = f"{name}_active"
+    if metadata_row is None or column not in metadata_row.index:
+        return True
+    value = metadata_row[column]
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes")
+    return bool(value)
+
+
 def selected_input_summary(row):
     """Format the exact C++ analysis conditions for the chart sidebar."""
     required = {
@@ -303,33 +314,45 @@ def selected_input_summary(row):
     def km(value):
         return float(value) / 1000.0
 
-    return "\n".join((
-        f"Mode: {str(row['condition_source']).title()}",
-        (f"Takeoff: {row['takeoff_runway_m']:.0f} m runway, "
-         f"h={km(row['takeoff_altitude_m']):.1f} km"),
-        (f"Landing: {row['landing_runway_m']:.0f} m roll, "
-         f"h={km(row['landing_altitude_m']):.1f} km"),
-        f"Stall: V≤{row['stall_speed_limit_ms']:.0f} m/s",
-        (f"Max Mach: M={row['max_mach']:.2f}, "
-         f"h={km(row['max_mach_altitude_m']):.1f} km"),
-        (f"Acceleration: h={km(row['acceleration_altitude_m']):.1f} km, "
-         f"V={row['acceleration_speed_ms']:.0f} m/s, "
-         f"a={row['acceleration_ms2']:.2f} m/s²"),
-        (f"Cruise: h={km(row['cruise_altitude_m']):.1f} km, "
-         f"V={row['cruise_speed_ms']:.0f} m/s"),
-        (f"Climb: h={km(row['climb_altitude_m']):.1f} km, "
-         f"V={row['climb_speed_ms']:.0f} m/s, "
-         f"ROC={row['climb_roc_ms']:.1f} m/s"),
-        (f"Gust: h={km(row['gust_altitude_m']):.1f} km, "
-         f"V={row['gust_speed_ms']:.0f} m/s"),
-        (f"Turn: h={km(row['turn_altitude_m']):.1f} km, "
-         f"V={row['turn_speed_ms']:.0f} m/s, "
-         f"n={row['turn_load_factor']:.1f}"),
-        (f"β: TO={row['takeoff_beta']:.2f}, LDG={row['landing_beta']:.2f}, "
-         f"ACC={row['acceleration_beta']:.2f}, CR={row['cruise_beta']:.2f}"),
-        (f"β: CL={row['climb_beta']:.2f}, Gust={row['gust_beta']:.2f}, "
-         f"Turn={row['turn_beta']:.2f}, MMO={row['max_mach_beta']:.2f}"),
-    ))
+    lines = [f"Mode: {str(row['condition_source']).title()}"]
+    if constraint_is_active("takeoff"):
+        lines.append(
+            f"Takeoff: {row['takeoff_runway_m']:.0f} m runway, "
+            f"h={km(row['takeoff_altitude_m']):.1f} km")
+    if constraint_is_active("landing"):
+        lines.append(
+            f"Landing: {row['landing_runway_m']:.0f} m roll, "
+            f"h={km(row['landing_altitude_m']):.1f} km")
+    if constraint_is_active("stall"):
+        lines.append(f"Stall: V≤{row['stall_speed_limit_ms']:.0f} m/s")
+    if constraint_is_active("max_mach"):
+        lines.append(
+            f"Max Mach: M={row['max_mach']:.2f}, "
+            f"h={km(row['max_mach_altitude_m']):.1f} km")
+    if constraint_is_active("acceleration"):
+        lines.append(
+            f"Acceleration: h={km(row['acceleration_altitude_m']):.1f} km, "
+            f"V={row['acceleration_speed_ms']:.0f} m/s, "
+            f"a={row['acceleration_ms2']:.2f} m/s²")
+    if constraint_is_active("cruise"):
+        lines.append(
+            f"Cruise: h={km(row['cruise_altitude_m']):.1f} km, "
+            f"V={row['cruise_speed_ms']:.0f} m/s")
+    if constraint_is_active("climb"):
+        lines.append(
+            f"Climb: h={km(row['climb_altitude_m']):.1f} km, "
+            f"V={row['climb_speed_ms']:.0f} m/s, "
+            f"ROC={row['climb_roc_ms']:.1f} m/s")
+    if constraint_is_active("gust"):
+        lines.append(
+            f"Gust: h={km(row['gust_altitude_m']):.1f} km, "
+            f"V={row['gust_speed_ms']:.0f} m/s")
+    if constraint_is_active("turn"):
+        lines.append(
+            f"Turn: h={km(row['turn_altitude_m']):.1f} km, "
+            f"V={row['turn_speed_ms']:.0f} m/s, "
+            f"n={row['turn_load_factor']:.1f}")
+    return "\n".join(lines)
 
 
 selected_inputs_text = selected_input_summary(metadata_row)
@@ -534,9 +557,22 @@ else:
     if os.path.exists(stale_duplicate):
         os.remove(stale_duplicate)
 
+activation_by_label = {
+    "Acceleration": "acceleration",
+    "Max Mach": "max_mach",
+    "Takeoff": "takeoff",
+    "Turn": "turn",
+}
+constraint_files = {
+    label: filename for label, filename in constraint_files.items()
+    if constraint_is_active(activation_by_label[label])
+}
+
 propulsion_prefix = "propeller" if propeller_mode else "jet"
 for regime in ("subsonic", "transonic", "supersonic"):
     for segment in ("climb", "cruise"):
+        if not constraint_is_active(segment):
+            continue
         filename = (
             f"{propulsion_prefix}_{regime}_{segment}_constraint.csv"
         )
@@ -545,6 +581,8 @@ for regime in ("subsonic", "transonic", "supersonic"):
             constraint_files[label] = filename
 
 for required_segment in ("Climb", "Cruise"):
+    if not constraint_is_active(required_segment.lower()):
+        continue
     if not any(name.endswith(required_segment) for name in constraint_files):
         raise RuntimeError(
             f"No mission-supported {required_segment.lower()} constraint "

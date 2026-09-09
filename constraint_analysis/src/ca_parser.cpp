@@ -9,10 +9,12 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <initializer_list>
 #include <limits>
 #include <numbers>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 namespace constraint_analysis
 {
@@ -101,6 +103,34 @@ namespace constraint_analysis
         config.values[config_key] = xml_required_string(parent, xml_path);
     }
 
+    static void xml_map_optional_value(
+        text_config& config,
+        node& parent,
+        const std::string& config_key,
+        const std::string& xml_path,
+        const std::string& default_value)
+    {
+        node* xml_node = parent.find(xml_path);
+        config.values[config_key] = xml_node == nullptr
+            ? default_value
+            : xml_node_text(*xml_node);
+    }
+
+    static bool xml_bool(
+        const text_config& config,
+        const std::string& key)
+    {
+        std::string value = xml_string(config, key);
+        std::transform(value.begin(), value.end(), value.begin(),
+            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        if (value == "true" || value == "1" || value == "yes")
+            return true;
+        if (value == "false" || value == "0" || value == "no")
+            return false;
+        throw std::runtime_error(
+            "Config value '" + key + "' must be true or false, got: " + value);
+    }
+
     static std::string get_active_case_id(
         node& document,
         node& constraint_cases,
@@ -164,6 +194,14 @@ namespace constraint_analysis
 
         text_config config;
         config.values["active_constraint_case_id"] = active_case_id;
+        node* method_node = document->find("method");
+        node* mode_node = document->find("mode_selection");
+        config.values["method"] = method_node == nullptr
+            ? "Energy_Based"
+            : xml_node_text(*method_node);
+        config.values["mode_selection"] = mode_node == nullptr
+            ? "mode_0"
+            : xml_node_text(*mode_node);
         node* propulsion_type_node = selected_case->find("engine/propulsion_type");
         config.values["propulsion_type"] =
             propulsion_type_node == nullptr
@@ -234,10 +272,14 @@ namespace constraint_analysis
 
             const std::string set_id = xml_node_text(*set_ref_node);
 
-            // First locate the shared <constraint_sets> container, then search
-            // inside it for the requested <standard_set>. Searching the whole
-            // document with a combined path is not handled reliably by aixml.
-            node* constraint_sets_node = document->find("constraint_sets");
+            // Prefer the original UNICADO <constraint_selection> container.
+            // The former <constraint_sets> name remains accepted so existing
+            // case files continue to run unchanged. Search inside the selected
+            // container because aixml does not reliably handle the combined
+            // document path and ID lookup in one call.
+            node* constraint_sets_node = document->find("constraint_selection");
+            if (constraint_sets_node == nullptr)
+                constraint_sets_node = document->find("constraint_sets");
             if (constraint_sets_node != nullptr)
             {
                 standard_set_node = constraint_sets_node->find(
@@ -247,7 +289,7 @@ namespace constraint_analysis
             if (standard_set_node == nullptr)
             {
                 throw std::runtime_error(
-                    "Could not find shared standard_set with ID: " + set_id);
+                    "Could not find referenced standard_set with ID: " + set_id);
             }
         }
 
@@ -256,6 +298,25 @@ namespace constraint_analysis
         xml_map_value(config, *standard_set_node,
             "condition_source",
             standard_set + "condition_source");
+
+        for (const auto& [config_key, xml_path] :
+             std::initializer_list<std::pair<const char*, const char*>>{
+                 {"takeoff_active", "takeoff_ground_roll/active"},
+                 {"landing_active", "landing_field_length/active"},
+                 {"stall_active", "stall_speed/active"},
+                 {"gust_active", "gust/active"},
+                 {"max_mach_active", "max_mach/active"},
+                 {"acceleration_active", "horizontal_acceleration/active"},
+                 {"cruise_active", "cruise/active"},
+                 {"climb_active", "climb/active"},
+                 {"turn_active", "constant_speed_turn/active"},
+                 {"range_active", "range_fuel_fraction/active"}})
+        {
+            // Backward compatibility: configs created before constraint
+            // switches existed behave exactly as before (all active).
+            xml_map_optional_value(
+                config, *standard_set_node, config_key, xml_path, "true");
+        }
 
         xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
@@ -387,6 +448,25 @@ namespace constraint_analysis
         Engine* engine)
     {
         constraint_input input;
+
+        if (xml_string(config, "method") != "Energy_Based")
+            throw std::runtime_error(
+                "Only method=Energy_Based is currently implemented.");
+        if (xml_string(config, "mode_selection") != "mode_0")
+            throw std::runtime_error(
+                "Only mode_selection=mode_0 is currently implemented.");
+
+        input.active.takeoff_ground_roll = xml_bool(config, "takeoff_active");
+        input.active.landing_field_length = xml_bool(config, "landing_active");
+        input.active.stall_speed = xml_bool(config, "stall_active");
+        input.active.gust = xml_bool(config, "gust_active");
+        input.active.max_mach = xml_bool(config, "max_mach_active");
+        input.active.horizontal_acceleration =
+            xml_bool(config, "acceleration_active");
+        input.active.cruise = xml_bool(config, "cruise_active");
+        input.active.climb = xml_bool(config, "climb_active");
+        input.active.constant_speed_turn = xml_bool(config, "turn_active");
+        input.active.range_fuel_fraction = xml_bool(config, "range_active");
 
         input.condition_source = xml_string(config, "condition_source");
         std::transform(

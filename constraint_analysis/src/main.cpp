@@ -205,7 +205,13 @@ int main(int argc, char* argv[])
             const bool regime_mission_curve =
                 filename.ends_with("_climb_constraint.csv") ||
                 filename.ends_with("_cruise_constraint.csv");
-            if (legacy_mission_curve || regime_mission_curve)
+            const bool generated_constraint_output =
+                (filename.starts_with("jet_") ||
+                 filename.starts_with("propeller_")) &&
+                (filename.ends_with("_constraint.csv") ||
+                 filename.ends_with("_limit.csv"));
+            if (legacy_mission_curve || regime_mission_curve ||
+                generated_constraint_output)
                 std::filesystem::remove(entry.path());
         }
 
@@ -269,7 +275,10 @@ int main(int argc, char* argv[])
                 << "climb_altitude_m,climb_speed_ms,climb_roc_ms,"
                 << "climb_acceleration_ms2,climb_beta,gust_altitude_m,"
                 << "gust_speed_ms,gust_beta,turn_altitude_m,turn_speed_ms,"
-                << "turn_load_factor,turn_beta\n";
+                << "turn_load_factor,turn_beta,takeoff_active,landing_active,"
+                << "stall_active,gust_active,max_mach_active,"
+                << "acceleration_active,cruise_active,climb_active,"
+                << "turn_active,range_active\n";
             metadata << active_case_id << ","
                      << (is_propeller ? "propeller" : "jet") << ","
                      << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
@@ -304,7 +313,17 @@ int main(int argc, char* argv[])
                      << input.turn.altitude_m << ","
                      << input.turn.speed_ms << ","
                      << input.turn.load_factor << ","
-                     << input.turn.beta_turn << "\n";
+                     << input.turn.beta_turn << ","
+                     << input.active.takeoff_ground_roll << ","
+                     << input.active.landing_field_length << ","
+                     << input.active.stall_speed << ","
+                     << input.active.gust << ","
+                     << input.active.max_mach << ","
+                     << input.active.horizontal_acceleration << ","
+                     << input.active.cruise << ","
+                     << input.active.climb << ","
+                     << input.active.constant_speed_turn << ","
+                     << input.active.range_fuel_fraction << "\n";
         }
         std::cout << "Using UNICADO atmosphere library.\n";
         if (is_propeller)
@@ -757,7 +776,15 @@ int main(int argc, char* argv[])
             };
 
             for (const auto& sample : input.mission_verification.points)
-                verify_point(sample);
+            {
+                const bool segment_active =
+                    (sample.segment == "acceleration" &&
+                     input.active.horizontal_acceleration) ||
+                    (sample.segment == "cruise" && input.active.cruise) ||
+                    (sample.segment == "climb" && input.active.climb);
+                if (segment_active)
+                    verify_point(sample);
+            }
 
             std::cout << "\n=== mission_verification ===\n"
                       << "design_source = performance requirements\n"
