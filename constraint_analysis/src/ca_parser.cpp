@@ -324,15 +324,18 @@ namespace constraint_analysis
             "stall_speed_limit_ms",
             "stall_speed/stall_speed_limit");
 
-        xml_map_value(config, *standard_set_node,
-            "max_mach_altitude_m",
-            "max_mach/altitude");
-        xml_map_value(config, *standard_set_node,
-            "max_mach",
-            "max_mach/Mach");
-        xml_map_value(config, *standard_set_node,
-            "max_mach_beta",
-            "max_mach/weight_fraction");
+        if (xml_bool(config, "max_mach_active"))
+        {
+            xml_map_value(config, *standard_set_node,
+                "max_mach_altitude_m",
+                "max_mach/altitude");
+            xml_map_value(config, *standard_set_node,
+                "max_mach",
+                "max_mach/Mach");
+            xml_map_value(config, *standard_set_node,
+                "max_mach_beta",
+                "max_mach/weight_fraction");
+        }
 
         xml_map_value(config, *standard_set_node,
             "acceleration_altitude_m",
@@ -399,9 +402,12 @@ namespace constraint_analysis
             "turn_beta",
             "constant_speed_turn/weight_fraction");
 
-        xml_map_value(config, *standard_set_node,
-            "range_available_fuel_fraction",
-            "range_fuel_fraction/available_fuel_fraction");
+        if (xml_bool(config, "range_active"))
+        {
+            xml_map_value(config, *standard_set_node,
+                "range_available_fuel_fraction",
+                "range_fuel_fraction/available_fuel_fraction");
+        }
 
         return config;
     }
@@ -537,9 +543,14 @@ namespace constraint_analysis
         input.stall_speed.speed_limit_ms = xml_double(config, "stall_speed_limit_ms");
         input.stall_speed.beta_stall = input.landing.beta_landing;
 
-        input.max_mach.altitude_m = xml_double(config, "max_mach_altitude_m");
-        input.max_mach.mach = xml_double(config, "max_mach");
-        input.max_mach.beta_max_mach = xml_double(config, "max_mach_beta");
+        if (input.active.max_mach)
+        {
+            input.max_mach.altitude_m = xml_double(
+                config, "max_mach_altitude_m");
+            input.max_mach.mach = xml_double(config, "max_mach");
+            input.max_mach.beta_max_mach = xml_double(
+                config, "max_mach_beta");
+        }
 
         if (input.condition_source == "performance")
         {
@@ -689,13 +700,17 @@ namespace constraint_analysis
         input.turn.load_factor = xml_double(config, "turn_load_factor");
         input.turn.beta_turn = xml_double(config, "turn_beta");
 
-        input.range.altitude_m =
-            mission_data.get_cruise_range_weighted_altitude();
-        input.range.speed_ms = mission_data.get_cruise_range_weighted_tas();
-        input.range.range_m = mission_data.get_cruise_range();
-        input.range.beta_start =
-            mission_data.get_segment_start_beta("cruise");
-        input.range.available_fuel_fraction = xml_double(config, "range_available_fuel_fraction");
+        if (input.active.range_fuel_fraction)
+        {
+            input.range.altitude_m =
+                mission_data.get_cruise_range_weighted_altitude();
+            input.range.speed_ms = mission_data.get_cruise_range_weighted_tas();
+            input.range.range_m = mission_data.get_cruise_range();
+            input.range.beta_start =
+                mission_data.get_segment_start_beta("cruise");
+            input.range.available_fuel_fraction = xml_double(
+                config, "range_available_fuel_fraction");
+        }
 
         std::cout << "Using UNICADO aerodynamics library.\n";
         std::cout << "Aerodynamic polar XML: "

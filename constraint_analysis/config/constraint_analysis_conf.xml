@@ -22,19 +22,16 @@
     <!-- ==================================================== -->
     <constraint_selection description="Selectable standard performance constraints">
 
-      <!-- Baseline requirements shared by all non-specialized cases. -->
       <standard_set ID="BASELINE_STANDARD_SET">
 
         <!-- Matching-chart source: "performance" uses the explicit user
              requirements below; "mission" scans the mission CSV instead. -->
         <condition_source><value>performance</value></condition_source>
 
-        <!-- Ground performance -->
-        <takeoff_ground_roll ID="TO_BASELINE">
+        <takeoff_ground_roll>
           <active>
             <value>true</value>
           </active>
-          <!-- Project-defined normal-field takeoff ground-roll requirement. -->
           <altitude><value>0.0</value></altitude>
           <weight_fraction><value>1.0</value></weight_fraction>
           <takeoff_ground_roll_m><value>1200.0</value></takeoff_ground_roll_m>
@@ -43,11 +40,10 @@
           <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
         </takeoff_ground_roll>
 
-        <landing_field_length ID="LDG_BASELINE">
+        <landing_field_length>
           <active>
             <value>true</value>
           </active>
-          <!-- Project-defined normal-field landing braking-roll requirement. -->
           <altitude><value>0.0</value></altitude>
           <weight_fraction><value>0.85</value></weight_fraction>
           <landing_braking_roll_m><value>1000.0</value></landing_braking_roll_m>
@@ -56,15 +52,14 @@
           <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
         </landing_field_length>
 
-        <stall_speed ID="STALL_BASELINE">
+        <stall_speed>
           <active>
             <value>true</value>
           </active>
           <stall_speed_limit><value>65.0</value></stall_speed_limit>
         </stall_speed>
 
-        <!-- Atmospheric / structural limit -->
-        <gust ID="GUST_BASELINE">
+        <gust>
           <active>
             <value>true</value>
           </active>
@@ -73,8 +68,7 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </gust>
 
-        <!-- High-speed flight -->
-        <max_mach ID="MMO_BASELINE">
+        <max_mach>
           <active>
             <value>true</value>
           </active>
@@ -83,7 +77,7 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </max_mach>
 
-        <horizontal_acceleration ID="ACC_BASELINE">
+        <horizontal_acceleration>
           <active>
             <value>true</value>
           </active>
@@ -94,7 +88,7 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </horizontal_acceleration>
 
-        <cruise ID="CR_BASELINE">
+        <cruise>
           <active>
             <value>true</value>
           </active>
@@ -103,7 +97,7 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </cruise>
 
-        <climb ID="CL_BASELINE">
+        <climb>
           <active>
             <value>true</value>
           </active>
@@ -114,7 +108,7 @@
           <weight_fraction><value>0.99</value></weight_fraction>
         </climb>
 
-        <constant_speed_turn ID="TURN_BASELINE">
+        <constant_speed_turn>
           <active>
             <value>true</value>
           </active>
@@ -124,8 +118,7 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </constant_speed_turn>
 
-        <!-- Mission requirement -->
-        <range_fuel_fraction ID="RANGE_BASELINE">
+        <range_fuel_fraction>
           <active>
             <value>true</value>
           </active>
@@ -134,14 +127,12 @@
 
       </standard_set>
 
-      <!-- Propeller-specific baseline. Jet-only maximum-Mach and range
-           constraints remain present for schema compatibility but are
-           explicitly disabled. -->
+      <!-- Propeller-specific constraint activation and performance inputs. -->
       <standard_set ID="PROPELLER_STANDARD_SET">
 
         <condition_source><value>performance</value></condition_source>
 
-        <takeoff_ground_roll ID="TO_PROPELLER">
+        <takeoff_ground_roll>
           <active><value>true</value></active>
           <altitude><value>0.0</value></altitude>
           <weight_fraction><value>1.0</value></weight_fraction>
@@ -151,7 +142,7 @@
           <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
         </takeoff_ground_roll>
 
-        <landing_field_length ID="LDG_PROPELLER">
+        <landing_field_length>
           <active><value>true</value></active>
           <altitude><value>0.0</value></altitude>
           <weight_fraction><value>0.85</value></weight_fraction>
@@ -161,26 +152,23 @@
           <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
         </landing_field_length>
 
-        <stall_speed ID="STALL_PROPELLER">
+        <stall_speed>
           <active><value>true</value></active>
           <stall_speed_limit><value>65.0</value></stall_speed_limit>
         </stall_speed>
 
-        <gust ID="GUST_PROPELLER">
+        <gust>
           <active><value>true</value></active>
           <altitude><value>6000.0</value></altitude>
           <speed><value>180.0</value></speed>
           <weight_fraction><value>0.98</value></weight_fraction>
         </gust>
 
-        <max_mach ID="MMO_PROPELLER">
+        <max_mach>
           <active><value>false</value></active>
-          <altitude><value>9000.0</value></altitude>
-          <Mach><value>0.78</value></Mach>
-          <weight_fraction><value>0.98</value></weight_fraction>
         </max_mach>
 
-        <horizontal_acceleration ID="ACC_PROPELLER">
+        <horizontal_acceleration>
           <active><value>true</value></active>
           <altitude><value>8000.0</value></altitude>
           <speed><value>180.0</value></speed>
@@ -189,14 +177,14 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </horizontal_acceleration>
 
-        <cruise ID="CR_PROPELLER">
+        <cruise>
           <active><value>true</value></active>
           <altitude><value>6000.0</value></altitude>
           <speed><value>180.0</value></speed>
           <weight_fraction><value>0.98</value></weight_fraction>
         </cruise>
 
-        <climb ID="CL_PROPELLER">
+        <climb>
           <active><value>true</value></active>
           <altitude><value>3000.0</value></altitude>
           <speed><value>120.0</value></speed>
@@ -205,7 +193,7 @@
           <weight_fraction><value>0.99</value></weight_fraction>
         </climb>
 
-        <constant_speed_turn ID="TURN_PROPELLER">
+        <constant_speed_turn>
           <active><value>true</value></active>
           <altitude><value>3000.0</value></altitude>
           <speed><value>120.0</value></speed>
@@ -213,18 +201,12 @@
           <weight_fraction><value>0.98</value></weight_fraction>
         </constant_speed_turn>
 
-        <range_fuel_fraction ID="RANGE_PROPELLER">
+        <range_fuel_fraction>
           <active><value>false</value></active>
-          <available_fuel_fraction><value>0.25</value></available_fuel_fraction>
         </range_fuel_fraction>
 
       </standard_set>
 
-      <!-- Only runway requirements differ from the baseline case. -->
-
-      <!-- Project-defined long-field scenario. Only runway requirements
-           differ from the baseline set. Values are ground-roll requirements,
-           not certified total field lengths. -->
     </constraint_selection>
 
     <!-- ==================================================== -->
