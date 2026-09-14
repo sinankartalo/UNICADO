@@ -34,8 +34,6 @@ namespace constraint_analysis
         double diameter_m = 0.0;
         double tip_mach_limit = 0.9999;
         int count = 1;
-        propeller_setting takeoff;
-        propeller_setting continuous;
     };
 
 
@@ -45,19 +43,39 @@ namespace constraint_analysis
         double k = 0.0;
     };
 
+    struct aerodynamic_polar_sample
+    {
+        double mach = 0.0;
+        double altitude_m = 0.0;
+        double cd_0 = 0.0;
+        double k = 0.0;
+        double cl_max = 0.0;
+        std::string configuration_id;
+    };
+
     struct aircraft_data
     {
+        std::string aerodynamic_polar_xml_path;
+        std::string reference_wing_id;
         double wing_area_m2 = 0.0;
         double takeoff_weight_N = 0.0;
         double aspect_ratio = 0.0;
+        double mean_aerodynamic_chord_m = 0.0;
         double cl_max_takeoff = 0.0;
         double cl_max_landing = 0.0;
+        double aerodynamic_minimum_mach = 0.0;
+        double aerodynamic_maximum_mach = 0.0;
         drag_polar polar;
+        // Parameter-study multipliers applied after querying the authoritative
+        // Mach/altitude-dependent aerodynamic polar. Nominal analysis keeps
+        // both at unity.
+        double operating_cd0_scale = 1.0;
+        double operating_k_scale = 1.0;
+        std::vector<aerodynamic_polar_sample> polar_samples;
     };
 
     struct takeoff_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double runway_m = 0.0;
         double speed_factor = 1.2;
@@ -70,51 +88,51 @@ namespace constraint_analysis
 
     struct max_mach_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double mach = 0.0;
         double beta_max_mach = 1.0;
     };
 
+    struct climb_mission_point
+    {
+        double altitude_m = 0.0;
+        double speed_ms = 0.0;
+        double roc_ms = 0.0;
+        double acceleration_ms2 = 0.0;
+        double beta_climb = 1.0;
+    };
+
     struct acceleration_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double acceleration_ms2 = 0.0;
         double beta_acceleration = 1.0;
-    };
-
-    struct supercruise_constraint
-    {
-        bool active = true;
-        double altitude_m = 0.0;
-        double mach = 0.0;
-        double beta_supercruise = 1.0;
+        std::vector<climb_mission_point> mission_points;
     };
 
     struct climb_constraint
     {
-        bool active = true;
-        double altitude_m = 0.0;
-        double speed_ms = 0.0;
-        double roc_ms = 0.0;
+        // Complete mission climb history used to build a worst-case envelope.
+        std::vector<climb_mission_point> mission_points;
 
-        double beta_climb = 1.0;
+        // Point with the largest kinematic energy demand. Retained only for
+        // diagnostics that need one representative climb operating condition.
+        climb_mission_point representative_point;
     };
 
     struct cruise_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
 
         double beta_cruise = 1.0;
+        std::vector<climb_mission_point> mission_points;
+        bool allow_configured_fallback = false;
     };
 
     struct turn_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double load_factor = 1.0;
@@ -124,7 +142,6 @@ namespace constraint_analysis
 
     struct landing_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double runway_m = 0.0;
         double speed_factor = 1.15;
@@ -136,7 +153,6 @@ namespace constraint_analysis
 
     struct stall_speed_constraint
     {
-        bool active = true;
         // Altitude and beta are inherited from the landing case in the parser.
         // speed_limit_ms is the only independent stall-speed requirement.
         double altitude_m = 0.0;
@@ -146,18 +162,14 @@ namespace constraint_analysis
 
     struct gust_constraint
     {
-        bool active = true;
-        // Gust condition is inherited from the cruise case in the parser.
-        // The design gust velocity, lift-curve slope, alleviation factor,
-        // and load-factor limit are derived inside compute_gust_constraint_limit().
-        double altitude_m = 0.0;
-        double speed_ms = 0.0;
-        double beta_gust = 1.0;
+        // Every mission cruise condition is scanned. The design gust
+        // velocity, lift-curve slope, alleviation factor and load-factor
+        // limit are derived inside compute_gust_constraint_limit().
+        std::vector<climb_mission_point> mission_points;
     };
 
     struct range_constraint
     {
-        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double range_m = 0.0;
@@ -165,8 +177,42 @@ namespace constraint_analysis
         double available_fuel_fraction = 0.25;
     };
 
+    struct mission_verification_point
+    {
+        std::string segment;
+        climb_mission_point condition;
+        double time_s = 0.0;
+        double range_m = 0.0;
+        std::size_t source_index = 0;
+    };
+
+    struct mission_verification_data
+    {
+        // Chronological mission samples retained only for post-design
+        // verification. They never construct the performance matching chart.
+        std::vector<mission_verification_point> points;
+    };
+
+    struct constraint_activation
+    {
+        bool takeoff_ground_roll = true;
+        bool landing_field_length = true;
+        bool stall_speed = true;
+        bool gust = true;
+        bool max_mach = true;
+        bool horizontal_acceleration = true;
+        bool cruise = true;
+        bool climb = true;
+        bool constant_speed_turn = true;
+        bool range_fuel_fraction = true;
+    };
+
     struct constraint_input
     {
+        // "performance" evaluates user-defined sizing conditions; "mission"
+        // scans the mission history. The former is the matching-chart default.
+        std::string condition_source = "performance";
+        constraint_activation active;
         propulsion_type propulsion = propulsion_type::jet;
         aircraft_data aircraft;
 
@@ -188,8 +234,8 @@ namespace constraint_analysis
         landing_constraint landing;
         stall_speed_constraint stall_speed;
         gust_constraint gust;
-        supercruise_constraint supercruise;
         range_constraint range;
+        mission_verification_data mission_verification;
 
         double wing_loading_min = 0.0;
         double wing_loading_max = 0.0;
@@ -245,6 +291,17 @@ namespace constraint_analysis
         double required_shaft_power_to_weight_W_N = 0.0;
         double integrated_ground_roll_m = 0.0;
         std::vector<propeller_takeoff_step> steps;
+    };
+
+    struct propeller_climb_coverage
+    {
+        std::size_t total_mission_points = 0;
+        std::size_t valid_deck_points = 0;
+        std::size_t invalid_deck_points = 0;
+        double first_invalid_altitude_m = 0.0;
+        double first_invalid_speed_ms = 0.0;
+        double first_invalid_advance_ratio = 0.0;
+        std::string first_invalid_reason;
     };
 }
 
@@ -458,7 +515,6 @@ namespace constraint_analysis
         vertical_constraint compute_stall_speed_constraint_limit(const constraint_input& input) const;
         vertical_constraint compute_gust_constraint_limit(const constraint_input& input) const;
 
-        constraint_curve compute_supercruise_constraint(const constraint_input& input) const;
         constraint_curve compute_max_mach_constraint(const constraint_input& input) const;
         constraint_curve compute_acceleration_constraint(const constraint_input& input) const;
         constraint_curve compute_cruise_constraint(const constraint_input& input) const;
@@ -483,6 +539,11 @@ namespace constraint_analysis
             double speed_ms,
             const propeller_setting& setting) const;
 
+        propeller_operating_point select_best_airborne_operating_point(
+            const constraint_input& input,
+            double altitude_m,
+            double speed_ms) const;
+
         propeller_takeoff_result solve_takeoff_ground_roll(
             const constraint_input& input,
             double wing_loading_N_m2,
@@ -494,6 +555,9 @@ namespace constraint_analysis
         constraint_curve compute_climb_constraint(const constraint_input& input) const;
         constraint_curve compute_turn_constraint(const constraint_input& input) const;
 
+        propeller_climb_coverage assess_climb_coverage(
+            const constraint_input& input) const;
+
     private:
         constraint_curve compute_airborne_constraint(
             const constraint_input& input,
@@ -504,6 +568,11 @@ namespace constraint_analysis
             double load_factor,
             double climb_rate_ms,
             double acceleration_ms2) const;
+
+        constraint_curve compute_mission_airborne_constraint(
+            const constraint_input& input,
+            const std::string& name,
+            const std::vector<climb_mission_point>& mission_points) const;
 
         const atmosphere& atmosphere_;
     };

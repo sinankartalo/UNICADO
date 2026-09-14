@@ -3,6 +3,7 @@
 #include "atmosphere/atmosphere.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <exception>
 #include <filesystem>
@@ -10,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -107,39 +109,55 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_root = "output";
         std::filesystem::create_directories(output_root);
 
-        // Command-line arguments are optional.
+        // Command-line arguments are optional. Expensive carpet/sensitivity
+        // sweeps are opt-in so a normal matching-chart run does not repeat
+        // the complete constraint analysis roughly one hundred times.
         // Supported forms:
         //   app.exe
         //   app.exe CASE_ID
         //   app.exe "config\\another_config.xml"
         //   app.exe "config\\another_config.xml" CASE_ID
+        //   app.exe CASE_ID --with-studies
         //
         // The engine directory is always read from engine/engine_directory_path
         // in the selected XML constraint case.
         std::filesystem::path config_path = "config/constraint_analysis_conf.xml";
         std::string case_override_id;
+        bool run_parameter_studies = false;
+        std::vector<std::string> positional_arguments;
 
-        if (argc > 3)
+        for (int index = 1; index < argc; ++index)
         {
-            throw std::runtime_error(
-                "Too many command-line arguments. Use: app.exe [config.xml] [case_ID] "
-                "or app.exe [case_ID].");
+            const std::string argument = argv[index];
+            if (argument == "--with-studies")
+                run_parameter_studies = true;
+            else
+                positional_arguments.push_back(argument);
         }
 
-        if (argc >= 2)
+        if (positional_arguments.size() > 2)
+            throw std::runtime_error(
+                "Too many positional arguments. Use: app.exe [config.xml] "
+                "[case_ID] [--with-studies] or app.exe [case_ID] "
+                "[--with-studies].");
+
+        if (!positional_arguments.empty())
         {
-            const std::filesystem::path first_argument = argv[1];
+            const std::filesystem::path first_argument =
+                positional_arguments.front();
 
             if (first_argument.extension() == ".xml")
             {
                 config_path = first_argument;
-                case_override_id = (argc == 3) ? argv[2] : "";
+                case_override_id = positional_arguments.size() == 2
+                    ? positional_arguments[1]
+                    : "";
             }
             else
             {
-                case_override_id = argv[1];
+                case_override_id = positional_arguments.front();
 
-                if (argc == 3)
+                if (positional_arguments.size() == 2)
                 {
                     throw std::runtime_error(
                         "When the first argument is a case ID, no second argument is allowed. "
@@ -153,15 +171,59 @@ int main(int argc, char* argv[])
             xml_string(config, "active_constraint_case_id");
         const std::filesystem::path output_directory =
             output_root / active_case_id;
-        // Every run owns this case directory. Clearing it prevents CSV files
-        // from constraints disabled in the XML from appearing in new plots.
-        std::filesystem::remove_all(output_directory);
         std::filesystem::create_directories(output_directory);
+        // Remove every earlier study schema before producing fresh carpet data.
+        for (const char* study_file : {
+                 "carpet_plot_full.csv",
+                 "carpet_plot_study.csv",
+                 "true_carpet_constraints.csv",
+                 "jet_cd0_k_carpet.csv",
+                 "jet_cd0_takeoff_distance_carpet.csv",
+                 "jet_cd0_thrust_lapse_carpet.csv",
+                 "jet_acceleration_takeoff_distance_carpet.csv",
+                 "jet_performance_carpet.csv",
+                 "propeller_performance_carpet.csv",
+                 "jet_k_sensitivity_curves.csv",
+                 "propeller_cd0_sensitivity_curves.csv",
+                 "propeller_cd0_k_carpet.csv",
+                 "propeller_k_sensitivity_curves.csv",
+                 "mission_verification.csv"})
+        {
+            std::filesystem::remove(output_directory / study_file);
+        }
+        for (const auto& entry :
+             std::filesystem::directory_iterator(output_directory))
+        {
+            if (!entry.is_regular_file())
+                continue;
+            const std::string filename = entry.path().filename().string();
+            const bool legacy_mission_curve =
+                filename == "jet_climb_constraint.csv" ||
+                filename == "jet_cruise_constraint.csv" ||
+                filename == "propeller_climb_constraint.csv" ||
+                filename == "propeller_cruise_constraint.csv";
+            const bool regime_mission_curve =
+                filename.ends_with("_climb_constraint.csv") ||
+                filename.ends_with("_cruise_constraint.csv");
+            const bool generated_constraint_output =
+                (filename.starts_with("jet_") ||
+                 filename.starts_with("propeller_")) &&
+                (filename.ends_with("_constraint.csv") ||
+                 filename.ends_with("_limit.csv"));
+            if (legacy_mission_curve || regime_mission_curve ||
+                generated_constraint_output)
+                std::filesystem::remove(entry.path());
+        }
 
         std::cout << "Using XML configuration: " << config_path << '\n';
         std::cout << "Using constraint case ID: " << active_case_id << '\n';
         std::cout << "Case output directory: "
                   << output_directory.string() << '\n';
+        std::cout << "Parameter studies: "
+                  << (run_parameter_studies
+                          ? "enabled (--with-studies)"
+                          : "skipped (main analysis only)")
+                  << '\n';
 
         const bool is_propeller =
             xml_string(config, "propulsion_type") == "propeller";
@@ -199,11 +261,69 @@ int main(int argc, char* argv[])
         input.propeller.model = propeller_model.get();
         {
             std::ofstream metadata(output_directory / "analysis_metadata.csv");
-            metadata << "case_id,propulsion_type,y_axis,y_unit\n";
+            const auto& climb_condition = input.climb.representative_point;
+            const auto& gust_condition = input.gust.mission_points.front();
+            metadata
+                << "case_id,propulsion_type,y_axis,y_unit,condition_source,"
+                << "takeoff_altitude_m,takeoff_runway_m,takeoff_beta,"
+                << "landing_altitude_m,landing_runway_m,landing_beta,"
+                << "stall_speed_limit_ms,max_mach_altitude_m,max_mach,"
+                << "max_mach_beta,acceleration_altitude_m,"
+                << "acceleration_speed_ms,acceleration_ms2,"
+                << "acceleration_roc_ms,acceleration_beta,"
+                << "cruise_altitude_m,cruise_speed_ms,cruise_beta,"
+                << "climb_altitude_m,climb_speed_ms,climb_roc_ms,"
+                << "climb_acceleration_ms2,climb_beta,gust_altitude_m,"
+                << "gust_speed_ms,gust_beta,turn_altitude_m,turn_speed_ms,"
+                << "turn_load_factor,turn_beta,takeoff_active,landing_active,"
+                << "stall_active,gust_active,max_mach_active,"
+                << "acceleration_active,cruise_active,climb_active,"
+                << "turn_active,range_active\n";
             metadata << active_case_id << ","
                      << (is_propeller ? "propeller" : "jet") << ","
                      << (is_propeller ? "shaft_power_to_weight" : "thrust_to_weight")
-                     << "," << (is_propeller ? "W/N" : "-") << "\n";
+                     << "," << (is_propeller ? "W/N" : "-") << ","
+                     << input.condition_source << ","
+                     << input.takeoff.altitude_m << ","
+                     << input.takeoff.runway_m << ","
+                     << input.takeoff.beta_to << ","
+                     << input.landing.altitude_m << ","
+                     << input.landing.runway_m << ","
+                     << input.landing.beta_landing << ","
+                     << input.stall_speed.speed_limit_ms << ","
+                     << input.max_mach.altitude_m << ","
+                     << input.max_mach.mach << ","
+                     << input.max_mach.beta_max_mach << ","
+                     << input.acceleration.altitude_m << ","
+                     << input.acceleration.speed_ms << ","
+                     << input.acceleration.acceleration_ms2 << ","
+                     << input.acceleration.mission_points.front().roc_ms << ","
+                     << input.acceleration.beta_acceleration << ","
+                     << input.cruise.altitude_m << ","
+                     << input.cruise.speed_ms << ","
+                     << input.cruise.beta_cruise << ","
+                     << climb_condition.altitude_m << ","
+                     << climb_condition.speed_ms << ","
+                     << climb_condition.roc_ms << ","
+                     << climb_condition.acceleration_ms2 << ","
+                     << climb_condition.beta_climb << ","
+                     << gust_condition.altitude_m << ","
+                     << gust_condition.speed_ms << ","
+                     << gust_condition.beta_climb << ","
+                     << input.turn.altitude_m << ","
+                     << input.turn.speed_ms << ","
+                     << input.turn.load_factor << ","
+                     << input.turn.beta_turn << ","
+                     << input.active.takeoff_ground_roll << ","
+                     << input.active.landing_field_length << ","
+                     << input.active.stall_speed << ","
+                     << input.active.gust << ","
+                     << input.active.max_mach << ","
+                     << input.active.horizontal_acceleration << ","
+                     << input.active.cruise << ","
+                     << input.active.climb << ","
+                     << input.active.constant_speed_turn << ","
+                     << input.active.range_fuel_fraction << "\n";
         }
         std::cout << "Using UNICADO atmosphere library.\n";
         if (is_propeller)
@@ -227,6 +347,12 @@ int main(int argc, char* argv[])
         else
         {
             std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
+            for (const char* stale_file : {
+                     "jet_supercruise_constraint.csv",
+                     "jet_k_acceleration_carpet.csv"})
+            {
+                std::filesystem::remove(output_directory / stale_file);
+            }
         }
 
         // ============================================================
@@ -235,7 +361,233 @@ int main(int argc, char* argv[])
         atmosphere atm;
         constraint_analysis_tool tool{atm};
 
+        {
+            struct regime_definition
+            {
+                const char* name;
+                double minimum_mach;
+                double maximum_mach;
+            };
+            const std::array<regime_definition, 3> regimes = {{
+                {"subsonic", 0.0, 0.95},
+                {"transonic", 0.95, 1.20},
+                {"supersonic", 1.20,
+                 std::numeric_limits<double>::infinity()}
+            }};
+            std::ofstream coverage(
+                output_directory / "mission_mach_regime_coverage.csv");
+            coverage << "segment,regime,observed_minimum_mach,"
+                        "observed_maximum_mach,"
+                        "mission_point_count,aerodynamic_supported_point_count,"
+                        "curve_generated\n";
+            const auto write_segment = [&](
+                const char* segment,
+                const std::vector<climb_mission_point>& points)
+            {
+                for (const auto& regime : regimes)
+                {
+                    std::size_t count = 0;
+                    std::size_t supported_count = 0;
+                    double observed_min =
+                        std::numeric_limits<double>::infinity();
+                    double observed_max = 0.0;
+                    for (const auto& point : points)
+                    {
+                        const double mach = point.speed_ms /
+                            atm.getSpeedOfSound(point.altitude_m);
+                        if (std::isfinite(mach) &&
+                            mach >= regime.minimum_mach &&
+                            mach < regime.maximum_mach)
+                        {
+                            ++count;
+                            observed_min = std::min(observed_min, mach);
+                            observed_max = std::max(observed_max, mach);
+                            if (mach >= input.aircraft.aerodynamic_minimum_mach &&
+                                mach <= input.aircraft.aerodynamic_maximum_mach)
+                                ++supported_count;
+                        }
+                    }
+                    coverage << segment << "," << regime.name << ",";
+                    if (count > 0)
+                        coverage << observed_min << "," << observed_max;
+                    else
+                        coverage << ",";
+                    coverage << "," << count << "," << supported_count << ","
+                             << (supported_count > 0 ? "true" : "false")
+                             << "\n";
+                    std::cout << input.condition_source << " " << segment << " "
+                              << regime.name << " points = " << count
+                              << ", aero-supported = " << supported_count;
+                    if (count > 0)
+                        std::cout << " (Mach " << observed_min << " to "
+                                  << observed_max << ")";
+                    std::cout << "\n";
+                }
+            };
+            write_segment("climb", input.climb.mission_points);
+            write_segment("cruise", input.cruise.mission_points);
+        }
+
         const constraint_output output = tool.run(input);
+
+        if (!is_propeller)
+        {
+            const auto write_mission_points = [](
+                const std::filesystem::path& path,
+                const std::vector<climb_mission_point>& points)
+            {
+                std::ofstream file(path);
+                file << "altitude_m,speed_ms,roc_ms,acceleration_ms2,beta\n";
+                for (const auto& point : points)
+                {
+                    file << point.altitude_m << "," << point.speed_ms << ","
+                         << point.roc_ms << "," << point.acceleration_ms2
+                         << "," << point.beta_climb << "\n";
+                }
+            };
+            write_mission_points(
+                output_directory / "jet_acceleration_mission_points.csv",
+                input.acceleration.mission_points);
+            write_mission_points(
+                output_directory / "jet_cruise_mission_points.csv",
+                input.cruise.mission_points);
+        }
+
+        if (is_propeller)
+        {
+            propeller_constraint_analysis propeller_analysis{atm};
+            const auto count_deck_coverage = [&propeller_analysis, &input](
+                const std::vector<climb_mission_point>& points)
+            {
+                std::size_t valid = 0;
+                for (const auto& point : points)
+                {
+                    try
+                    {
+                        (void)propeller_analysis.select_best_airborne_operating_point(
+                            input, point.altitude_m, point.speed_ms);
+                        ++valid;
+                    }
+                    catch (const std::exception&)
+                    {
+                    }
+                }
+                return valid;
+            };
+            const std::size_t acceleration_valid = count_deck_coverage(
+                input.acceleration.mission_points);
+            const std::size_t cruise_valid = count_deck_coverage(
+                input.cruise.mission_points);
+            {
+                std::ofstream coverage_summary(
+                    output_directory /
+                    "propeller_mission_constraint_coverage.csv");
+                coverage_summary <<
+                    "constraint,total_mission_points,valid_deck_points,"
+                    "invalid_deck_points,analysis_mode\n";
+                coverage_summary << "acceleration,"
+                    << input.acceleration.mission_points.size() << ","
+                    << acceleration_valid << ","
+                    << input.acceleration.mission_points.size() -
+                        acceleration_valid << "," << input.condition_source
+                        << "\n";
+                coverage_summary << "cruise,"
+                    << input.cruise.mission_points.size() << ","
+                    << cruise_valid << ","
+                    << input.cruise.mission_points.size() - cruise_valid << ","
+                    << (cruise_valid == 0
+                            ? "explicit_configured_fallback"
+                            : input.condition_source) << "\n";
+            }
+            if (cruise_valid == 0)
+            {
+                std::cout
+                    << "WARNING: Propeller deck covers no configured cruise "
+                    << "condition. Cruise constraint uses explicit fallback: "
+                    << "V=" << input.cruise.speed_ms << " m/s, altitude="
+                    << input.cruise.altitude_m << " m.\n";
+            }
+            const propeller_climb_coverage coverage =
+                propeller_analysis.assess_climb_coverage(input);
+
+            std::ofstream coverage_file(
+                output_directory / "propeller_climb_mission_coverage.csv");
+            coverage_file <<
+                "coverage_status,total_mission_points,valid_deck_points,"
+                "invalid_deck_points,coverage_fraction,"
+                "first_invalid_altitude_m,first_invalid_speed_ms,"
+                "first_invalid_advance_ratio,first_invalid_reason\n";
+            const double coverage_fraction =
+                coverage.total_mission_points == 0
+                    ? 0.0
+                    : static_cast<double>(coverage.valid_deck_points) /
+                        static_cast<double>(coverage.total_mission_points);
+            coverage_file
+                << (coverage.invalid_deck_points == 0
+                        ? "full_condition_coverage"
+                        : "partial_condition_coverage") << ","
+                << coverage.total_mission_points << ","
+                << coverage.valid_deck_points << ","
+                << coverage.invalid_deck_points << ","
+                << coverage_fraction << ","
+                << coverage.first_invalid_altitude_m << ","
+                << coverage.first_invalid_speed_ms << ","
+                << coverage.first_invalid_advance_ratio << ",\""
+                << coverage.first_invalid_reason << "\"\n";
+
+            std::ofstream climb_points_file(
+                output_directory / "propeller_climb_operating_points.csv");
+            climb_points_file <<
+                "altitude_m,speed_ms,roc_ms,acceleration_ms2,beta_climb,"
+                "rpm,pitch_deg,advance_ratio,CT,CP,eta,tip_mach,"
+                "tip_mach_limit,status\n";
+            for (const auto& mission_point : input.climb.mission_points)
+            {
+                try
+                {
+                    const auto point =
+                        propeller_analysis.select_best_airborne_operating_point(
+                            input,
+                            mission_point.altitude_m,
+                            mission_point.speed_ms);
+                    climb_points_file
+                        << mission_point.altitude_m << ","
+                        << mission_point.speed_ms << ","
+                        << mission_point.roc_ms << ","
+                        << mission_point.acceleration_ms2 << ","
+                        << mission_point.beta_climb << ","
+                        << point.rpm << "," << point.pitch_deg << ","
+                        << point.advance_ratio << ","
+                        << point.thrust_coefficient << ","
+                        << point.power_coefficient << ","
+                        << point.efficiency << "," << point.tip_mach << ","
+                        << point.tip_mach_limit << ",selected\n";
+                }
+                catch (const std::exception&)
+                {
+                    climb_points_file
+                        << mission_point.altitude_m << ","
+                        << mission_point.speed_ms << ","
+                        << mission_point.roc_ms << ","
+                        << mission_point.acceleration_ms2 << ","
+                        << mission_point.beta_climb
+                        << ",,,,,,,,,outside_automatic_selection_domain\n";
+                }
+            }
+
+            if (coverage.invalid_deck_points > 0)
+            {
+                std::cout
+                    << "WARNING: Propeller climb uses partial condition coverage: "
+                    << coverage.valid_deck_points << "/"
+                    << coverage.total_mission_points
+                    << " points are inside the supplied deck. First invalid: "
+                    << "altitude=" << coverage.first_invalid_altitude_m
+                    << " m, V=" << coverage.first_invalid_speed_ms
+                    << " m/s, J=" << coverage.first_invalid_advance_ratio
+                    << ". See propeller_climb_mission_coverage.csv.\n";
+            }
+        }
 
         // ============================================================
         // 2. POST-PROCESSING
@@ -279,7 +631,180 @@ int main(int argc, char* argv[])
             active_constraint_analyzer::analyze(output);
 
         // ============================================================
-        // 3. WRITE MAIN CSV OUTPUTS
+        // 3. MISSION VERIFICATION OF THE PERFORMANCE-SIZED DESIGN
+        // ============================================================
+        // The selected design remains the result of the user-defined
+        // performance requirements. Mission history is used only here, as an
+        // independent pass/fail check at that fixed design point.
+        if (input.condition_source == "performance")
+        {
+            std::ofstream verification(
+                output_directory / "mission_verification.csv");
+            verification
+                << "segment,mission_point_index,time_s,range_m,altitude_m,speed_ms,mach,"
+                   "roc_ms,acceleration_ms2,beta,wing_loading_N_m2,"
+                << (is_propeller
+                        ? "required_shaft_power_to_weight_W_N,available_shaft_power_to_weight_W_N,"
+                        : "required_thrust_to_weight,available_thrust_to_weight,")
+                << "absolute_margin,margin_percent,utilization_percent,status,model_note\n";
+
+            std::size_t evaluated_points = 0;
+            std::size_t failed_points = 0;
+            std::size_t outside_domain_points = 0;
+            double minimum_margin_percent =
+                std::numeric_limits<double>::infinity();
+            std::string critical_segment = "none";
+            std::size_t critical_index = 0;
+
+            const auto verify_point = [&](
+                const mission_verification_point& sample)
+            {
+                    const auto& segment = sample.segment;
+                    const auto& point = sample.condition;
+                    const double mach = point.speed_ms /
+                        atm.getSpeedOfSound(point.altitude_m);
+                    try
+                    {
+                        constraint_input point_input = input;
+                        // Verification needs only the already-selected W/S,
+                        // not a complete matching-chart grid for every
+                        // mission sample.
+                        point_input.wing_loading_min =
+                            feasible_best_point.wing_loading;
+                        point_input.wing_loading_max =
+                            feasible_best_point.wing_loading;
+                        constraint_curve curve;
+                        if (segment == "acceleration")
+                        {
+                            point_input.acceleration.mission_points = {point};
+                            if (is_propeller)
+                            {
+                                propeller_constraint_analysis analysis{atm};
+                                curve = analysis.compute_acceleration_constraint(
+                                    point_input);
+                            }
+                            else
+                            {
+                                jet_constraint_analysis analysis{atm};
+                                curve = analysis.compute_acceleration_constraint(
+                                    point_input);
+                            }
+                        }
+                        else if (segment == "cruise")
+                        {
+                            point_input.cruise.mission_points = {point};
+                            point_input.cruise.allow_configured_fallback = false;
+                            if (is_propeller)
+                            {
+                                propeller_constraint_analysis analysis{atm};
+                                curve = analysis.compute_cruise_constraint(point_input);
+                            }
+                            else
+                            {
+                                jet_constraint_analysis analysis{atm};
+                                curve = analysis.compute_cruise_constraint(point_input);
+                            }
+                        }
+                        else
+                        {
+                            point_input.climb.mission_points = {point};
+                            if (is_propeller)
+                            {
+                                propeller_constraint_analysis analysis{atm};
+                                curve = analysis.compute_climb_constraint(point_input);
+                            }
+                            else
+                            {
+                                jet_constraint_analysis analysis{atm};
+                                curve = analysis.compute_climb_constraint(point_input);
+                            }
+                        }
+
+                        const double required =
+                            interpolate_envelope_thrust_to_weight(
+                                curve, feasible_best_point.wing_loading);
+                        const double available =
+                            feasible_best_point.thrust_to_weight;
+                        const double margin = available - required;
+                        const double margin_percent =
+                            100.0 * margin / required;
+                        const double utilization_percent =
+                            100.0 * required / available;
+                        const bool passed = margin >= -1.0e-10;
+                        ++evaluated_points;
+                        if (!passed)
+                            ++failed_points;
+                        if (margin_percent < minimum_margin_percent)
+                        {
+                            minimum_margin_percent = margin_percent;
+                            critical_segment = segment;
+                            critical_index = sample.source_index;
+                        }
+                        verification
+                            << segment << "," << sample.source_index << ","
+                            << sample.time_s << "," << sample.range_m << ","
+                            << point.altitude_m << "," << point.speed_ms << ","
+                            << mach << "," << point.roc_ms << ","
+                            << point.acceleration_ms2 << ","
+                            << point.beta_climb << ","
+                            << feasible_best_point.wing_loading << ","
+                            << required << "," << available << ","
+                            << margin << "," << margin_percent << ","
+                            << utilization_percent << ","
+                            << (passed ? "PASS" : "FAIL")
+                            << ",evaluated_against_fixed_performance_design\n";
+                    }
+                    catch (const std::exception& error)
+                    {
+                        ++outside_domain_points;
+                        std::string model_note = error.what();
+                        std::replace(
+                            model_note.begin(), model_note.end(), ',', ';');
+                        std::replace(
+                            model_note.begin(), model_note.end(), '\n', ' ');
+                        verification
+                            << segment << "," << sample.source_index << ","
+                            << sample.time_s << "," << sample.range_m << ","
+                            << point.altitude_m << "," << point.speed_ms << ","
+                            << mach << "," << point.roc_ms << ","
+                            << point.acceleration_ms2 << ","
+                            << point.beta_climb << ","
+                            << feasible_best_point.wing_loading
+                            << ",,,,,,OUTSIDE_MODEL_DOMAIN," << model_note
+                            << "\n";
+                    }
+            };
+
+            for (const auto& sample : input.mission_verification.points)
+            {
+                const bool segment_active =
+                    (sample.segment == "acceleration" &&
+                     input.active.horizontal_acceleration) ||
+                    (sample.segment == "cruise" && input.active.cruise) ||
+                    (sample.segment == "climb" && input.active.climb);
+                if (segment_active)
+                    verify_point(sample);
+            }
+
+            std::cout << "\n=== mission_verification ===\n"
+                      << "design_source = performance requirements\n"
+                      << "evaluated_points = " << evaluated_points << "\n"
+                      << "failed_points = " << failed_points << "\n"
+                      << "outside_model_domain_points = "
+                      << outside_domain_points << "\n";
+            if (evaluated_points > 0)
+            {
+                std::cout << "critical_point = " << critical_segment << "["
+                          << critical_index << "]\n"
+                          << "minimum_margin_percent = "
+                          << minimum_margin_percent << "\n"
+                          << "overall_status = "
+                          << (failed_points == 0 ? "PASS" : "FAIL") << "\n";
+            }
+        }
+
+        // ============================================================
+        // 4. WRITE MAIN CSV OUTPUTS
         // ============================================================
         constraint_output_writer::write_all_curves_to_csv(
             output, output_directory.string());
@@ -359,141 +884,79 @@ int main(int argc, char* argv[])
         }
 
         // ============================================================
-        // 4. CARPET PLOT PARAMETER STUDY
+        // 4. DESIGNER PERFORMANCE CARPET
         // ============================================================
-        // All single- and two-parameter aerodynamic studies use the same
-        // relative band around the imported aircraft polar.
-        const std::vector<double> sensitivity_factors = {
-            0.80, 0.85, 0.90, 0.95, 1.00,
-            1.05, 1.10, 1.15, 1.20};
-        std::vector<double> cd0_values;
-        for (double factor : sensitivity_factors)
+        // A normal run produces the selected matching chart. --with-studies
+        // adds one 9x9 requirement trade study. The wide requirement ranges
+        // are deliberate: the carpet should expose changes in the governing
+        // constraint, not only tiny perturbations around one nominal point.
+        std::vector<jet_two_parameter_carpet_point> performance_carpet_points;
+        if (run_parameter_studies)
         {
-            cd0_values.push_back(input.aircraft.polar.cd_0 * factor);
-        }
+            if (input.condition_source != "performance")
+            {
+                throw std::runtime_error(
+                    "Designer carpet requires condition_source='performance'.");
+            }
 
-        std::vector<carpet_study_point> carpet_points;
-        std::vector<true_carpet_constraint_point> true_carpet_points;
-        std::vector<jet_aerodynamic_carpet_point> jet_aero_carpet_points;
-        std::vector<k_sensitivity_curve_point> k_sensitivity_points;
-
-        // Use the same imported-polar-relative grid for both propulsion
-        // architectures.  The analysis tool selects T/W or P/W equations
-        // from the configured propulsion type; the sweep itself is common.
-        std::vector<double> cd0_carpet_values;
-        std::vector<double> induced_drag_factor_values;
-        for (double factor : sensitivity_factors)
-        {
-            cd0_carpet_values.push_back(
-                input.aircraft.polar.cd_0 * factor);
-            induced_drag_factor_values.push_back(
-                input.aircraft.polar.k * factor);
-        }
-
-        if (!is_propeller)
-        {
-            carpet_plot_study study{atm};
-            carpet_points = study.run(input, cd0_values);
-            carpet_plot_study::write_to_csv(
-                carpet_points,
-                (output_directory / "carpet_plot_study.csv").string());
-
-            true_carpet_constraints true_carpet{atm};
-            true_carpet_points = true_carpet.run(input, cd0_values);
-            true_carpet_constraints::write_to_csv(
-                true_carpet_points,
-                (output_directory / "true_carpet_constraints.csv").string());
-
-            // Use a relative sensitivity band around the authoritative polar
-            // rather than replacing it with unrelated absolute assumptions.
-            jet_aerodynamic_carpet_study aero_carpet{atm};
-            jet_aero_carpet_points = aero_carpet.run(
-                input, cd0_carpet_values, induced_drag_factor_values);
-            jet_aerodynamic_carpet_study::write_to_csv(
-                jet_aero_carpet_points,
-                (output_directory / "jet_cd0_k_carpet.csv").string());
-
-            const auto scaled_values = [&sensitivity_factors](double nominal)
+            const auto runway_values = [&input]()
             {
                 std::vector<double> values;
-                values.reserve(sensitivity_factors.size());
-                for (double factor : sensitivity_factors)
-                    values.push_back(nominal * factor);
+                for (int index = 0; index < 9; ++index)
+                    values.push_back(
+                        input.takeoff.runway_m * (0.5 + index / 8.0));
                 return values;
-            };
-            const auto takeoff_distance_values =
-                scaled_values(input.takeoff.runway_m);
-            const auto acceleration_requirement_values =
-                scaled_values(input.acceleration.acceleration_ms2);
-            const std::vector<double> thrust_lapse_scale_values =
-                sensitivity_factors;
+            }();
 
-            jet_two_parameter_carpet_study paired_carpet{atm};
-            const auto cd0_takeoff_points = paired_carpet.run(
-                input,
-                jet_carpet_parameter::cd0, cd0_carpet_values,
-                jet_carpet_parameter::takeoff_distance_m,
-                takeoff_distance_values);
-            jet_two_parameter_carpet_study::write_to_csv(
-                cd0_takeoff_points, "cd_0", "takeoff_distance_m",
-                (output_directory /
-                    "jet_cd0_takeoff_distance_carpet.csv").string());
-
-            const auto k_acceleration_points = paired_carpet.run(
-                input,
-                jet_carpet_parameter::induced_drag_factor,
-                induced_drag_factor_values,
-                jet_carpet_parameter::acceleration_requirement_ms2,
-                acceleration_requirement_values);
-            jet_two_parameter_carpet_study::write_to_csv(
-                k_acceleration_points, "induced_drag_factor",
-                "acceleration_requirement_ms2",
-                (output_directory /
-                    "jet_k_acceleration_carpet.csv").string());
-
-            const auto cd0_lapse_points = paired_carpet.run(
-                input,
-                jet_carpet_parameter::cd0, cd0_carpet_values,
-                jet_carpet_parameter::thrust_lapse_scale,
-                thrust_lapse_scale_values);
-            jet_two_parameter_carpet_study::write_to_csv(
-                cd0_lapse_points, "cd_0", "thrust_lapse_scale",
-                (output_directory /
-                    "jet_cd0_thrust_lapse_carpet.csv").string());
-
-            k_sensitivity_study k_sensitivity{atm};
-            k_sensitivity_points = k_sensitivity.run(
-                input, induced_drag_factor_values);
-            k_sensitivity_study::write_to_csv(
-                k_sensitivity_points,
-                (output_directory /
-                    "jet_k_sensitivity_curves.csv").string());
-        }
-        else
-        {
-            true_carpet_constraints cd0_sensitivity{atm};
-            true_carpet_points = cd0_sensitivity.run(
-                input, cd0_carpet_values);
-            true_carpet_constraints::write_to_csv(
-                true_carpet_points,
-                (output_directory /
-                    "propeller_cd0_sensitivity_curves.csv").string());
-
-            jet_aerodynamic_carpet_study aero_carpet{atm};
-            jet_aero_carpet_points = aero_carpet.run(
-                input, cd0_carpet_values, induced_drag_factor_values);
-            jet_aerodynamic_carpet_study::write_to_csv(
-                jet_aero_carpet_points,
-                (output_directory /
-                    "propeller_cd0_k_carpet.csv").string());
-
-            k_sensitivity_study k_sensitivity{atm};
-            k_sensitivity_points = k_sensitivity.run(
-                input, induced_drag_factor_values);
-            k_sensitivity_study::write_to_csv(
-                k_sensitivity_points,
-                (output_directory /
-                    "propeller_k_sensitivity_curves.csv").string());
+            jet_two_parameter_carpet_study study{atm};
+            if (!is_propeller)
+            {
+                const auto acceleration_values = [&input]()
+                {
+                    std::vector<double> values;
+                    const double nominal = input.acceleration.mission_points
+                                               .front().acceleration_ms2;
+                    for (int index = 0; index < 9; ++index)
+                        values.push_back(
+                            nominal * (1.0 / 3.0 + index / 12.0));
+                    return values;
+                }();
+                performance_carpet_points = study.run(
+                    input,
+                    jet_carpet_parameter::acceleration_ms2,
+                    acceleration_values,
+                    jet_carpet_parameter::takeoff_distance_m,
+                    runway_values);
+                jet_two_parameter_carpet_study::write_to_csv(
+                    performance_carpet_points,
+                    "acceleration_ms2", "takeoff_distance_m",
+                    (output_directory / "jet_performance_carpet.csv").string());
+            }
+            else
+            {
+                const auto climb_rate_values = [&input]()
+                {
+                    std::vector<double> values;
+                    const double nominal =
+                        input.climb.mission_points.front().roc_ms;
+                    for (int index = 0; index < 9; ++index)
+                        values.push_back(nominal * (0.4 + 0.15 * index));
+                    return values;
+                }();
+                performance_carpet_points = study.run(
+                    input,
+                    jet_carpet_parameter::climb_rate_ms,
+                    climb_rate_values,
+                    jet_carpet_parameter::takeoff_distance_m,
+                    runway_values);
+                jet_two_parameter_carpet_study::write_to_csv(
+                    performance_carpet_points,
+                    "climb_rate_ms", "takeoff_distance_m",
+                    (output_directory /
+                        "propeller_performance_carpet.csv").string());
+            }
+            std::cout << "Designer performance carpet points written: "
+                      << performance_carpet_points.size() << '\n';
         }
 
         // ============================================================
@@ -519,20 +982,61 @@ int main(int argc, char* argv[])
                              << point.efficiency << "\n";
                 }
             }
-            const std::vector<propeller_operating_point> points = {
-                propeller_analysis.evaluate(
-                    input, input.cruise.altitude_m, input.cruise.speed_ms,
-                    input.propeller.continuous),
-                propeller_analysis.evaluate(
-                    input, input.climb.altitude_m, input.climb.speed_ms,
-                    input.propeller.continuous),
-                propeller_analysis.evaluate(
-                    input, input.turn.altitude_m, input.turn.speed_ms,
-                    input.propeller.continuous),
-                propeller_analysis.evaluate(
-                    input, input.acceleration.altitude_m,
-                    input.acceleration.speed_ms, input.propeller.continuous)
+            const auto select_valid_representative = [
+                &propeller_analysis, &input](
+                    const std::vector<climb_mission_point>& mission_points,
+                    double fallback_altitude_m,
+                    double fallback_speed_ms)
+            {
+                propeller_operating_point best;
+                double best_kinematic_demand =
+                    -std::numeric_limits<double>::infinity();
+                for (const auto& mission_point : mission_points)
+                {
+                    try
+                    {
+                        const auto point =
+                            propeller_analysis.select_best_airborne_operating_point(
+                                input, mission_point.altitude_m,
+                                mission_point.speed_ms);
+                        const double demand =
+                            mission_point.roc_ms / mission_point.speed_ms +
+                            mission_point.acceleration_ms2 / 9.80665;
+                        if (demand > best_kinematic_demand)
+                        {
+                            best_kinematic_demand = demand;
+                            best = point;
+                        }
+                    }
+                    catch (const std::exception&)
+                    {
+                    }
+                }
+                if (std::isfinite(best_kinematic_demand))
+                    return best;
+                return propeller_analysis.select_best_airborne_operating_point(
+                    input, fallback_altitude_m, fallback_speed_ms);
             };
+            const auto cruise_operating_point = select_valid_representative(
+                input.cruise.mission_points,
+                input.cruise.altitude_m, input.cruise.speed_ms);
+            const auto climb_operating_point = select_valid_representative(
+                input.climb.mission_points,
+                input.climb.representative_point.altitude_m,
+                input.climb.representative_point.speed_ms);
+            const auto acceleration_operating_point =
+                select_valid_representative(
+                    input.acceleration.mission_points,
+                    input.acceleration.altitude_m,
+                    input.acceleration.speed_ms);
+            const auto turn_operating_point =
+                propeller_analysis.select_best_airborne_operating_point(
+                    input, input.turn.altitude_m, input.turn.speed_ms);
+            const std::vector<propeller_operating_point> points = {
+                cruise_operating_point,
+                climb_operating_point,
+                turn_operating_point,
+                acceleration_operating_point};
 
             std::ofstream file(
                 output_directory / "propeller_operating_points.csv");
@@ -599,21 +1103,20 @@ int main(int argc, char* argv[])
                 const char* curve;
                 double altitude_m;
                 double speed_ms;
-                propeller_setting setting;
             };
             const std::vector<capacity_case> capacity_cases = {
                 {"acceleration", "propeller_acceleration_constraint",
-                 input.acceleration.altitude_m, input.acceleration.speed_ms,
-                 input.propeller.continuous},
-                {"cruise", "propeller_cruise_constraint",
-                 input.cruise.altitude_m, input.cruise.speed_ms,
-                 input.propeller.continuous},
-                {"climb", "propeller_climb_constraint",
-                 input.climb.altitude_m, input.climb.speed_ms,
-                 input.propeller.continuous},
+                 acceleration_operating_point.altitude_m,
+                 acceleration_operating_point.speed_ms},
+                {"cruise", "propeller_subsonic_cruise_constraint",
+                 cruise_operating_point.altitude_m,
+                 cruise_operating_point.speed_ms},
+                {"climb", "propeller_subsonic_climb_constraint",
+                 climb_operating_point.altitude_m,
+                 climb_operating_point.speed_ms},
                 {"turn", "propeller_turn_constraint",
-                 input.turn.altitude_m, input.turn.speed_ms,
-                 input.propeller.continuous},
+                 turn_operating_point.altitude_m,
+                 turn_operating_point.speed_ms},
             };
 
             std::ofstream capacity(
@@ -674,8 +1177,9 @@ int main(int argc, char* argv[])
 
             for (const auto& item : capacity_cases)
             {
-                const auto point = propeller_analysis.evaluate(
-                    input, item.altitude_m, item.speed_ms, item.setting);
+                const auto point =
+                    propeller_analysis.select_best_airborne_operating_point(
+                        input, item.altitude_m, item.speed_ms);
                 const double required_W_N =
                     interpolate_envelope_thrust_to_weight(
                         find_curve(output, item.curve),
@@ -708,9 +1212,10 @@ int main(int argc, char* argv[])
                      "propeller_aerodynamic_map,implemented,"
                      "supplied_UNICADO_propeller_deck\n"
                      "takeoff_ground_roll,implemented,"
-                     "speed_integrated_ground_roll_with_deck_CT_and_CP\n"
-                     "airborne_constraints,implemented,"
-                     "cruise_climb_turn_and_acceleration_power_loading\n"
+                     "speed_integrated_ground_roll_with_automatic_tip_mach_limited_RPM_and_deck_pitch\n"
+                     "airborne_constraints,implemented_with_coverage_flag,"
+                     "acceleration_and_climb_use_deck_covered_mission_points;"
+                     "cruise_uses_reported_fallback_when_mission_coverage_is_zero\n"
                      "vertical_constraints,implemented,"
                      "landing_stall_and_gust_wing_loading_limits\n"
                      "propeller_tip_mach,implemented,"
@@ -854,37 +1359,6 @@ int main(int argc, char* argv[])
                     << "  feasible = " << (point.feasible ? "yes" : "no")
                     << '\n';
             }
-        }
-
-        if (!is_propeller)
-        {
-        std::cout << "\n=== carpet_plot_study ===\n";
-
-        for (const auto& point : carpet_points)
-        {
-            std::cout
-                << "CD0 = " << point.cd_0
-                << "  best W/S = " << point.best_wing_loading
-                << "  best T/W = " << point.best_thrust_to_weight
-                << "  range feasible = " << (point.range_feasible ? "yes" : "no")
-                << '\n';
-        }
-
-        std::cout << "\n=== true_carpet_constraints ===\n";
-        std::cout
-            << "True carpet constraint points written: "
-            << true_carpet_points.size()
-            << '\n';
-        std::cout << "CSV: "
-                  << (output_directory / "true_carpet_constraints.csv").string()
-                  << "\n";
-
-        std::cout << "\n=== jet_cd0_k_carpet ===\n";
-        std::cout << "Aerodynamic carpet points written: "
-                  << jet_aero_carpet_points.size() << '\n';
-        std::cout << "CSV: "
-                  << (output_directory / "jet_cd0_k_carpet.csv").string()
-                  << "\n";
         }
 
         if (is_propeller)

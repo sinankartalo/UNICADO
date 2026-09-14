@@ -76,6 +76,10 @@ namespace constraint_analysis
             for (double induced_drag_factor : induced_drag_factor_values)
             {
                 constraint_input input = base_input;
+                input.aircraft.operating_cd0_scale =
+                    cd0 / base_input.aircraft.polar.cd_0;
+                input.aircraft.operating_k_scale =
+                    induced_drag_factor / base_input.aircraft.polar.k;
                 input.aircraft.polar.cd_0 = cd0;
                 input.aircraft.polar.k = induced_drag_factor;
 
@@ -265,8 +269,18 @@ namespace constraint_analysis
                     return input.aircraft.polar.k;
                 case jet_carpet_parameter::takeoff_distance_m:
                     return input.takeoff.runway_m;
-                case jet_carpet_parameter::acceleration_requirement_ms2:
-                    return input.acceleration.acceleration_ms2;
+                case jet_carpet_parameter::acceleration_ms2:
+                    if (input.acceleration.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Acceleration carpet requires one explicit performance condition.");
+                    return input.acceleration.mission_points.front().acceleration_ms2;
+                case jet_carpet_parameter::climb_rate_ms:
+                    if (input.climb.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Climb-rate carpet requires one explicit performance condition.");
+                    return input.climb.mission_points.front().roc_ms;
+                case jet_carpet_parameter::acceleration_severity_scale:
+                    return 1.0;
                 case jet_carpet_parameter::thrust_lapse_scale:
                     return input.installed_thrust_lapse_scale;
             }
@@ -286,16 +300,43 @@ namespace constraint_analysis
             switch (parameter)
             {
                 case jet_carpet_parameter::cd0:
+                    input.aircraft.operating_cd0_scale =
+                        value / input.aircraft.polar.cd_0;
                     input.aircraft.polar.cd_0 = value;
                     return;
                 case jet_carpet_parameter::induced_drag_factor:
+                    input.aircraft.operating_k_scale =
+                        value / input.aircraft.polar.k;
                     input.aircraft.polar.k = value;
                     return;
                 case jet_carpet_parameter::takeoff_distance_m:
                     input.takeoff.runway_m = value;
                     return;
-                case jet_carpet_parameter::acceleration_requirement_ms2:
+                case jet_carpet_parameter::acceleration_ms2:
+                    if (input.acceleration.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Acceleration carpet requires performance condition_source.");
+                    input.acceleration.mission_points.front().acceleration_ms2 = value;
                     input.acceleration.acceleration_ms2 = value;
+                    return;
+                case jet_carpet_parameter::climb_rate_ms:
+                    if (input.climb.mission_points.size() != 1)
+                        throw std::runtime_error(
+                            "Climb-rate carpet requires performance condition_source.");
+                    input.climb.mission_points.front().roc_ms = value;
+                    input.climb.representative_point =
+                        input.climb.mission_points.front();
+                    return;
+                case jet_carpet_parameter::acceleration_severity_scale:
+                    // Preserve the mission operating conditions and scale
+                    // only its kinematic specific-energy demand:
+                    //   d(energy)/dt / W = ROC + V/g * dV/dt.
+                    for (auto& point : input.acceleration.mission_points)
+                    {
+                        point.roc_ms *= value;
+                        point.acceleration_ms2 *= value;
+                    }
+                    input.acceleration.acceleration_ms2 *= value;
                     return;
                 case jet_carpet_parameter::thrust_lapse_scale:
                     input.installed_thrust_lapse_scale = value;
@@ -346,15 +387,10 @@ namespace constraint_analysis
         jet_carpet_parameter parameter_b,
         const std::vector<double>& parameter_b_values) const
     {
-        if (base_input.propulsion != propulsion_type::jet)
-        {
-            throw std::runtime_error(
-                "Jet two-parameter carpets require jet propulsion.");
-        }
         if (parameter_a == parameter_b)
         {
             throw std::runtime_error(
-                "Jet carpet parameters must be independent.");
+                "Two-parameter carpet inputs must be independent.");
         }
 
         const double baseline_a =
@@ -389,7 +425,7 @@ namespace constraint_analysis
                 if (constraint_values.size() < 2)
                 {
                     throw std::runtime_error(
-                        "Jet carpet requires at least two constraints.");
+                        "Two-parameter carpet requires at least two constraints.");
                 }
                 std::sort(
                     constraint_values.begin(), constraint_values.end(),
@@ -428,10 +464,10 @@ namespace constraint_analysis
         if (!file.is_open())
         {
             throw std::runtime_error(
-                "Could not open jet two-parameter carpet CSV: " + file_path);
+                "Could not open two-parameter carpet CSV: " + file_path);
         }
         file << parameter_a_column << "," << parameter_b_column
-             << ",best_wing_loading,best_thrust_to_weight,is_baseline,"
+             << ",best_wing_loading,best_required_loading,is_baseline,"
                 "active_constraint_name,second_constraint_name,"
                 "constraint_margin\n";
         for (const auto& point : points)
@@ -439,7 +475,7 @@ namespace constraint_analysis
             file << point.parameter_a_value << ","
                  << point.parameter_b_value << ","
                  << point.best_wing_loading << ","
-                 << point.best_thrust_to_weight << ","
+                 << point.best_required_loading << ","
                  << point.is_baseline << ","
                  << point.active_constraint_name << ","
                  << point.second_constraint_name << ","
@@ -464,6 +500,8 @@ namespace constraint_analysis
         {
             constraint_input input = base_input;
 
+            input.aircraft.operating_cd0_scale =
+                cd0 / base_input.aircraft.polar.cd_0;
             input.aircraft.polar.cd_0 = cd0;
 
             const constraint_output output = tool.run(input);
@@ -555,6 +593,8 @@ namespace constraint_analysis
         {
             constraint_input input = base_input;
 
+            input.aircraft.operating_cd0_scale =
+                cd0 / base_input.aircraft.polar.cd_0;
             input.aircraft.polar.cd_0 = cd0;
 
             const constraint_output output = tool.run(input);
@@ -615,6 +655,8 @@ namespace constraint_analysis
         for (double induced_drag_factor : induced_drag_factor_values)
         {
             constraint_input input = base_input;
+            input.aircraft.operating_k_scale =
+                induced_drag_factor / base_input.aircraft.polar.k;
             input.aircraft.polar.k = induced_drag_factor;
             const constraint_output output = tool.run(input);
 

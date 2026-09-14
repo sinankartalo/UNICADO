@@ -1,9 +1,11 @@
 #include "constraint_analysis/ca_functions.h"
+#include "io/aerodynamics_xml.h"
 
 #include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
@@ -123,6 +125,19 @@ namespace constraint_analysis
                     previous->advance_ratio <= advance_ratio &&
                     advance_ratio <= row.advance_ratio)
                 {
+                    // Do not interpolate across the transition from the
+                    // propulsive branch into windmilling/negative-thrust data.
+                    // Both tabulated endpoints must describe a positive,
+                    // power-consuming propulsive operating segment.
+                    if (previous->thrust_coefficient <= 0.0 ||
+                        previous->power_coefficient <= 0.0 ||
+                        row.thrust_coefficient <= 0.0 ||
+                        row.power_coefficient <= 0.0)
+                    {
+                        throw std::runtime_error(
+                            "Propeller operating point crosses a non-positive "
+                            "deck segment.");
+                    }
                     const double fraction =
                         (advance_ratio - previous->advance_ratio) /
                         (row.advance_ratio - previous->advance_ratio);
@@ -164,6 +179,57 @@ namespace constraint_analysis
             // interpolation used by aerodynamics::Propeller.
             return thrust_to_weight *
                 operating_point.shaft_power_W / operating_point.thrust_N;
+        }
+
+        bool is_propeller_deck_coverage_error(const std::exception& error)
+        {
+            const std::string message = error.what();
+            return message.find(
+                       "outside the selected pitch slice") !=
+                       std::string::npos ||
+                   message.find(
+                       "Propeller deck produced an invalid operating point") !=
+                       std::string::npos ||
+                   message.find(
+                       "crosses a non-positive deck segment") !=
+                       std::string::npos ||
+                   message.find(
+                       "No tip-Mach-feasible positive propeller deck point") !=
+                       std::string::npos;
+        }
+
+        drag_polar operating_drag_polar(
+            const constraint_input& input,
+            double mach,
+            double altitude_m)
+        {
+            if (input.aircraft.aerodynamic_polar_xml_path.empty() ||
+                input.aircraft.reference_wing_id.empty())
+                return input.aircraft.polar;
+            static std::unordered_map<std::string, drag_polar> cache;
+            std::ostringstream key_stream;
+            key_stream << std::setprecision(17)
+                << input.aircraft.aerodynamic_polar_xml_path << '|'
+                << input.aircraft.reference_wing_id << '|'
+                << mach << '|' << altitude_m;
+            const std::string key = key_stream.str();
+            drag_polar polar;
+            if (const auto cached = cache.find(key); cached != cache.end())
+            {
+                polar = cached->second;
+            }
+            else
+            {
+                polar = read_drag_polar_at_condition(
+                    input.aircraft.aerodynamic_polar_xml_path,
+                    input.aircraft.reference_wing_id,
+                    mach,
+                    altitude_m);
+                cache.emplace(key, polar);
+            }
+            polar.cd_0 *= input.aircraft.operating_cd0_scale;
+            polar.k *= input.aircraft.operating_k_scale;
+            return polar;
         }
     }
 
@@ -225,39 +291,9 @@ namespace constraint_analysis
         point.advance_ratio =
             speed_ms / (rotations_per_second * input.propeller.diameter_m);
 
-        // The three pitch slices in the supplied deck do not share the same
-        // J range.  Keep test operation on an actual slice and inside that
-        // slice instead of silently extrapolating.
-        double minimum_j = 0.0;
-        double maximum_j = 0.0;
-        if (std::abs(setting.pitch_deg - 15.0) < 1.0e-9)
-        {
-            minimum_j = 0.0;
-            maximum_j = 1.05;
-        }
-        else if (std::abs(setting.pitch_deg - 30.0) < 1.0e-9)
-        {
-            minimum_j = 0.5;
-            maximum_j = 1.5;
-        }
-        else if (std::abs(setting.pitch_deg - 45.0) < 1.0e-9)
-        {
-            minimum_j = 0.75;
-            maximum_j = 2.8;
-        }
-        else
-        {
-            throw std::runtime_error(
-                "Test propeller deck supports pitch 15, 30, or 45 deg.");
-        }
-
-        if (point.advance_ratio < minimum_j ||
-            point.advance_ratio > maximum_j)
-        {
-            throw std::runtime_error(
-                "Propeller operating point is outside the selected pitch slice.");
-        }
-
+        // The deck itself is the authority for the available pitch/J domain.
+        // Avoid duplicated hard-coded slice limits, which can disagree with
+        // exact deck rows selected by the automatic RPM calculation.
         const auto deck_row = interpolate_propeller_pitch_slice(
             input.propeller.deck_path,
             setting.pitch_deg,
@@ -276,13 +312,113 @@ namespace constraint_analysis
 
         if (!std::isfinite(point.thrust_N) ||
             !std::isfinite(point.shaft_power_W) ||
-            point.thrust_N <= 0.0 || point.shaft_power_W <= 0.0)
+            point.thrust_N <= 0.0 || point.shaft_power_W <= 0.0 ||
+            !std::isfinite(point.efficiency) || point.efficiency <= 0.0)
         {
             throw std::runtime_error(
                 "Propeller deck produced an invalid operating point.");
         }
 
         return point;
+    }
+
+    propeller_operating_point
+    propeller_constraint_analysis::select_best_airborne_operating_point(
+        const constraint_input& input,
+        double altitude_m,
+        double speed_ms) const
+    {
+        if (speed_ms <= 0.0 || input.propeller.diameter_m <= 0.0)
+            throw std::runtime_error(
+                "Automatic propeller selection requires positive speed and diameter.");
+
+        // The same mission condition is queried while building the curve,
+        // writing coverage diagnostics and exporting operating points. Keep
+        // the deterministic selection result instead of repeating the deck
+        // search for every consumer.
+        static std::unordered_map<std::string, propeller_operating_point> cache;
+        std::ostringstream cache_key_stream;
+        cache_key_stream << std::setprecision(17)
+            << input.propeller.deck_path << '|'
+            << input.propeller.diameter_m << '|'
+            << input.propeller.tip_mach_limit << '|'
+            << altitude_m << '|' << speed_ms;
+        const std::string cache_key = cache_key_stream.str();
+        if (const auto cached = cache.find(cache_key); cached != cache.end())
+            return cached->second;
+
+        propeller_operating_point best;
+        double best_power_per_thrust =
+            std::numeric_limits<double>::infinity();
+
+        // Each positive deck row supplies J and pitch. With mission TAS and
+        // diameter known, n = V/(J D), hence RPM = 60 V/(J D). This removes
+        // the manually prescribed continuous-flight RPM and pitch.
+        for (const auto& row : read_propeller_deck(input.propeller.deck_path))
+        {
+            if (row.advance_ratio <= 0.0 ||
+                row.thrust_coefficient <= 0.0 ||
+                row.power_coefficient <= 0.0 ||
+                row.efficiency <= 0.0)
+                continue;
+
+            const double candidate_rpm =
+                60.0 * speed_ms /
+                (row.advance_ratio * input.propeller.diameter_m);
+            const double rotations_per_second = candidate_rpm / 60.0;
+            const double density_kg_m3 = atmosphere_.getDensity(altitude_m);
+            const double speed_of_sound_ms =
+                atmosphere_.getSpeedOfSound(altitude_m);
+            const double rotational_tip_speed_ms = std::numbers::pi *
+                input.propeller.diameter_m * rotations_per_second;
+
+            // candidate RPM is derived from this exact deck row, so calling
+            // evaluate() would search/interpolate the complete pitch slice
+            // only to recover the same CT/CP/eta values.
+            propeller_operating_point point;
+            point.altitude_m = altitude_m;
+            point.speed_ms = speed_ms;
+            point.density_kg_m3 = density_kg_m3;
+            point.speed_of_sound_ms = speed_of_sound_ms;
+            point.rpm = candidate_rpm;
+            point.pitch_deg = row.pitch_deg;
+            point.advance_ratio = row.advance_ratio;
+            point.thrust_coefficient = row.thrust_coefficient;
+            point.power_coefficient = row.power_coefficient;
+            point.efficiency = row.efficiency;
+            point.tip_speed_ms =
+                std::hypot(speed_ms, rotational_tip_speed_ms);
+            point.tip_mach = point.tip_speed_ms / speed_of_sound_ms;
+            point.tip_mach_limit = input.propeller.tip_mach_limit;
+            point.tip_mach_feasible =
+                point.tip_mach <= point.tip_mach_limit;
+            const double diameter_m = input.propeller.diameter_m;
+            point.thrust_N = row.thrust_coefficient * density_kg_m3 *
+                std::pow(rotations_per_second, 2.0) *
+                std::pow(diameter_m, 4.0);
+            point.shaft_power_W = row.power_coefficient * density_kg_m3 *
+                std::pow(rotations_per_second, 3.0) *
+                std::pow(diameter_m, 5.0);
+            if (!point.tip_mach_feasible)
+                continue;
+
+            const double power_per_thrust =
+                point.shaft_power_W / point.thrust_N;
+            if (power_per_thrust < best_power_per_thrust)
+            {
+                best_power_per_thrust = power_per_thrust;
+                best = point;
+            }
+        }
+
+        if (!std::isfinite(best_power_per_thrust))
+        {
+            throw std::runtime_error(
+                "No tip-Mach-feasible positive propeller deck point for "
+                "automatic RPM/pitch selection.");
+        }
+        cache.emplace(cache_key, best);
+        return best;
     }
 
     constraint_curve propeller_constraint_analysis::compute_takeoff_constraint(
@@ -328,6 +464,16 @@ namespace constraint_analysis
         const double takeoff_speed_ms =
             input.takeoff.speed_factor * stall_speed_ms;
         const double dv = takeoff_speed_ms / integration_steps;
+        std::vector<double> available_pitches;
+        for (const auto& row : read_propeller_deck(input.propeller.deck_path))
+        {
+            if (std::find(available_pitches.begin(), available_pitches.end(),
+                          row.pitch_deg) == available_pitches.end())
+                available_pitches.push_back(row.pitch_deg);
+        }
+        if (available_pitches.empty())
+            throw std::runtime_error(
+                "Propeller takeoff deck contains no pitch slices.");
 
         auto integrate = [&](double power_to_weight_W_N,
                              bool keep_steps) -> propeller_takeoff_result
@@ -344,39 +490,56 @@ namespace constraint_analysis
             for (int index = 0; index < integration_steps; ++index)
             {
                 const double speed_ms = (index + 0.5) * dv;
-                const double advance_ratio =
-                    speed_ms /
-                    ((input.propeller.takeoff.rpm / 60.0) *
-                     input.propeller.diameter_m);
-                std::vector<double> valid_pitches;
-                if (advance_ratio <= 1.05)
-                    valid_pitches.push_back(15.0);
-                if (advance_ratio >= 0.5 && advance_ratio <= 1.5)
-                    valid_pitches.push_back(30.0);
-                if (advance_ratio >= 0.75 && advance_ratio <= 2.8)
-                    valid_pitches.push_back(45.0);
-                if (valid_pitches.empty())
+                const double speed_of_sound_ms =
+                    atmosphere_.getSpeedOfSound(input.takeoff.altitude_m);
+                // A variable-speed controller uses the highest RPM allowed by
+                // the configured helical tip-Mach limit. A small margin avoids
+                // rejecting a point because of floating-point roundoff.
+                const double allowed_helical_tip_speed_ms =
+                    0.995 * input.propeller.tip_mach_limit *
+                    speed_of_sound_ms;
+                if (speed_ms >= allowed_helical_tip_speed_ms)
                     throw std::runtime_error(
-                        "No valid supplied-deck pitch slice for integrated takeoff.");
+                        "Takeoff speed exceeds the propeller helical tip-speed limit.");
+                const double rotational_tip_speed_ms = std::sqrt(
+                    allowed_helical_tip_speed_ms * allowed_helical_tip_speed_ms -
+                    speed_ms * speed_ms);
+                const double automatic_rpm =
+                    60.0 * rotational_tip_speed_ms /
+                    (std::numbers::pi * input.propeller.diameter_m);
 
                 propeller_operating_point deck_point;
                 double best_power_per_thrust =
                     std::numeric_limits<double>::infinity();
-                for (double pitch_deg : valid_pitches)
+                for (double pitch_deg : available_pitches)
                 {
-                    propeller_setting candidate = input.propeller.takeoff;
+                    propeller_setting candidate;
+                    candidate.rpm = automatic_rpm;
                     candidate.pitch_deg = pitch_deg;
-                    const auto candidate_point = evaluate(
-                        input, input.takeoff.altitude_m, speed_ms, candidate);
-                    const double candidate_power_per_thrust =
-                        candidate_point.shaft_power_W /
-                        candidate_point.thrust_N;
-                    if (candidate_power_per_thrust < best_power_per_thrust)
+                    try
                     {
-                        best_power_per_thrust = candidate_power_per_thrust;
-                        deck_point = candidate_point;
+                        const auto candidate_point = evaluate(
+                            input, input.takeoff.altitude_m, speed_ms, candidate);
+                        if (!candidate_point.tip_mach_feasible)
+                            continue;
+                        const double candidate_power_per_thrust =
+                            candidate_point.shaft_power_W /
+                            candidate_point.thrust_N;
+                        if (candidate_power_per_thrust < best_power_per_thrust)
+                        {
+                            best_power_per_thrust = candidate_power_per_thrust;
+                            deck_point = candidate_point;
+                        }
+                    }
+                    catch (const std::exception& error)
+                    {
+                        if (!is_propeller_deck_coverage_error(error))
+                            throw;
                     }
                 }
+                if (!std::isfinite(best_power_per_thrust))
+                    throw std::runtime_error(
+                        "No valid automatic RPM/pitch deck point for integrated takeoff.");
                 const double power_per_thrust_ms =
                     deck_point.shaft_power_W / deck_point.thrust_N;
                 const double thrust_to_weight =
@@ -464,8 +627,8 @@ namespace constraint_analysis
         const double rho = atmosphere_.getDensity(altitude_m);
         const double q =
             constraint_utilities::compute_dynamic_pressure(rho, speed_ms);
-        const auto operating_point = evaluate(
-            input, altitude_m, speed_ms, input.propeller.continuous);
+        const auto operating_point = select_best_airborne_operating_point(
+            input, altitude_m, speed_ms);
 
         for (double ws = input.wing_loading_min;
              ws <= input.wing_loading_max;
@@ -497,32 +660,240 @@ namespace constraint_analysis
         return curve;
     }
 
+    constraint_curve
+    propeller_constraint_analysis::compute_mission_airborne_constraint(
+        const constraint_input& input,
+        const std::string& name,
+        const std::vector<climb_mission_point>& mission_points) const
+    {
+        if (mission_points.empty())
+            throw std::runtime_error(name + " has no mission points.");
+
+        struct prepared_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            propeller_operating_point propeller;
+        };
+        std::vector<prepared_point> prepared;
+        prepared.reserve(mission_points.size());
+        for (const auto& point : mission_points)
+        {
+            try
+            {
+                const double rho = atmosphere_.getDensity(point.altitude_m);
+                prepared.push_back({
+                    &point,
+                    constraint_utilities::compute_dynamic_pressure(
+                        rho, point.speed_ms),
+                    select_best_airborne_operating_point(
+                        input, point.altitude_m, point.speed_ms)});
+            }
+            catch (const std::exception& error)
+            {
+                if (!is_propeller_deck_coverage_error(error))
+                    throw;
+            }
+        }
+        if (prepared.empty())
+            throw std::runtime_error(
+                name + " has no mission points covered by the propeller deck.");
+
+        constraint_curve curve;
+        curve.name = name;
+        for (double ws = input.wing_loading_min;
+             ws <= input.wing_loading_max;
+             ws += input.wing_loading_step)
+        {
+            double worst_power_to_weight =
+                -std::numeric_limits<double>::infinity();
+            for (const auto& item : prepared)
+            {
+                const auto& point = *item.mission;
+                mattingly_airborne_case_input airborne;
+                airborne.wing_loading = ws;
+                airborne.dynamic_pressure = item.dynamic_pressure;
+                airborne.alpha = 1.0;
+                airborne.beta = point.beta_climb;
+                airborne.k1 = input.aircraft.polar.k;
+                airborne.k2 = 0.0;
+                airborne.cd0 = input.aircraft.polar.cd_0;
+                airborne.cdr = 0.0;
+                airborne.load_factor = 1.0;
+                airborne.climb_rate = point.roc_ms;
+                airborne.velocity = point.speed_ms;
+                airborne.acceleration = point.acceleration_ms2;
+
+                const auto thrust_result =
+                    mattingly_airborne_case::compute(airborne);
+                worst_power_to_weight = std::max(
+                    worst_power_to_weight,
+                    power_loading_from_thrust_loading(
+                        thrust_result.thrust_to_weight_sl,
+                        item.propeller));
+            }
+            if (!std::isfinite(worst_power_to_weight))
+                throw std::runtime_error(
+                    name + " mission scan produced no finite result.");
+            curve.points.push_back({ws, worst_power_to_weight});
+        }
+        return curve;
+    }
+
     constraint_curve propeller_constraint_analysis::compute_acceleration_constraint(
         const constraint_input& input) const
     {
-        return compute_airborne_constraint(
+        return compute_mission_airborne_constraint(
             input, "propeller_acceleration_constraint",
-            input.acceleration.altitude_m, input.acceleration.speed_ms,
-            input.acceleration.beta_acceleration, 1.0, 0.0,
-            input.acceleration.acceleration_ms2);
+            input.acceleration.mission_points);
     }
 
     constraint_curve propeller_constraint_analysis::compute_cruise_constraint(
         const constraint_input& input) const
     {
-        return compute_airborne_constraint(
-            input, "propeller_cruise_constraint",
-            input.cruise.altitude_m, input.cruise.speed_ms,
-            input.cruise.beta_cruise, 1.0, 0.0, 0.0);
+        try
+        {
+            return compute_mission_airborne_constraint(
+                input, "propeller_cruise_constraint",
+                input.cruise.mission_points);
+        }
+        catch (const std::runtime_error& error)
+        {
+            const std::string message = error.what();
+            if (message.find("has no mission points covered by the propeller deck") ==
+                    std::string::npos ||
+                !input.cruise.allow_configured_fallback)
+                throw;
+            return compute_airborne_constraint(
+                input, "propeller_cruise_constraint",
+                input.cruise.altitude_m, input.cruise.speed_ms,
+                input.cruise.beta_cruise, 1.0, 0.0, 0.0);
+        }
     }
 
     constraint_curve propeller_constraint_analysis::compute_climb_constraint(
         const constraint_input& input) const
     {
-        return compute_airborne_constraint(
-            input, "propeller_climb_constraint",
-            input.climb.altitude_m, input.climb.speed_ms,
-            input.climb.beta_climb, 1.0, input.climb.roc_ms, 0.0);
+        constraint_curve curve;
+        curve.name = "propeller_climb_constraint";
+
+        struct prepared_climb_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            propeller_operating_point propeller;
+        };
+
+        std::vector<prepared_climb_point> prepared_points;
+        prepared_points.reserve(input.climb.mission_points.size());
+        for (const auto& mission_point : input.climb.mission_points)
+        {
+            const double rho = atmosphere_.getDensity(mission_point.altitude_m);
+            try
+            {
+                prepared_points.push_back({
+                    &mission_point,
+                    constraint_utilities::compute_dynamic_pressure(
+                        rho, mission_point.speed_ms),
+                    select_best_airborne_operating_point(
+                        input,
+                        mission_point.altitude_m,
+                        mission_point.speed_ms)
+                });
+            }
+            catch (const std::exception& error)
+            {
+                if (!is_propeller_deck_coverage_error(error))
+                    throw;
+            }
+        }
+
+        if (prepared_points.empty())
+        {
+            throw std::runtime_error(
+                "Propeller deck covers none of the mission climb points.");
+        }
+
+        for (double ws = input.wing_loading_min;
+             ws <= input.wing_loading_max;
+             ws += input.wing_loading_step)
+        {
+            double worst_power_to_weight =
+                -std::numeric_limits<double>::infinity();
+
+            for (const auto& prepared : prepared_points)
+            {
+                const auto& mission_point = *prepared.mission;
+                mattingly_airborne_case_input airborne;
+                airborne.wing_loading = ws;
+                airborne.dynamic_pressure = prepared.dynamic_pressure;
+                airborne.alpha = 1.0;
+                airborne.beta = mission_point.beta_climb;
+                airborne.k1 = input.aircraft.polar.k;
+                airborne.k2 = 0.0;
+                airborne.cd0 = input.aircraft.polar.cd_0;
+                airborne.cdr = 0.0;
+                airborne.load_factor = 1.0;
+                airborne.climb_rate = mission_point.roc_ms;
+                airborne.velocity = mission_point.speed_ms;
+                airborne.acceleration = mission_point.acceleration_ms2;
+
+                const auto thrust_result =
+                    mattingly_airborne_case::compute(airborne);
+                const double power_to_weight =
+                    power_loading_from_thrust_loading(
+                        thrust_result.thrust_to_weight_sl,
+                        prepared.propeller);
+                worst_power_to_weight =
+                    std::max(worst_power_to_weight, power_to_weight);
+            }
+
+            if (!std::isfinite(worst_power_to_weight))
+            {
+                throw std::runtime_error(
+                    "Propeller climb mission scan produced no finite result.");
+            }
+            curve.points.push_back({ws, worst_power_to_weight});
+        }
+
+        return curve;
+    }
+
+    propeller_climb_coverage
+    propeller_constraint_analysis::assess_climb_coverage(
+        const constraint_input& input) const
+    {
+        propeller_climb_coverage coverage;
+        coverage.total_mission_points = input.climb.mission_points.size();
+
+        for (const auto& mission_point : input.climb.mission_points)
+        {
+            try
+            {
+                (void)select_best_airborne_operating_point(
+                    input,
+                    mission_point.altitude_m,
+                    mission_point.speed_ms);
+                ++coverage.valid_deck_points;
+            }
+            catch (const std::exception& error)
+            {
+                if (!is_propeller_deck_coverage_error(error))
+                    throw;
+
+                ++coverage.invalid_deck_points;
+                if (coverage.invalid_deck_points == 1)
+                {
+                    coverage.first_invalid_altitude_m =
+                        mission_point.altitude_m;
+                    coverage.first_invalid_speed_ms = mission_point.speed_ms;
+                    coverage.first_invalid_advance_ratio = 0.0;
+                    coverage.first_invalid_reason = error.what();
+                }
+            }
+        }
+
+        return coverage;
     }
 
     constraint_curve propeller_constraint_analysis::compute_turn_constraint(
@@ -1000,34 +1371,36 @@ namespace constraint_analysis
         double automatic_design_gust_velocity_ms(double altitude_m)
         {
             /*
-             * Default discrete-gust velocity model for preliminary sizing.
-             * 50 ft/s is used up to 20,000 ft, linearly reducing to 25 ft/s at 50,000 ft.
-             * This keeps the input automatic while preserving the usual CS/FAR-25-style trend.
+             * CS-25.341 reference gust velocity U_ref for transport aircraft:
+             * 17.07 m/s EAS at sea level, 13.41 m/s at 15,000 ft and
+             * 6.36 m/s at 60,000 ft, linearly interpolated with altitude.
+             * Flight-profile alleviation F_g is conservatively 1.0 because
+             * the mission file does not carry the certification mass/altitude
+             * envelope needed to derive it.
              */
             const double altitude_ft = altitude_m * ft_per_m;
-            const double u_low_ms = 50.0 * 0.3048;
-            const double u_high_ms = 25.0 * 0.3048;
-
-            if (altitude_ft <= 20000.0)
-            {
-                return u_low_ms;
-            }
-
-            if (altitude_ft >= 50000.0)
-            {
-                return u_high_ms;
-            }
-
-            const double fraction = (altitude_ft - 20000.0) / (50000.0 - 20000.0);
-            return u_low_ms + fraction * (u_high_ms - u_low_ms);
+            if (altitude_ft <= 0.0)
+                return 17.07;
+            if (altitude_ft <= 15000.0)
+                return 17.07 + (13.41 - 17.07) *
+                    altitude_ft / 15000.0;
+            if (altitude_ft >= 60000.0)
+                return 6.36;
+            return 13.41 + (6.36 - 13.41) *
+                (altitude_ft - 15000.0) / 45000.0;
         }
 
-        double automatic_effective_aspect_ratio(double aspect_ratio, double induced_drag_factor)
+        double automatic_effective_aspect_ratio(
+            double aspect_ratio,
+            double wing_area_m2,
+            double mean_aerodynamic_chord_m,
+            double induced_drag_factor)
         {
             /*
              * Prefer the aspect ratio provided by the aircraft/aerodynamics data.
-             * The current aerodynamics XML path may not provide AR, but it does
-             * provide the induced drag factor k. In that case, estimate AR from
+             * If the XML has no explicit AR, area and mean chord are used for
+             * an equivalent rectangular-wing estimate. Only if geometry is
+             * unavailable is AR estimated from the induced drag factor k:
              *     k = 1 / (pi * e * AR)
              * using a typical preliminary Oswald efficiency e = 0.85. This avoids
              * requiring another manual gust input while keeping the calculation
@@ -1037,6 +1410,13 @@ namespace constraint_analysis
             {
                 return aspect_ratio;
             }
+
+            // The polar XML supplies reference area and mean chord. Their
+            // equivalent rectangular-wing ratio is more aircraft-specific
+            // than assuming an Oswald efficiency from k alone.
+            if (wing_area_m2 > 0.0 && mean_aerodynamic_chord_m > 0.0)
+                return wing_area_m2 /
+                    (mean_aerodynamic_chord_m * mean_aerodynamic_chord_m);
 
             constexpr double default_oswald_efficiency = 0.85;
             if (induced_drag_factor > 0.0)
@@ -1093,23 +1473,14 @@ namespace constraint_analysis
         vc.name = "jet_gust_limit";
         vc.is_upper_limit = false;
 
-        if (input.gust.speed_ms <= 0.0)
-        {
-            throw std::runtime_error("Gust limit error: speed_ms must be positive.");
-        }
+        if (input.gust.mission_points.empty())
+            throw std::runtime_error(
+                "Gust limit error: mission cruise scan has no points.");
 
-        if (input.gust.beta_gust <= 0.0)
-        {
-            throw std::runtime_error("Gust limit error: beta_gust must be positive.");
-        }
-
-        const double rho = atmosphere_.getDensity(input.gust.altitude_m);
-        const double v = input.gust.speed_ms;
-        const double beta = input.gust.beta_gust;
-
-        const double u_de = automatic_design_gust_velocity_ms(input.gust.altitude_m);
         const double effective_aspect_ratio = automatic_effective_aspect_ratio(
             input.aircraft.aspect_ratio,
+            input.aircraft.wing_area_m2,
+            input.aircraft.mean_aerodynamic_chord_m,
             input.aircraft.polar.k);
         const double a = automatic_lift_curve_slope_per_rad(effective_aspect_ratio);
         const double n_limit = automatic_transport_gust_load_factor_limit();
@@ -1118,7 +1489,7 @@ namespace constraint_analysis
             throw std::runtime_error("Gust limit error: takeoff weight must be positive.");
         }
 
-        if (rho <= 0.0 || u_de <= 0.0 || a <= 0.0 || n_limit <= 1.0)
+        if (a <= 0.0 || n_limit <= 1.0)
         {
             throw std::runtime_error("Gust limit error: automatic gust parameters are invalid.");
         }
@@ -1133,63 +1504,67 @@ namespace constraint_analysis
          * K_g also depends on W/S_actual through the mass ratio, so the limit
          * is solved as a scalar root instead of using a fixed K_g value.
          */
-        const auto delta_n = [&](double takeoff_wing_loading) -> double
+        const auto solve_point_limit = [&](const climb_mission_point& point)
         {
-            const double actual_wing_loading = beta * takeoff_wing_loading;
+            if (point.speed_ms <= 0.0 || point.beta_climb <= 0.0)
+                throw std::runtime_error(
+                    "Gust limit error: mission point has invalid speed or beta.");
+            const double rho = atmosphere_.getDensity(point.altitude_m);
+            const double u_de =
+                automatic_design_gust_velocity_ms(point.altitude_m);
+            if (rho <= 0.0 || u_de <= 0.0)
+                throw std::runtime_error(
+                    "Gust limit error: mission atmosphere is invalid.");
 
-            // For every candidate W/S, calculate its corresponding clean-sheet wing area:
-            //     S = W_TO / (W_TO/S)
-            // This keeps wing area an output of sizing rather than a polar-file input.
-            const double candidate_wing_area_m2 =
-                input.aircraft.takeoff_weight_N / takeoff_wing_loading;
-            const double mean_chord = automatic_mean_aerodynamic_chord_m(
-                candidate_wing_area_m2,
-                effective_aspect_ratio);
+            const auto delta_n = [&](double takeoff_wing_loading)
+            {
+                const double actual_wing_loading =
+                    point.beta_climb * takeoff_wing_loading;
 
-            const double k_g = automatic_gust_alleviation_factor(
-                actual_wing_loading,
-                rho,
-                mean_chord,
-                a);
+                const double candidate_wing_area_m2 =
+                    input.aircraft.takeoff_weight_N / takeoff_wing_loading;
+                const double mean_chord = automatic_mean_aerodynamic_chord_m(
+                    candidate_wing_area_m2,
+                    effective_aspect_ratio);
 
-            return k_g * rho * v * a * u_de / (2.0 * actual_wing_loading);
+                const double k_g = automatic_gust_alleviation_factor(
+                    actual_wing_loading, rho, mean_chord, a);
+
+                return k_g * rho * point.speed_ms * a * u_de /
+                    (2.0 * actual_wing_loading);
+            };
+
+            const double target_delta_n = n_limit - 1.0;
+            double lower = 1.0;
+            double upper = 100000.0;
+
+            while (delta_n(lower) < target_delta_n && lower > 1.0e-6)
+                lower *= 0.5;
+
+            while (delta_n(upper) > target_delta_n)
+            {
+                upper *= 2.0;
+                if (upper > 1.0e8)
+                    throw std::runtime_error(
+                        "Gust limit error: could not bracket W/S limit.");
+            }
+
+            for (int iteration = 0; iteration < 80; ++iteration)
+            {
+                const double mid = 0.5 * (lower + upper);
+                if (delta_n(mid) > target_delta_n)
+                    lower = mid;
+                else
+                    upper = mid;
+            }
+            return 0.5 * (lower + upper);
         };
 
-        const double target_delta_n = n_limit - 1.0;
-
-        double lower = 1.0;
-        double upper = 100000.0;
-
-        while (delta_n(lower) < target_delta_n && lower > 1.0e-6)
-        {
-            lower *= 0.5;
-        }
-
-        while (delta_n(upper) > target_delta_n)
-        {
-            upper *= 2.0;
-
-            if (upper > 1.0e8)
-            {
-                throw std::runtime_error("Gust limit error: could not bracket W/S limit.");
-            }
-        }
-
-        for (int iteration = 0; iteration < 80; ++iteration)
-        {
-            const double mid = 0.5 * (lower + upper);
-
-            if (delta_n(mid) > target_delta_n)
-            {
-                lower = mid;
-            }
-            else
-            {
-                upper = mid;
-            }
-        }
-
-        vc.x_limit = 0.5 * (lower + upper);
+        // Gust is a lower W/S limit, so the largest limit across the mission
+        // cruise segment is the governing condition.
+        vc.x_limit = 0.0;
+        for (const auto& point : input.gust.mission_points)
+            vc.x_limit = std::max(vc.x_limit, solve_point_limit(point));
         return vc;
     }
 
@@ -1207,6 +1582,7 @@ namespace constraint_analysis
         const double a = atmosphere_.getSpeedOfSound(h);
         const double v = mach * a;
         const double q = constraint_utilities::compute_dynamic_pressure(rho, v);
+        const auto polar = operating_drag_polar(input, mach, h);
 
         const double alpha = installed_thrust_lapse(
             input,
@@ -1225,9 +1601,9 @@ namespace constraint_analysis
             case_input.alpha = alpha;
             case_input.beta = beta;
 
-            case_input.k1 = input.aircraft.polar.k;
+            case_input.k1 = polar.k;
             case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
+            case_input.cd0 = polar.cd_0;
             case_input.cdr = 0.0;
 
             case_input.load_factor = 1.0;
@@ -1248,45 +1624,61 @@ namespace constraint_analysis
         constraint_curve curve;
         curve.name = "jet_acceleration_constraint";
 
-        const double h = input.acceleration.altitude_m;
-        const double v = input.acceleration.speed_ms;
-        const double acceleration = input.acceleration.acceleration_ms2;
-        const double beta = input.acceleration.beta_acceleration;
+        if (input.acceleration.mission_points.empty())
+            throw std::runtime_error(
+                "Jet acceleration mission scan has no points.");
 
-        const double rho = atmosphere_.getDensity(h);
-        const double q = constraint_utilities::compute_dynamic_pressure(rho, v);
-        const double mach = v / atmosphere_.getSpeedOfSound(h);
-
-        const double alpha = installed_thrust_lapse(
-            input,
-            atmosphere_,
-            mach,
-            h,
-            "maximum_continuous");
+        struct prepared_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            double thrust_lapse = 1.0;
+            drag_polar polar;
+        };
+        std::vector<prepared_point> prepared;
+        prepared.reserve(input.acceleration.mission_points.size());
+        for (const auto& point : input.acceleration.mission_points)
+        {
+            const double rho = atmosphere_.getDensity(point.altitude_m);
+            const double mach = point.speed_ms /
+                atmosphere_.getSpeedOfSound(point.altitude_m);
+            prepared.push_back({
+                &point,
+                constraint_utilities::compute_dynamic_pressure(
+                    rho, point.speed_ms),
+                installed_thrust_lapse(
+                    input, atmosphere_, mach, point.altitude_m,
+                    "maximum_continuous"),
+                operating_drag_polar(input, mach, point.altitude_m)});
+        }
 
         for (double ws = input.wing_loading_min;
             ws <= input.wing_loading_max;
             ws += input.wing_loading_step)
         {
-            mattingly_airborne_case_input case_input;
-            case_input.wing_loading = ws;
-            case_input.dynamic_pressure = q;
-            case_input.alpha = alpha;
-            case_input.beta = beta;
-
-            case_input.k1 = input.aircraft.polar.k;
-            case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
-            case_input.cdr = 0.0;
-
-            case_input.load_factor = 1.0;
-            case_input.climb_rate = 0.0;
-            case_input.velocity = v;
-            case_input.acceleration = acceleration;
-
-            const auto result = mattingly_airborne_case::compute(case_input);
-
-            curve.points.push_back({ws, result.thrust_to_weight_sl});
+            double worst = -std::numeric_limits<double>::infinity();
+            for (const auto& item : prepared)
+            {
+                const auto& point = *item.mission;
+                mattingly_airborne_case_input case_input;
+                case_input.wing_loading = ws;
+                case_input.dynamic_pressure = item.dynamic_pressure;
+                case_input.alpha = item.thrust_lapse;
+                case_input.beta = point.beta_climb;
+                case_input.k1 = item.polar.k;
+                case_input.k2 = 0.0;
+                case_input.cd0 = item.polar.cd_0;
+                case_input.cdr = 0.0;
+                case_input.load_factor = 1.0;
+                case_input.climb_rate = point.roc_ms;
+                case_input.velocity = point.speed_ms;
+                case_input.acceleration = point.acceleration_ms2;
+                worst = std::max(
+                    worst,
+                    mattingly_airborne_case::compute(case_input)
+                        .thrust_to_weight_sl);
+            }
+            curve.points.push_back({ws, worst});
         }
 
         return curve;
@@ -1297,44 +1689,60 @@ namespace constraint_analysis
         constraint_curve curve;
         curve.name = "jet_cruise_constraint";
 
-        const double h = input.cruise.altitude_m;
-        const double v = input.cruise.speed_ms;
-        const double beta = input.cruise.beta_cruise;
+        if (input.cruise.mission_points.empty())
+            throw std::runtime_error("Jet cruise mission scan has no points.");
 
-        const double rho = atmosphere_.getDensity(h);
-        const double q = constraint_utilities::compute_dynamic_pressure(rho, v);
-        const double mach = v / atmosphere_.getSpeedOfSound(h);
-
-        const double alpha = installed_thrust_lapse(
-            input,
-            atmosphere_,
-            mach,
-            h,
-            "maximum_continuous");
+        struct prepared_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            double thrust_lapse = 1.0;
+            drag_polar polar;
+        };
+        std::vector<prepared_point> prepared;
+        prepared.reserve(input.cruise.mission_points.size());
+        for (const auto& point : input.cruise.mission_points)
+        {
+            const double rho = atmosphere_.getDensity(point.altitude_m);
+            const double mach = point.speed_ms /
+                atmosphere_.getSpeedOfSound(point.altitude_m);
+            prepared.push_back({
+                &point,
+                constraint_utilities::compute_dynamic_pressure(
+                    rho, point.speed_ms),
+                installed_thrust_lapse(
+                    input, atmosphere_, mach, point.altitude_m,
+                    "maximum_continuous"),
+                operating_drag_polar(input, mach, point.altitude_m)});
+        }
 
         for (double ws = input.wing_loading_min;
             ws <= input.wing_loading_max;
             ws += input.wing_loading_step)
         {
-            mattingly_airborne_case_input case_input;
-            case_input.wing_loading = ws;
-            case_input.dynamic_pressure = q;
-            case_input.alpha = alpha;
-            case_input.beta = beta;
-
-            case_input.k1 = input.aircraft.polar.k;
-            case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
-            case_input.cdr = 0.0;
-
-            case_input.load_factor = 1.0;
-            case_input.climb_rate = 0.0;
-            case_input.velocity = v;
-            case_input.acceleration = 0.0;
-
-            const auto result = mattingly_airborne_case::compute(case_input);
-
-            curve.points.push_back({ws, result.thrust_to_weight_sl});
+            double worst = -std::numeric_limits<double>::infinity();
+            for (const auto& item : prepared)
+            {
+                const auto& point = *item.mission;
+                mattingly_airborne_case_input case_input;
+                case_input.wing_loading = ws;
+                case_input.dynamic_pressure = item.dynamic_pressure;
+                case_input.alpha = item.thrust_lapse;
+                case_input.beta = point.beta_climb;
+                case_input.k1 = item.polar.k;
+                case_input.k2 = 0.0;
+                case_input.cd0 = item.polar.cd_0;
+                case_input.cdr = 0.0;
+                case_input.load_factor = 1.0;
+                case_input.climb_rate = 0.0;
+                case_input.velocity = point.speed_ms;
+                case_input.acceleration = 0.0;
+                worst = std::max(
+                    worst,
+                    mattingly_airborne_case::compute(case_input)
+                        .thrust_to_weight_sl);
+            }
+            curve.points.push_back({ws, worst});
         }
 
         return curve;
@@ -1345,45 +1753,73 @@ namespace constraint_analysis
         constraint_curve curve;
         curve.name = "jet_climb_constraint";
 
-        const double h = input.climb.altitude_m;
-        const double v = input.climb.speed_ms;
-        const double roc = input.climb.roc_ms;
-        const double beta = input.climb.beta_climb;
+        struct prepared_climb_point
+        {
+            const climb_mission_point* mission = nullptr;
+            double dynamic_pressure = 0.0;
+            double thrust_lapse = 1.0;
+            drag_polar polar;
+        };
 
-        const double rho = atmosphere_.getDensity(h);
-        const double q = constraint_utilities::compute_dynamic_pressure(rho, v);
-        const double mach = v / atmosphere_.getSpeedOfSound(h);
-
-        const double alpha = installed_thrust_lapse(
-            input,
-            atmosphere_,
-            mach,
-            h,
-            "maximum_continuous");
+        std::vector<prepared_climb_point> prepared_points;
+        prepared_points.reserve(input.climb.mission_points.size());
+        for (const auto& mission_point : input.climb.mission_points)
+        {
+            const double rho = atmosphere_.getDensity(mission_point.altitude_m);
+            const double mach = mission_point.speed_ms /
+                atmosphere_.getSpeedOfSound(mission_point.altitude_m);
+            prepared_points.push_back({
+                &mission_point,
+                constraint_utilities::compute_dynamic_pressure(
+                    rho, mission_point.speed_ms),
+                installed_thrust_lapse(
+                    input,
+                    atmosphere_,
+                    mach,
+                    mission_point.altitude_m,
+                    "maximum_continuous"),
+                operating_drag_polar(
+                    input, mach, mission_point.altitude_m)
+            });
+        }
 
         for (double ws = input.wing_loading_min;
             ws <= input.wing_loading_max;
             ws += input.wing_loading_step)
         {
-            mattingly_airborne_case_input case_input;
-            case_input.wing_loading = ws;
-            case_input.dynamic_pressure = q;
-            case_input.alpha = alpha;
-            case_input.beta = beta;
+            double worst_thrust_to_weight =
+                -std::numeric_limits<double>::infinity();
 
-            case_input.k1 = input.aircraft.polar.k;
-            case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
-            case_input.cdr = 0.0;
+            for (const auto& prepared : prepared_points)
+            {
+                const auto& mission_point = *prepared.mission;
+                mattingly_airborne_case_input case_input;
+                case_input.wing_loading = ws;
+                case_input.dynamic_pressure = prepared.dynamic_pressure;
+                case_input.alpha = prepared.thrust_lapse;
+                case_input.beta = mission_point.beta_climb;
+                case_input.k1 = prepared.polar.k;
+                case_input.k2 = 0.0;
+                case_input.cd0 = prepared.polar.cd_0;
+                case_input.cdr = 0.0;
+                case_input.load_factor = 1.0;
+                case_input.climb_rate = mission_point.roc_ms;
+                case_input.velocity = mission_point.speed_ms;
+                case_input.acceleration = mission_point.acceleration_ms2;
 
-            case_input.load_factor = 1.0;
-            case_input.climb_rate = roc;
-            case_input.velocity = v;
-            case_input.acceleration = 0.0;
+                const auto result =
+                    mattingly_airborne_case::compute(case_input);
+                worst_thrust_to_weight = std::max(
+                    worst_thrust_to_weight,
+                    result.thrust_to_weight_sl);
+            }
 
-            const auto result = mattingly_airborne_case::compute(case_input);
-
-            curve.points.push_back({ws, result.thrust_to_weight_sl});
+            if (!std::isfinite(worst_thrust_to_weight))
+            {
+                throw std::runtime_error(
+                    "Jet climb mission scan produced no finite result.");
+            }
+            curve.points.push_back({ws, worst_thrust_to_weight});
         }
 
         return curve;
@@ -1409,6 +1845,7 @@ namespace constraint_analysis
             mach,
             h,
             "maximum_continuous");
+        const auto polar = operating_drag_polar(input, mach, h);
 
         for (double ws = input.wing_loading_min;
             ws <= input.wing_loading_max;
@@ -1420,61 +1857,12 @@ namespace constraint_analysis
             case_input.alpha = alpha;
             case_input.beta = beta;
 
-            case_input.k1 = input.aircraft.polar.k;
+            case_input.k1 = polar.k;
             case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
+            case_input.cd0 = polar.cd_0;
             case_input.cdr = 0.0;
 
             case_input.load_factor = n;
-            case_input.climb_rate = 0.0;
-            case_input.velocity = v;
-            case_input.acceleration = 0.0;
-
-            const auto result = mattingly_airborne_case::compute(case_input);
-
-            curve.points.push_back({ws, result.thrust_to_weight_sl});
-        }
-
-        return curve;
-    }
-
-    constraint_curve jet_constraint_analysis::compute_supercruise_constraint(const constraint_input& input) const
-    {
-        constraint_curve curve;
-        curve.name = "jet_supercruise_constraint";
-
-        const double h = input.supercruise.altitude_m;
-        const double mach = input.supercruise.mach;
-        const double beta = input.supercruise.beta_supercruise;
-
-        const double rho = atmosphere_.getDensity(h);
-        const double a = atmosphere_.getSpeedOfSound(h);
-        const double v = mach * a;
-        const double q = constraint_utilities::compute_dynamic_pressure(rho, v);
-
-        const double alpha = installed_thrust_lapse(
-            input,
-            atmosphere_,
-            mach,
-            h,
-            "maximum_continuous");
-
-        for (double ws = input.wing_loading_min;
-            ws <= input.wing_loading_max;
-            ws += input.wing_loading_step)
-        {
-            mattingly_airborne_case_input case_input;
-            case_input.wing_loading = ws;
-            case_input.dynamic_pressure = q;
-            case_input.alpha = alpha;
-            case_input.beta = beta;
-
-            case_input.k1 = input.aircraft.polar.k;
-            case_input.k2 = 0.0;
-            case_input.cd0 = input.aircraft.polar.cd_0;
-            case_input.cdr = 0.0;
-
-            case_input.load_factor = 1.0;
             case_input.climb_rate = 0.0;
             case_input.velocity = v;
             case_input.acceleration = 0.0;
@@ -1514,6 +1902,8 @@ namespace constraint_analysis
 
         const double range_m = input.range.range_m;
         const double mach = v / atmosphere_.getSpeedOfSound(input.range.altitude_m);
+        const auto polar = operating_drag_polar(
+            input, mach, input.range.altitude_m);
         const double c = engine_tsfc_1_per_s(
             input,
             input.range.altitude_m,
@@ -1524,8 +1914,8 @@ namespace constraint_analysis
         {
             const double cl = constraint_utilities::compute_lift_coefficient(ws, q);
             const double cd = constraint_utilities::compute_drag_coefficient(
-                input.aircraft.polar.cd_0,
-                input.aircraft.polar.k,
+                polar.cd_0,
+                polar.k,
                 cl);
 
             const double lift_to_drag = cl / cd;
