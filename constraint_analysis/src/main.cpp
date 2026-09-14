@@ -109,37 +109,26 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_root = "output";
         std::filesystem::create_directories(output_root);
 
-        // Command-line arguments are optional. Expensive carpet/sensitivity
-        // sweeps are opt-in so a normal matching-chart run does not repeat
-        // the complete constraint analysis roughly one hundred times.
+        // Command-line arguments are optional.
         // Supported forms:
         //   app.exe
         //   app.exe CASE_ID
         //   app.exe "config\\another_config.xml"
         //   app.exe "config\\another_config.xml" CASE_ID
-        //   app.exe CASE_ID --with-studies
         //
         // The engine directory is always read from engine/engine_directory_path
         // in the selected XML constraint case.
         std::filesystem::path config_path = "config/constraint_analysis_conf.xml";
         std::string case_override_id;
-        bool run_parameter_studies = false;
         std::vector<std::string> positional_arguments;
 
         for (int index = 1; index < argc; ++index)
-        {
-            const std::string argument = argv[index];
-            if (argument == "--with-studies")
-                run_parameter_studies = true;
-            else
-                positional_arguments.push_back(argument);
-        }
+            positional_arguments.emplace_back(argv[index]);
 
         if (positional_arguments.size() > 2)
             throw std::runtime_error(
                 "Too many positional arguments. Use: app.exe [config.xml] "
-                "[case_ID] [--with-studies] or app.exe [case_ID] "
-                "[--with-studies].");
+                "[case_ID] or app.exe [case_ID].");
 
         if (!positional_arguments.empty())
         {
@@ -172,15 +161,10 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_directory =
             output_root / active_case_id;
         std::filesystem::create_directories(output_directory);
-        // Remove optional outputs before rerunning so disabled studies or
-        // verification cannot leave stale current-schema evidence behind.
-        for (const char* study_file : {
-                 "jet_performance_carpet.csv",
-                 "propeller_performance_carpet.csv",
-                 "mission_verification.csv"})
-        {
-            std::filesystem::remove(output_directory / study_file);
-        }
+        // Remove optional verification output before rerunning so a disabled
+        // verification pass cannot leave stale evidence behind.
+        std::filesystem::remove(
+            output_directory / "mission_verification.csv");
         for (const auto& entry :
              std::filesystem::directory_iterator(output_directory))
         {
@@ -203,12 +187,6 @@ int main(int argc, char* argv[])
         std::cout << "Using constraint case ID: " << active_case_id << '\n';
         std::cout << "Case output directory: "
                   << output_directory.string() << '\n';
-        std::cout << "Parameter studies: "
-                  << (run_parameter_studies
-                          ? "enabled (--with-studies)"
-                          : "skipped (main analysis only)")
-                  << '\n';
-
         const bool is_propeller =
             xml_string(config, "propulsion_type") == "propeller";
 
@@ -831,102 +809,8 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (is_propeller)
-        {
-            std::ofstream carpet(
-                output_directory / "propeller_constraint_carpet.csv");
-            carpet << "constraint,wing_loading_N_m2,"
-                       "required_shaft_power_to_weight_W_N,"
-                       "required_total_shaft_power_W\n";
-            for (const auto& curve : output.curves)
-            {
-                for (const auto& point : curve.points)
-                {
-                    carpet << curve.name << "," << point.x << "," << point.y
-                           << "," << point.y * input.aircraft.takeoff_weight_N
-                           << "\n";
-                }
-            }
-        }
-
         // ============================================================
-        // 4. DESIGNER PERFORMANCE CARPET
-        // ============================================================
-        // A normal run produces the selected matching chart. --with-studies
-        // adds one 9x9 requirement trade study. The wide requirement ranges
-        // are deliberate: the carpet should expose changes in the governing
-        // constraint, not only tiny perturbations around one nominal point.
-        std::vector<jet_two_parameter_carpet_point> performance_carpet_points;
-        if (run_parameter_studies)
-        {
-            if (input.condition_source != "performance")
-            {
-                throw std::runtime_error(
-                    "Designer carpet requires condition_source='performance'.");
-            }
-
-            const auto runway_values = [&input]()
-            {
-                std::vector<double> values;
-                for (int index = 0; index < 9; ++index)
-                    values.push_back(
-                        input.takeoff.runway_m * (0.5 + index / 8.0));
-                return values;
-            }();
-
-            jet_two_parameter_carpet_study study{atm};
-            if (!is_propeller)
-            {
-                const auto acceleration_values = [&input]()
-                {
-                    std::vector<double> values;
-                    const double nominal = input.acceleration.mission_points
-                                               .front().acceleration_ms2;
-                    for (int index = 0; index < 9; ++index)
-                        values.push_back(
-                            nominal * (1.0 / 3.0 + index / 12.0));
-                    return values;
-                }();
-                performance_carpet_points = study.run(
-                    input,
-                    jet_carpet_parameter::acceleration_ms2,
-                    acceleration_values,
-                    jet_carpet_parameter::takeoff_distance_m,
-                    runway_values);
-                jet_two_parameter_carpet_study::write_to_csv(
-                    performance_carpet_points,
-                    "acceleration_ms2", "takeoff_distance_m",
-                    (output_directory / "jet_performance_carpet.csv").string());
-            }
-            else
-            {
-                const auto climb_rate_values = [&input]()
-                {
-                    std::vector<double> values;
-                    const double nominal =
-                        input.climb.mission_points.front().roc_ms;
-                    for (int index = 0; index < 9; ++index)
-                        values.push_back(nominal * (0.4 + 0.15 * index));
-                    return values;
-                }();
-                performance_carpet_points = study.run(
-                    input,
-                    jet_carpet_parameter::climb_rate_ms,
-                    climb_rate_values,
-                    jet_carpet_parameter::takeoff_distance_m,
-                    runway_values);
-                jet_two_parameter_carpet_study::write_to_csv(
-                    performance_carpet_points,
-                    "climb_rate_ms", "takeoff_distance_m",
-                    (output_directory /
-                        "propeller_performance_carpet.csv").string());
-            }
-            std::cout << "Designer performance carpet points written: "
-                      << performance_carpet_points.size() << '\n';
-        }
-
-        // ============================================================
-        // 5. PROPELLER OPERATING-POINT EVIDENCE
+        // 4. PROPELLER OPERATING-POINT EVIDENCE
         // ============================================================
         if (is_propeller)
         {

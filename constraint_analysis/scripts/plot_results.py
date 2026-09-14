@@ -376,7 +376,6 @@ plot_allowlist = {
     "01_design_matching_chart",
     "02_governing_constraint_envelope",
     "03_design_point_margins",
-    "04_requirement_tradeoff",
     "05_tolerance_robustness",
 }
 for existing_plot in os.listdir(save_dir):
@@ -388,117 +387,6 @@ for existing_plot in os.listdir(save_dir):
 
 def analysis_title(title):
     return f"{analysis_label}: {title}"
-
-
-def plot_requirement_tradeoff(csv_path):
-    study = pd.read_csv(csv_path).dropna()
-    secondary_parameter = (
-        "climb_rate_ms" if propeller_mode else "acceleration_ms2"
-    )
-    required = {
-        secondary_parameter, "takeoff_distance_m", "best_wing_loading",
-        "best_required_loading", "is_baseline", "active_constraint_name",
-    }
-    if not required.issubset(study.columns):
-        missing = sorted(required.difference(study.columns))
-        raise RuntimeError(
-            "Requirement trade-off CSV is incomplete. Missing: "
-            + ", ".join(missing)
-        )
-
-    baseline = study[
-        pd.to_numeric(study["is_baseline"], errors="coerce").fillna(0) == 1
-    ]
-    if len(baseline) != 1:
-        raise RuntimeError(
-            "Requirement trade-off study must contain one nominal point."
-        )
-    baseline = baseline.iloc[0]
-
-    available_levels = np.sort(study[secondary_parameter].unique())
-    nominal_value = float(baseline[secondary_parameter])
-    nominal_level = available_levels[
-        np.argmin(np.abs(available_levels - nominal_value))
-    ]
-    requested_levels = [available_levels[0], nominal_level, available_levels[-1]]
-    level_names = ["Low", "Nominal", "High"]
-    colors = ["#16a34a", "#2563eb", "#dc2626"]
-
-    fig, (ax_loading, ax_ws) = plt.subplots(
-        1, 2, figsize=(12.2, 5.8), sharex=True,
-    )
-    for level, level_name, color in zip(
-            requested_levels, level_names, colors):
-        points = study[np.isclose(study[secondary_parameter], level)].sort_values(
-            "takeoff_distance_m"
-        )
-        if points.empty:
-            continue
-        if propeller_mode:
-            requirement = f"ROC = {level:.1f} m/s"
-        else:
-            requirement = f"a = {level:.2f} m/s²"
-        label = f"{level_name}: {requirement}"
-        width = 2.8 if level_name == "Nominal" else 1.8
-        ax_loading.plot(
-            points["takeoff_distance_m"], points["best_required_loading"],
-            color=color, linewidth=width, marker="o", markersize=3.8,
-            label=label,
-        )
-        ax_ws.plot(
-            points["takeoff_distance_m"], points["best_wing_loading"],
-            color=color, linewidth=width, marker="o", markersize=3.8,
-            label=label,
-        )
-
-    nominal_x = float(baseline["takeoff_distance_m"])
-    nominal_loading = float(baseline["best_required_loading"])
-    nominal_ws = float(baseline["best_wing_loading"])
-    for ax, nominal_y in (
-            (ax_loading, nominal_loading), (ax_ws, nominal_ws)):
-        ax.scatter(
-            nominal_x, nominal_y, marker="*", s=190, color="#fbbf24",
-            edgecolor="#111827", linewidth=0.9, zorder=6,
-        )
-
-    governing = str(baseline["active_constraint_name"]).replace(
-        "propeller_", ""
-    ).replace("jet_", "").replace("_constraint", "").replace("_", " ")
-    ax_loading.annotate(
-        f"Nominal design\n{y_symbol} = {nominal_loading:.3f}\n"
-        f"Control: {governing.title()}",
-        (nominal_x, nominal_loading), xytext=(14, 14),
-        textcoords="offset points", fontsize=8.8,
-        arrowprops=dict(arrowstyle="->", color="#64748b"),
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                  edgecolor="#cbd5e1", alpha=0.96),
-    )
-    ax_ws.annotate(
-        f"Nominal W/S = {nominal_ws:.0f} N/m²",
-        (nominal_x, nominal_ws), xytext=(14, 14),
-        textcoords="offset points", fontsize=8.8,
-        arrowprops=dict(arrowstyle="->", color="#64748b"),
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                  edgecolor="#cbd5e1", alpha=0.96),
-    )
-
-    ax_loading.set_title("Required propulsion loading")
-    ax_loading.set_ylabel(y_axis_label)
-    ax_ws.set_title("Selected wing loading")
-    ax_ws.set_ylabel("Selected Wing Loading, W/S [N/m²]")
-    for ax in (ax_loading, ax_ws):
-        ax.set_xlabel("Take-off ground-roll requirement [m]")
-        clean_axes(ax)
-    ax_loading.legend(frameon=False, fontsize=8.7)
-    fig.suptitle(analysis_title("Requirement Trade-Off"), fontsize=15)
-    fig.text(
-        0.5, 0.015,
-        "Shorter runway and higher climb/acceleration requirements are more "
-        "demanding. The star marks the nominal design requirement.",
-        ha="center", fontsize=8.8, color="#475569",
-    )
-    fig.tight_layout(rect=(0.0, 0.055, 1.0, 0.94))
-    save_plot("04_requirement_tradeoff", tight=False)
 
 
 if propeller_mode:
@@ -1541,15 +1429,6 @@ ax.text(
 )
 fig.tight_layout()
 save_plot("03_design_point_margins")
-
-
-requirement_study_path = os.path.join(
-    output_dir,
-    "propeller_performance_carpet.csv"
-    if propeller_mode else "jet_performance_carpet.csv",
-)
-if os.path.exists(requirement_study_path):
-    plot_requirement_tradeoff(requirement_study_path)
 
 
 print()
