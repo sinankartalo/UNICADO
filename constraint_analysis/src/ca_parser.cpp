@@ -103,19 +103,6 @@ namespace constraint_analysis
         config.values[config_key] = xml_required_string(parent, xml_path);
     }
 
-    static void xml_map_optional_value(
-        text_config& config,
-        node& parent,
-        const std::string& config_key,
-        const std::string& xml_path,
-        const std::string& default_value)
-    {
-        node* xml_node = parent.find(xml_path);
-        config.values[config_key] = xml_node == nullptr
-            ? default_value
-            : xml_node_text(*xml_node);
-    }
-
     static bool xml_bool(
         const text_config& config,
         const std::string& key)
@@ -258,14 +245,15 @@ namespace constraint_analysis
         }
 
         const std::string set_id = xml_node_text(*set_ref_node);
-        node* constraint_sets_node = document->find("constraint_selection");
-        if (constraint_sets_node == nullptr)
+        node* constraint_selection_node = document->find(
+            "constraint_selection");
+        if (constraint_selection_node == nullptr)
         {
             throw std::runtime_error(
                 "XML config is missing program_settings/constraint_selection.");
         }
 
-        node* standard_set_node = constraint_sets_node->find(
+        node* standard_set_node = constraint_selection_node->find(
             "standard_set@ID=" + set_id, 1);
         if (standard_set_node == nullptr)
         {
@@ -273,11 +261,9 @@ namespace constraint_analysis
                 "Could not find referenced standard_set with ID: " + set_id);
         }
 
-        const std::string standard_set = "";
-
         xml_map_value(config, *standard_set_node,
             "condition_source",
-            standard_set + "condition_source");
+            "condition_source");
 
         for (const auto& [config_key, xml_path] :
              std::initializer_list<std::pair<const char*, const char*>>{
@@ -292,132 +278,130 @@ namespace constraint_analysis
                  {"turn_active", "constant_speed_turn/active"},
                  {"range_active", "range_fuel_fraction/active"}})
         {
-            // Backward compatibility: configs created before constraint
-            // switches existed behave exactly as before (all active).
-            xml_map_optional_value(
-                config, *standard_set_node, config_key, xml_path, "true");
+            xml_map_value(
+                config, *standard_set_node, config_key, xml_path);
         }
 
         xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
-            standard_set + "takeoff_ground_roll/takeoff_ground_roll_m");
+            "takeoff_ground_roll/takeoff_ground_roll_m");
         xml_map_value(config, *standard_set_node,
             "takeoff_altitude_m",
-            standard_set + "takeoff_ground_roll/altitude");
+            "takeoff_ground_roll/altitude");
         xml_map_value(config, *standard_set_node,
             "takeoff_beta",
-            standard_set + "takeoff_ground_roll/weight_fraction");
+            "takeoff_ground_roll/weight_fraction");
         xml_map_value(config, *standard_set_node,
             "takeoff_speed_factor",
-            standard_set + "takeoff_ground_roll/k_TO");
+            "takeoff_ground_roll/k_TO");
         xml_map_value(config, *standard_set_node,
             "takeoff_mu_ro",
-            standard_set + "takeoff_ground_roll/friction_coefficient");
+            "takeoff_ground_roll/friction_coefficient");
         xml_map_value(config, *standard_set_node,
             "takeoff_cd_ground",
-            standard_set + "takeoff_ground_roll/ground_drag_coefficient");
+            "takeoff_ground_roll/ground_drag_coefficient");
 
         xml_map_value(config, *standard_set_node,
             "landing_runway_m",
-            standard_set + "landing_field_length/landing_braking_roll_m");
+            "landing_field_length/landing_braking_roll_m");
         xml_map_value(config, *standard_set_node,
             "landing_altitude_m",
-            standard_set + "landing_field_length/altitude");
+            "landing_field_length/altitude");
         xml_map_value(config, *standard_set_node,
             "landing_beta",
-            standard_set + "landing_field_length/weight_fraction");
+            "landing_field_length/weight_fraction");
         xml_map_value(config, *standard_set_node,
             "landing_speed_factor",
-            standard_set + "landing_field_length/k_TD");
+            "landing_field_length/k_TD");
         xml_map_value(config, *standard_set_node,
             "landing_mu_brake",
-            standard_set + "landing_field_length/friction_coefficient");
+            "landing_field_length/friction_coefficient");
         xml_map_value(config, *standard_set_node,
             "landing_cd_brake",
-            standard_set + "landing_field_length/braking_drag_coefficient");
+            "landing_field_length/braking_drag_coefficient");
 
         xml_map_value(config, *standard_set_node,
             "stall_speed_limit_ms",
-            standard_set + "stall_speed/stall_speed_limit");
+            "stall_speed/stall_speed_limit");
 
         xml_map_value(config, *standard_set_node,
             "max_mach_altitude_m",
-            standard_set + "max_mach/altitude");
+            "max_mach/altitude");
         xml_map_value(config, *standard_set_node,
             "max_mach",
-            standard_set + "max_mach/Mach");
+            "max_mach/Mach");
         xml_map_value(config, *standard_set_node,
             "max_mach_beta",
-            standard_set + "max_mach/weight_fraction");
+            "max_mach/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "acceleration_altitude_m",
-            standard_set + "horizontal_acceleration/altitude");
+            "horizontal_acceleration/altitude");
         xml_map_value(config, *standard_set_node,
             "acceleration_speed_ms",
-            standard_set + "horizontal_acceleration/speed");
+            "horizontal_acceleration/speed");
         xml_map_value(config, *standard_set_node,
             "acceleration_ms2",
-            standard_set + "horizontal_acceleration/acceleration");
+            "horizontal_acceleration/acceleration");
         xml_map_value(config, *standard_set_node,
             "acceleration_roc_ms",
-            standard_set + "horizontal_acceleration/climb_rate");
+            "horizontal_acceleration/climb_rate");
         xml_map_value(config, *standard_set_node,
             "acceleration_beta",
-            standard_set + "horizontal_acceleration/weight_fraction");
+            "horizontal_acceleration/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "cruise_altitude_m",
-            standard_set + "cruise/altitude");
+            "cruise/altitude");
         xml_map_value(config, *standard_set_node,
             "cruise_speed_ms",
-            standard_set + "cruise/speed");
+            "cruise/speed");
         xml_map_value(config, *standard_set_node,
             "cruise_beta",
-            standard_set + "cruise/weight_fraction");
+            "cruise/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "climb_altitude_m",
-            standard_set + "climb/altitude");
+            "climb/altitude");
         xml_map_value(config, *standard_set_node,
             "climb_speed_ms",
-            standard_set + "climb/speed");
+            "climb/speed");
         xml_map_value(config, *standard_set_node,
             "climb_roc_ms",
-            standard_set + "climb/climb_rate");
+            "climb/climb_rate");
         xml_map_value(config, *standard_set_node,
             "climb_acceleration_ms2",
-            standard_set + "climb/acceleration");
+            "climb/acceleration");
         xml_map_value(config, *standard_set_node,
             "climb_beta",
-            standard_set + "climb/weight_fraction");
+            "climb/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "gust_altitude_m",
-            standard_set + "gust/altitude");
+            "gust/altitude");
         xml_map_value(config, *standard_set_node,
             "gust_speed_ms",
-            standard_set + "gust/speed");
+            "gust/speed");
         xml_map_value(config, *standard_set_node,
             "gust_beta",
-            standard_set + "gust/weight_fraction");
+            "gust/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "turn_altitude_m",
-            standard_set + "constant_speed_turn/altitude");
+            "constant_speed_turn/altitude");
         xml_map_value(config, *standard_set_node,
             "turn_speed_ms",
-            standard_set + "constant_speed_turn/speed");
+            "constant_speed_turn/speed");
         xml_map_value(config, *standard_set_node,
             "turn_load_factor",
-            standard_set + "constant_speed_turn/load_factor");
+            "constant_speed_turn/load_factor");
         xml_map_value(config, *standard_set_node,
             "turn_beta",
-            standard_set + "constant_speed_turn/weight_fraction");
+            "constant_speed_turn/weight_fraction");
 
         xml_map_value(config, *standard_set_node,
             "range_available_fuel_fraction",
-            standard_set + "range_fuel_fraction/available_fuel_fraction");
+            "range_fuel_fraction/available_fuel_fraction");
 
         return config;
     }
