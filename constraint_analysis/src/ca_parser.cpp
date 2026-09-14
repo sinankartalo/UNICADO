@@ -282,6 +282,21 @@ namespace constraint_analysis
                 config, *standard_set_node, config_key, xml_path);
         }
 
+        // Cases share one standard set. Only propulsion-dependent activation
+        // differences are overridden at case level; all numerical requirement
+        // values continue to have a single source of truth in the set.
+        for (const auto& [config_key, xml_path] :
+             std::initializer_list<std::pair<const char*, const char*>>{
+                 {"max_mach_active",
+                  "constraints/activation_overrides/max_mach"},
+                 {"range_active",
+                  "constraints/activation_overrides/range_fuel_fraction"}})
+        {
+            node* override_node = selected_case->find(xml_path);
+            if (override_node != nullptr)
+                config.values[config_key] = xml_node_text(*override_node);
+        }
+
         xml_map_value(config, *standard_set_node,
             "takeoff_runway_m",
             "takeoff_ground_roll/takeoff_ground_roll_m");
