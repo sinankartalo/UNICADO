@@ -376,7 +376,6 @@ plot_allowlist = {
     "01_design_matching_chart",
     "02_governing_constraint_envelope",
     "03_design_point_margins",
-    "04_performance_carpet",
     "05_tolerance_robustness",
 }
 for existing_plot in os.listdir(save_dir):
@@ -388,78 +387,6 @@ for existing_plot in os.listdir(save_dir):
 
 def analysis_title(title):
     return f"{analysis_label}: {title}"
-
-
-def plot_performance_carpet(carpet_path):
-    carpet = pd.read_csv(carpet_path).dropna()
-    parameter_a = "climb_rate_ms" if propeller_mode else "acceleration_ms2"
-    parameter_b = "takeoff_distance_m"
-    required = {
-        parameter_a, parameter_b, "best_wing_loading",
-        "best_required_loading", "is_baseline",
-    }
-    if not required.issubset(carpet.columns):
-        missing = sorted(required.difference(carpet.columns))
-        raise RuntimeError(
-            "Performance carpet CSV is incomplete. Missing: "
-            + ", ".join(missing)
-        )
-
-    values_a = np.sort(carpet[parameter_a].unique())
-    values_b = np.sort(carpet[parameter_b].unique())
-
-    def grid(column):
-        return carpet.pivot(
-            index=parameter_a, columns=parameter_b, values=column,
-        ).reindex(index=values_a, columns=values_b).to_numpy(dtype=float)
-
-    loading_grid = grid("best_required_loading")
-    wing_loading_grid = grid("best_wing_loading")
-    if not np.isfinite(loading_grid).all() or not np.isfinite(
-            wing_loading_grid).all():
-        raise RuntimeError("Performance carpet contains non-finite values.")
-
-    x_grid, y_grid = np.meshgrid(values_b, values_a)
-    fig, ax = plt.subplots(figsize=(10.7, 6.8))
-    carpet_fill = ax.contourf(
-        x_grid, y_grid, loading_grid, levels=14, cmap="viridis",
-    )
-    colorbar = fig.colorbar(carpet_fill, ax=ax, pad=0.025)
-    colorbar.set_label(y_axis_label)
-
-    if np.ptp(wing_loading_grid) > 1.0:
-        ws_levels = np.linspace(
-            float(np.min(wing_loading_grid)),
-            float(np.max(wing_loading_grid)), 6,
-        )
-        ws_contours = ax.contour(
-            x_grid, y_grid, wing_loading_grid, levels=ws_levels,
-            colors="white", linewidths=1.0, alpha=0.9,
-        )
-        ax.clabel(
-            ws_contours, inline=True, fontsize=8,
-            fmt=lambda value: f"W/S={value:.0f}",
-        )
-
-    baseline = carpet[carpet["is_baseline"].astype(bool)]
-    if len(baseline) == 1:
-        row = baseline.iloc[0]
-        ax.scatter(
-            row[parameter_b], row[parameter_a], marker="*", s=190,
-            color="#fbbf24", edgecolor="#111827", linewidth=0.9,
-            label="Nominal requirement", zorder=6,
-        )
-        ax.legend(frameon=False, loc="best")
-
-    ax.set_title(analysis_title("Performance-Requirement Carpet"))
-    ax.set_xlabel("Take-off ground-roll requirement [m]")
-    ax.set_ylabel(
-        "Climb-rate requirement [m/s]" if propeller_mode
-        else "Acceleration requirement [m/s²]"
-    )
-    clean_axes(ax)
-    fig.tight_layout()
-    save_plot("04_performance_carpet", tight=False)
 
 
 if propeller_mode:
@@ -1502,15 +1429,6 @@ ax.text(
 )
 fig.tight_layout()
 save_plot("03_design_point_margins")
-
-
-performance_carpet_path = os.path.join(
-    output_dir,
-    "propeller_performance_carpet.csv"
-    if propeller_mode else "jet_performance_carpet.csv",
-)
-if os.path.exists(performance_carpet_path):
-    plot_performance_carpet(performance_carpet_path)
 
 
 print()
