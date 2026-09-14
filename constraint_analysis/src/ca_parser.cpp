@@ -308,13 +308,13 @@ namespace constraint_analysis
             "takeoff_ground_roll/weight_fraction");
         xml_map_value(config, *standard_set_node,
             "takeoff_speed_factor",
-            "takeoff_ground_roll/k_TO");
+            "model_assumptions/takeoff/liftoff_speed_factor_k_TO");
         xml_map_value(config, *standard_set_node,
             "takeoff_mu_ro",
-            "takeoff_ground_roll/friction_coefficient");
+            "model_assumptions/takeoff/rolling_friction_coefficient");
         xml_map_value(config, *standard_set_node,
             "takeoff_cd_ground",
-            "takeoff_ground_roll/ground_drag_coefficient");
+            "model_assumptions/takeoff/ground_drag_coefficient");
 
         xml_map_value(config, *standard_set_node,
             "landing_runway_m",
@@ -327,13 +327,13 @@ namespace constraint_analysis
             "landing_field_length/weight_fraction");
         xml_map_value(config, *standard_set_node,
             "landing_speed_factor",
-            "landing_field_length/k_TD");
+            "model_assumptions/landing/touchdown_speed_factor_k_TD");
         xml_map_value(config, *standard_set_node,
             "landing_mu_brake",
-            "landing_field_length/friction_coefficient");
+            "model_assumptions/landing/braking_friction_coefficient");
         xml_map_value(config, *standard_set_node,
             "landing_cd_brake",
-            "landing_field_length/braking_drag_coefficient");
+            "model_assumptions/landing/braking_drag_coefficient");
 
         xml_map_value(config, *standard_set_node,
             "stall_speed_limit_ms",

@@ -28,6 +28,21 @@
              requirements below; "mission" scans the mission CSV instead. -->
         <condition_source><value>performance</value></condition_source>
 
+        <!-- Equation and ground-operation assumptions. These are model
+             settings, not customer performance requirements. -->
+        <model_assumptions>
+          <takeoff>
+            <liftoff_speed_factor_k_TO><value>1.2</value></liftoff_speed_factor_k_TO>
+            <rolling_friction_coefficient><value>0.02</value></rolling_friction_coefficient>
+            <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
+          </takeoff>
+          <landing>
+            <touchdown_speed_factor_k_TD><value>1.15</value></touchdown_speed_factor_k_TD>
+            <braking_friction_coefficient><value>0.40</value></braking_friction_coefficient>
+            <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
+          </landing>
+        </model_assumptions>
+
         <takeoff_ground_roll>
           <active>
             <value>true</value>
@@ -35,9 +50,6 @@
           <altitude><value>0.0</value></altitude>
           <weight_fraction><value>1.0</value></weight_fraction>
           <takeoff_ground_roll_m><value>1200.0</value></takeoff_ground_roll_m>
-          <k_TO><value>1.2</value></k_TO>
-          <friction_coefficient><value>0.02</value></friction_coefficient>
-          <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
         </takeoff_ground_roll>
 
         <landing_field_length>
@@ -47,9 +59,6 @@
           <altitude><value>0.0</value></altitude>
           <weight_fraction><value>0.85</value></weight_fraction>
           <landing_braking_roll_m><value>1000.0</value></landing_braking_roll_m>
-          <k_TD><value>1.15</value></k_TD>
-          <friction_coefficient><value>0.40</value></friction_coefficient>
-          <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
         </landing_field_length>
 
         <stall_speed>
