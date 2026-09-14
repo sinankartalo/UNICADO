@@ -728,6 +728,51 @@ upper_ws_limits = [
 feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
 feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
 
+# Conservative feasible region: every performance constraint is moved to its
+# upper tolerance edge, while the vertical W/S limits are tightened inward.
+# This definition is shared by the nominal matching chart and the detailed
+# tolerance chart so both figures report the same robust design space.
+robust_ws_min = (
+    gust_ws_limit * (1.0 + constraint_tolerances["Gust"][1])
+    if gust_ws_limit is not None else feasible_ws_min
+)
+robust_upper_limits = []
+if landing_ws_limit is not None:
+    robust_upper_limits.append(
+        landing_ws_limit * (1.0 - constraint_tolerances["Landing"][0])
+    )
+if stall_ws_limit is not None:
+    robust_upper_limits.append(
+        stall_ws_limit * (1.0 - constraint_tolerances["Stall speed"][0])
+    )
+robust_ws_max = (
+    min(robust_upper_limits) if robust_upper_limits else feasible_ws_max
+)
+robust_grid = envelope["wing_loading"].to_numpy(dtype=float)
+robust_curve_values = np.vstack([
+    np.interp(
+        robust_grid,
+        curve["wing_loading"].to_numpy(dtype=float),
+        curve["thrust_to_weight"].to_numpy(dtype=float),
+    ) * (1.0 + constraint_tolerances[name][1])
+    for name, curve in constraints.items()
+])
+robust_envelope = np.max(robust_curve_values, axis=0)
+robust_mask = (
+    (robust_grid >= robust_ws_min) & (robust_grid <= robust_ws_max)
+)
+robust_design_available = np.any(robust_mask)
+if robust_design_available:
+    robust_indices = np.flatnonzero(robust_mask)
+    robust_index = robust_indices[np.argmin(robust_envelope[robust_mask])]
+    robust_best_ws = float(robust_grid[robust_index])
+    robust_best_y = float(robust_envelope[robust_index])
+    robust_governing_index = int(np.argmax(
+        robust_curve_values[:, robust_index]
+    ))
+    robust_governing_name = list(constraints)[robust_governing_index]
+    robust_loading_shift_percent = 100.0 * (robust_best_y / best_tw - 1.0)
+
 
 def centered_feasible_xlim(required_left, required_right):
     """Show all required data while centering feasibility when possible."""
@@ -779,6 +824,39 @@ def shade_feasible_design_region(ax, upper_y, label=True):
 
 
 shade_feasible_design_region(ax, y_max)
+
+if robust_design_available:
+    robust_left = max(robust_ws_min, float(np.min(robust_grid)))
+    robust_right = min(robust_ws_max, float(np.max(robust_grid)))
+    robust_interior_x = robust_grid[
+        (robust_grid > robust_left) & (robust_grid < robust_right)
+    ]
+    robust_region_x = np.concatenate((
+        np.asarray([robust_left]),
+        robust_interior_x,
+        np.asarray([robust_right]),
+    ))
+    robust_region_y = np.interp(
+        robust_region_x, robust_grid, robust_envelope,
+    )
+    ax.plot(
+        robust_region_x,
+        robust_region_y,
+        color="#7c3aed",
+        linestyle="--",
+        linewidth=2.8,
+        label="Robust feasible boundary",
+        zorder=5,
+    )
+    ax.vlines(
+        [robust_region_x[0], robust_region_x[-1]],
+        [robust_region_y[0], robust_region_y[-1]],
+        y_max,
+        colors="#7c3aed",
+        linestyles="--",
+        linewidth=2.0,
+        zorder=4,
+    )
 
 ax.scatter(
     aircraft_ws,
@@ -972,49 +1050,7 @@ zoom_y_span = max(zoom_y_high - zoom_y_low, 1.0e-3)
 tolerance_zoom_y_min = max(0.0, zoom_y_low - 0.18 * zoom_y_span)
 tolerance_zoom_y_max = zoom_y_high + 0.20 * zoom_y_span
 
-# Conservative design point: upper performance demand bands together with
-# tightened vertical limits. This converts the tolerance picture into a clear
-# robustness decision rather than showing uncertainty bands alone.
-robust_ws_min = (
-    gust_ws_limit * (1.0 + constraint_tolerances["Gust"][1])
-    if gust_ws_limit is not None else feasible_ws_min
-)
-robust_upper_limits = []
-if landing_ws_limit is not None:
-    robust_upper_limits.append(
-        landing_ws_limit * (1.0 - constraint_tolerances["Landing"][0])
-    )
-if stall_ws_limit is not None:
-    robust_upper_limits.append(
-        stall_ws_limit * (1.0 - constraint_tolerances["Stall speed"][0])
-    )
-robust_ws_max = (
-    min(robust_upper_limits) if robust_upper_limits else feasible_ws_max
-)
-robust_grid = envelope["wing_loading"].to_numpy(dtype=float)
-robust_curve_values = np.vstack([
-    np.interp(
-        robust_grid,
-        curve["wing_loading"].to_numpy(dtype=float),
-        curve["thrust_to_weight"].to_numpy(dtype=float),
-    ) * (1.0 + constraint_tolerances[name][1])
-    for name, curve in constraints.items()
-])
-robust_envelope = np.max(robust_curve_values, axis=0)
-robust_mask = (
-    (robust_grid >= robust_ws_min) & (robust_grid <= robust_ws_max)
-)
-robust_design_available = np.any(robust_mask)
 if robust_design_available:
-    robust_indices = np.flatnonzero(robust_mask)
-    robust_index = robust_indices[np.argmin(robust_envelope[robust_mask])]
-    robust_best_ws = float(robust_grid[robust_index])
-    robust_best_y = float(robust_envelope[robust_index])
-    robust_governing_index = int(np.argmax(
-        robust_curve_values[:, robust_index]
-    ))
-    robust_governing_name = list(constraints)[robust_governing_index]
-    robust_loading_shift_percent = 100.0 * (robust_best_y / best_tw - 1.0)
     tolerance_zoom_x_min = max(
         tolerance_plot_min,
         min(tolerance_zoom_x_min, robust_best_ws - 0.08 * point_x_center),
