@@ -153,9 +153,10 @@ int main(int argc, char* argv[])
             xml_string(config, "active_constraint_case_id");
         const std::filesystem::path output_directory =
             output_root / active_case_id;
+        // Every run owns this case directory. Clearing it prevents CSV files
+        // from constraints disabled in the XML from appearing in new plots.
+        std::filesystem::remove_all(output_directory);
         std::filesystem::create_directories(output_directory);
-        std::filesystem::remove(
-            output_directory / "carpet_plot_full.csv");
 
         std::cout << "Using XML configuration: " << config_path << '\n';
         std::cout << "Using constraint case ID: " << active_case_id << '\n';

@@ -50,6 +50,29 @@ namespace constraint_analysis
         return std::stod(xml_string(config, key));
     }
 
+    static bool xml_bool(
+        const text_config& config,
+        const std::string& key)
+    {
+        std::string value = xml_string(config, key);
+        for (char& c : value)
+        {
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+
+        if (value == "true" || value == "1")
+        {
+            return true;
+        }
+        if (value == "false" || value == "0")
+        {
+            return false;
+        }
+
+        throw std::runtime_error(
+            "Invalid boolean config value for " + key + ": " + value);
+    }
+
     static bool has_xml_extension(const std::filesystem::path& path)
     {
         std::string extension = path.extension().string();
@@ -255,6 +278,9 @@ namespace constraint_analysis
         const std::string standard_set = "";
 
         xml_map_value(config, *standard_set_node,
+            "takeoff_active",
+            standard_set + "takeoff_ground_roll/active");
+        xml_map_value(config, *standard_set_node,
             "takeoff_altitude_m",
             standard_set + "takeoff_ground_roll/altitude");
         xml_map_value(config, *standard_set_node,
@@ -270,6 +296,9 @@ namespace constraint_analysis
             "takeoff_cd_ground",
             standard_set + "takeoff_ground_roll/ground_drag_coefficient");
 
+        xml_map_value(config, *standard_set_node,
+            "landing_active",
+            standard_set + "landing_field_length/active");
         xml_map_value(config, *standard_set_node,
             "landing_altitude_m",
             standard_set + "landing_field_length/altitude");
@@ -287,9 +316,15 @@ namespace constraint_analysis
             standard_set + "landing_field_length/braking_drag_coefficient");
 
         xml_map_value(config, *standard_set_node,
+            "stall_speed_active",
+            standard_set + "stall_speed/active");
+        xml_map_value(config, *standard_set_node,
             "stall_speed_limit_ms",
             standard_set + "stall_speed/stall_speed_limit");
 
+        xml_map_value(config, *standard_set_node,
+            "max_mach_active",
+            standard_set + "max_mach/active");
         xml_map_value(config, *standard_set_node,
             "max_mach_altitude_m",
             standard_set + "max_mach/altitude");
@@ -298,12 +333,18 @@ namespace constraint_analysis
             standard_set + "max_mach/Mach");
 
         xml_map_value(config, *standard_set_node,
+            "supercruise_active",
+            standard_set + "supercruise/active");
+        xml_map_value(config, *standard_set_node,
             "supercruise_altitude_m",
             standard_set + "supercruise/altitude");
         xml_map_value(config, *standard_set_node,
             "supercruise_mach",
             standard_set + "supercruise/Mach");
 
+        xml_map_value(config, *standard_set_node,
+            "acceleration_active",
+            standard_set + "horizontal_acceleration/active");
         xml_map_value(config, *standard_set_node,
             "acceleration_altitude_m",
             standard_set + "horizontal_acceleration/altitude");
@@ -315,12 +356,18 @@ namespace constraint_analysis
             standard_set + "horizontal_acceleration/acceleration");
 
         xml_map_value(config, *standard_set_node,
+            "cruise_active",
+            standard_set + "cruise/active");
+        xml_map_value(config, *standard_set_node,
             "cruise_altitude_m",
             standard_set + "cruise/altitude");
         xml_map_value(config, *standard_set_node,
             "cruise_speed_ms",
             standard_set + "cruise/speed");
 
+        xml_map_value(config, *standard_set_node,
+            "climb_active",
+            standard_set + "climb/active");
         xml_map_value(config, *standard_set_node,
             "climb_altitude_m",
             standard_set + "climb/altitude");
@@ -332,6 +379,9 @@ namespace constraint_analysis
             standard_set + "climb/climb_rate");
 
         xml_map_value(config, *standard_set_node,
+            "turn_active",
+            standard_set + "constant_speed_turn/active");
+        xml_map_value(config, *standard_set_node,
             "turn_altitude_m",
             standard_set + "constant_speed_turn/altitude");
         xml_map_value(config, *standard_set_node,
@@ -341,6 +391,13 @@ namespace constraint_analysis
             "turn_load_factor",
             standard_set + "constant_speed_turn/load_factor");
 
+        xml_map_value(config, *standard_set_node,
+            "gust_active",
+            standard_set + "gust/active");
+
+        xml_map_value(config, *standard_set_node,
+            "range_active",
+            standard_set + "range_fuel_fraction/active");
         xml_map_value(config, *standard_set_node,
             "range_available_fuel_fraction",
             standard_set + "range_fuel_fraction/available_fuel_fraction");
@@ -418,6 +475,7 @@ namespace constraint_analysis
         input.wing_loading_max = xml_double(config, "wing_loading_max");
         input.wing_loading_step = xml_double(config, "wing_loading_step");
 
+        input.takeoff.active = xml_bool(config, "takeoff_active");
         input.takeoff.altitude_m = xml_double(config, "takeoff_altitude_m");
         input.takeoff.runway_m = xml_double(config, "takeoff_runway_m");
         input.takeoff.speed_factor = xml_double(config, "takeoff_speed_factor");
@@ -425,6 +483,7 @@ namespace constraint_analysis
         input.takeoff.mu_ro = xml_double(config, "takeoff_mu_ro");
         input.takeoff.cd_ground = xml_double(config, "takeoff_cd_ground");
 
+        input.landing.active = xml_bool(config, "landing_active");
         input.landing.altitude_m = xml_double(config, "landing_altitude_m");
         input.landing.runway_m = xml_double(config, "landing_runway_m");
         input.landing.speed_factor = xml_double(config, "landing_speed_factor");
@@ -436,43 +495,52 @@ namespace constraint_analysis
         // Only the maximum allowed stall speed remains a requirement input.
         // Altitude and beta are inherited automatically from the landing case
         // to avoid entering the same physical condition twice.
+        input.stall_speed.active = xml_bool(config, "stall_speed_active");
         input.stall_speed.altitude_m = input.landing.altitude_m;
         input.stall_speed.speed_limit_ms = xml_double(config, "stall_speed_limit_ms");
         input.stall_speed.beta_stall = input.landing.beta_landing;
 
+        input.max_mach.active = xml_bool(config, "max_mach_active");
         input.max_mach.altitude_m = xml_double(config, "max_mach_altitude_m");
         input.max_mach.mach = xml_double(config, "max_mach");
         input.max_mach.beta_max_mach = mission_data.get_beta("cruise");
 
+        input.supercruise.active = xml_bool(config, "supercruise_active");
         input.supercruise.altitude_m = xml_double(config, "supercruise_altitude_m");
         input.supercruise.mach = xml_double(config, "supercruise_mach");
         input.supercruise.beta_supercruise = mission_data.get_beta("cruise");
 
+        input.acceleration.active = xml_bool(config, "acceleration_active");
         input.acceleration.altitude_m = xml_double(config, "acceleration_altitude_m");
         input.acceleration.speed_ms = xml_double(config, "acceleration_speed_ms");
         input.acceleration.acceleration_ms2 = xml_double(config, "acceleration_ms2");
         input.acceleration.beta_acceleration = mission_data.get_beta("cruise");
 
+        input.cruise.active = xml_bool(config, "cruise_active");
         input.cruise.altitude_m = xml_double(config, "cruise_altitude_m");
         input.cruise.speed_ms = xml_double(config, "cruise_speed_ms");
         input.cruise.beta_cruise = mission_data.get_beta("cruise", input.cruise.altitude_m);
 
         // Gust constraint uses the cruise flight condition automatically.
         // All remaining gust quantities are derived in compute_gust_constraint_limit().
+        input.gust.active = xml_bool(config, "gust_active");
         input.gust.altitude_m = input.cruise.altitude_m;
         input.gust.speed_ms = input.cruise.speed_ms;
         input.gust.beta_gust = input.cruise.beta_cruise;
 
+        input.climb.active = xml_bool(config, "climb_active");
         input.climb.altitude_m = xml_double(config, "climb_altitude_m");
         input.climb.speed_ms = xml_double(config, "climb_speed_ms");
         input.climb.roc_ms = xml_double(config, "climb_roc_ms");
         input.climb.beta_climb = mission_data.get_beta("climb", input.climb.altitude_m);
 
+        input.turn.active = xml_bool(config, "turn_active");
         input.turn.altitude_m = xml_double(config, "turn_altitude_m");
         input.turn.speed_ms = xml_double(config, "turn_speed_ms");
         input.turn.load_factor = xml_double(config, "turn_load_factor");
         input.turn.beta_turn = mission_data.get_beta("cruise");
 
+        input.range.active = xml_bool(config, "range_active");
         input.range.altitude_m = mission_data.get_range_weighted_altitude();
         input.range.speed_ms = mission_data.get_range_weighted_tas();
         input.range.range_m = mission_data.get_total_range();

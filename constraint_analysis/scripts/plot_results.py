@@ -358,21 +358,16 @@ else:
         os.remove(stale_duplicate)
 
 constraints = {}
-missing_constraint_files = []
 
 for name, filename in constraint_files.items():
     df = load_xy_csv(filename)
     if df is not None:
         constraints[name] = df
-    else:
-        missing_constraint_files.append(filename)
 
-if missing_constraint_files:
-    missing_list = ", ".join(missing_constraint_files)
+if not constraints:
     raise RuntimeError(
-        "The current analysis did not produce its constraint CSV files. "
-        "Do not plot stale results; inspect the C++ application exit code. "
-        f"Missing: {missing_list}"
+        "The current analysis did not produce any active constraint CSV files. "
+        "Enable at least one curve constraint in the XML and rerun the C++ application."
     )
 
 envelope = load_xy_csv("constraint_envelope.csv")

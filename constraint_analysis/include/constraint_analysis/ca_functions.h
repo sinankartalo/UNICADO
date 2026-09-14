@@ -57,6 +57,7 @@ namespace constraint_analysis
 
     struct takeoff_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double runway_m = 0.0;
         double speed_factor = 1.2;
@@ -69,6 +70,7 @@ namespace constraint_analysis
 
     struct max_mach_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double mach = 0.0;
         double beta_max_mach = 1.0;
@@ -76,6 +78,7 @@ namespace constraint_analysis
 
     struct acceleration_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double acceleration_ms2 = 0.0;
@@ -84,6 +87,7 @@ namespace constraint_analysis
 
     struct supercruise_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double mach = 0.0;
         double beta_supercruise = 1.0;
@@ -91,6 +95,7 @@ namespace constraint_analysis
 
     struct climb_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double roc_ms = 0.0;
@@ -100,6 +105,7 @@ namespace constraint_analysis
 
     struct cruise_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
 
@@ -108,6 +114,7 @@ namespace constraint_analysis
 
     struct turn_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double load_factor = 1.0;
@@ -117,6 +124,7 @@ namespace constraint_analysis
 
     struct landing_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double runway_m = 0.0;
         double speed_factor = 1.15;
@@ -128,6 +136,7 @@ namespace constraint_analysis
 
     struct stall_speed_constraint
     {
+        bool active = true;
         // Altitude and beta are inherited from the landing case in the parser.
         // speed_limit_ms is the only independent stall-speed requirement.
         double altitude_m = 0.0;
@@ -137,6 +146,7 @@ namespace constraint_analysis
 
     struct gust_constraint
     {
+        bool active = true;
         // Gust condition is inherited from the cruise case in the parser.
         // The design gust velocity, lift-curve slope, alleviation factor,
         // and load-factor limit are derived inside compute_gust_constraint_limit().
@@ -147,6 +157,7 @@ namespace constraint_analysis
 
     struct range_constraint
     {
+        bool active = true;
         double altitude_m = 0.0;
         double speed_ms = 0.0;
         double range_m = 0.0;
