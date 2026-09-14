@@ -798,12 +798,15 @@ namespace constraint_analysis
                   << representative_climb.altitude_m
                   << " m, beta = "
                   << representative_climb.beta_climb << '\n';
-        std::cout << "Cruise-segment range from mission CSV = "
-                << input.range.range_m << " m\n";
-        std::cout << "Cruise range-weighted altitude from mission CSV = "
-                << input.range.altitude_m << " m\n";
-        std::cout << "Cruise range-weighted TAS from mission CSV = "
-                << input.range.speed_ms << " m/s\n";
+        if (input.active.range_fuel_fraction)
+        {
+            std::cout << "Cruise-segment range from mission CSV = "
+                      << input.range.range_m << " m\n";
+            std::cout << "Cruise range-weighted altitude from mission CSV = "
+                      << input.range.altitude_m << " m\n";
+            std::cout << "Cruise range-weighted TAS from mission CSV = "
+                      << input.range.speed_ms << " m/s\n";
+        }
                         
         return input;
     }

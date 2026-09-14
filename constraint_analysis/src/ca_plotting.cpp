@@ -9,6 +9,7 @@
 // ============================================================
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
@@ -163,7 +164,10 @@ namespace constraint_analysis
             jet_carpet_parameter_value(base_input, parameter_b);
         constraint_analysis_tool tool(atmosphere_);
         std::vector<jet_two_parameter_carpet_point> results;
-        results.reserve(parameter_a_values.size() * parameter_b_values.size());
+        const std::size_t total_points =
+            parameter_a_values.size() * parameter_b_values.size();
+        results.reserve(total_points);
+        std::size_t completed_points = 0;
 
         for (double value_a : parameter_a_values)
         {
@@ -213,8 +217,14 @@ namespace constraint_analysis
                     constraint_values[0].second,
                     constraint_values[1].second,
                     constraint_values[0].first - constraint_values[1].first});
+
+                ++completed_points;
+                std::cout << "\rDesigner carpet progress: "
+                          << completed_points << "/" << total_points
+                          << std::flush;
             }
         }
+        std::cout << '\n';
         return results;
     }
 
