@@ -43,9 +43,6 @@ namespace constraint_analysis
         std::vector<double> climb_rate_ms;
         std::vector<std::string> mode_name;
 
-        double get_total_range() const;
-        double get_range_weighted_altitude() const;
-        double get_range_weighted_tas() const;
         double get_cruise_range() const;
         double get_cruise_range_weighted_altitude() const;
         double get_cruise_range_weighted_tas() const;
@@ -55,7 +52,6 @@ namespace constraint_analysis
         std::vector<climb_mission_point> get_cruise_conditions() const;
         std::vector<mission_verification_point>
             get_mission_verification_points() const;
-        double get_segment_reference_altitude(const std::string& segment) const;
 
         readMission(const std::filesystem::path missionCSV) : missionCSV(missionCSV)
         {
@@ -66,6 +62,5 @@ namespace constraint_analysis
 
         auto get_beta(const std::string segment, const double altitude) -> const double;
 
-        auto get_beta(const std::string segment_from) -> const double;
     };
 }

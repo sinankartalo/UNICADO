@@ -133,17 +133,11 @@ namespace constraint_analysis
 
     static std::string get_active_case_id(
         node& document,
-        node& constraint_cases,
         const std::string& case_override_id)
     {
         if (!case_override_id.empty())
         {
             return case_override_id;
-        }
-
-        if (constraint_cases.hasAttrib("active_case_ID"))
-        {
-            return constraint_cases.getStringAttrib("active_case_ID");
         }
 
         node* active_case_node = document.find("active_constraint_case_ID");
@@ -153,8 +147,8 @@ namespace constraint_analysis
         }
 
         throw std::runtime_error(
-            "XML config must define either constraint_cases active_case_ID "
-            "or control_settings/active_constraint_case_ID/value.");
+            "XML config must define control_settings/"
+            "active_constraint_case_ID/value.");
     }
 
     text_config read_xml_config(
@@ -183,7 +177,7 @@ namespace constraint_analysis
         }
 
         const std::string active_case_id =
-            get_active_case_id(*document, *constraint_cases, case_override_id);
+            get_active_case_id(*document, case_override_id);
 
         node* selected_case = constraint_cases->find("constraint_case@ID=" + active_case_id, 1);
         if (selected_case == nullptr)
@@ -1182,34 +1176,6 @@ namespace constraint_analysis
         return points;
     }
 
-    double readMission::get_segment_reference_altitude(
-        const std::string& segment) const
-    {
-        const std::string wanted_segment = trim_copy(segment);
-        double reference_altitude = std::numeric_limits<double>::infinity();
-
-        for (std::size_t i = 0; i < this->altitude.size(); ++i)
-        {
-            if (trim_copy(this->mode_name[i]) == wanted_segment &&
-                std::isfinite(this->altitude[i]))
-            {
-                // The lowest altitude in the ground-operation segment is the
-                // runway elevation and remains valid if the segment contains
-                // a small transition to or from airborne flight.
-                reference_altitude = std::min(
-                    reference_altitude, this->altitude[i]);
-            }
-        }
-
-        if (!std::isfinite(reference_altitude))
-        {
-            throw std::runtime_error(
-                "Mission CSV contains no altitude for segment: " +
-                wanted_segment);
-        }
-        return reference_altitude;
-    }
-
     auto readMission::get_beta(
         const std::string segment,
         const double altitude) -> const double
@@ -1228,52 +1194,6 @@ namespace constraint_analysis
         throw std::runtime_error(
             "Could not find mission beta for segment: " +
             wanted_segment);
-    }
-
-    auto readMission::get_beta(
-        const std::string segment_from) -> const double
-    {
-        const std::string wanted_segment = trim_copy(segment_from);
-
-        for (std::size_t i = 1; i < this->mode_name.size(); ++i)
-        {
-            if (trim_copy(this->mode_name[i - 1]) == wanted_segment &&
-                trim_copy(this->mode_name[i]) != wanted_segment)
-            {
-                return this->total_mass[i] / this->total_mass.front();
-            }
-        }
-
-        throw std::runtime_error(
-            "Could not find mission beta after segment: " +
-            wanted_segment);
-    }
-
-    double readMission::get_total_range() const
-    {
-        if (this->range.size() < 2)
-        {
-            throw std::runtime_error("Mission CSV contains insufficient range data.");
-        }
-
-        double total_range = 0.0;
-
-        for (std::size_t i = 1; i < this->range.size(); ++i)
-        {
-            const double delta_range = this->range[i] - this->range[i - 1];
-
-            if (delta_range > 0.0)
-            {
-                total_range += delta_range;
-            }
-        }
-
-        if (total_range <= 0.0)
-        {
-            throw std::runtime_error("Mission CSV contains no positive range increments.");
-        }
-
-        return total_range;
     }
 
     double readMission::get_segment_start_beta(
@@ -1343,66 +1263,6 @@ namespace constraint_analysis
             throw std::runtime_error(
                 "Mission CSV contains no cruise range for TAS weighting.");
         return weighted / total;
-    }
-
-    double readMission::get_range_weighted_altitude() const
-    {
-        if (this->range.size() < 2 ||
-            this->altitude.size() != this->range.size())
-        {
-            throw std::runtime_error("Mission CSV contains inconsistent altitude/range data.");
-        }
-
-        double weighted_altitude = 0.0;
-        double total_range = 0.0;
-
-        for (std::size_t i = 1; i < this->range.size(); ++i)
-        {
-            const double delta_range = this->range[i] - this->range[i - 1];
-
-            if (delta_range > 0.0)
-            {
-                weighted_altitude += this->altitude[i] * delta_range;
-                total_range += delta_range;
-            }
-        }
-
-        if (total_range <= 0.0)
-        {
-            throw std::runtime_error("Mission CSV contains no positive range increments for altitude weighting.");
-        }
-
-        return weighted_altitude / total_range;
-    }
-
-    double readMission::get_range_weighted_tas() const
-    {
-        if (this->range.size() < 2 ||
-            this->tas.size() != this->range.size())
-        {
-            throw std::runtime_error("Mission CSV contains inconsistent TAS/range data.");
-        }
-
-        double weighted_tas = 0.0;
-        double total_range = 0.0;
-
-        for (std::size_t i = 1; i < this->range.size(); ++i)
-        {
-            const double delta_range = this->range[i] - this->range[i - 1];
-
-            if (delta_range > 0.0)
-            {
-                weighted_tas += this->tas[i] * delta_range;
-                total_range += delta_range;
-            }
-        }
-
-        if (total_range <= 0.0)
-        {
-            throw std::runtime_error("Mission CSV contains no positive range increments for TAS weighting.");
-        }
-
-        return weighted_tas / total_range;
     }
 
 }

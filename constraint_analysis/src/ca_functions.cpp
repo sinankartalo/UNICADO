@@ -227,8 +227,6 @@ namespace constraint_analysis
                     altitude_m);
                 cache.emplace(key, polar);
             }
-            polar.cd_0 *= input.aircraft.operating_cd0_scale;
-            polar.k *= input.aircraft.operating_k_scale;
             return polar;
         }
     }
