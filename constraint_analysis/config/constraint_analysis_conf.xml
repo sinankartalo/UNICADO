@@ -144,6 +144,92 @@
 
       </standard_set>
 
+      <!-- Propeller-specific baseline. Jet-only maximum-Mach and range
+           constraints remain present for schema compatibility but are
+           explicitly disabled. -->
+      <standard_set ID="PROPELLER_STANDARD_SET">
+
+        <condition_source><value>performance</value></condition_source>
+
+        <takeoff_ground_roll ID="TO_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>1.0</value></weight_fraction>
+          <takeoff_ground_roll_m><value>1200.0</value></takeoff_ground_roll_m>
+          <k_TO><value>1.2</value></k_TO>
+          <friction_coefficient><value>0.02</value></friction_coefficient>
+          <ground_drag_coefficient><value>0.04</value></ground_drag_coefficient>
+        </takeoff_ground_roll>
+
+        <landing_field_length ID="LDG_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>0.0</value></altitude>
+          <weight_fraction><value>0.85</value></weight_fraction>
+          <landing_braking_roll_m><value>1000.0</value></landing_braking_roll_m>
+          <k_TD><value>1.15</value></k_TD>
+          <friction_coefficient><value>0.40</value></friction_coefficient>
+          <braking_drag_coefficient><value>0.10</value></braking_drag_coefficient>
+        </landing_field_length>
+
+        <stall_speed ID="STALL_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <stall_speed_limit><value>65.0</value></stall_speed_limit>
+        </stall_speed>
+
+        <gust ID="GUST_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
+        </gust>
+
+        <max_mach ID="MMO_PROPELLER">
+          <active><value>false</value><default>false</default></active>
+          <altitude><value>9000.0</value></altitude>
+          <Mach><value>0.78</value></Mach>
+          <weight_fraction><value>0.98</value></weight_fraction>
+        </max_mach>
+
+        <horizontal_acceleration ID="ACC_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>8000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <acceleration><value>1.5</value></acceleration>
+          <climb_rate><value>0.0</value></climb_rate>
+          <weight_fraction><value>0.98</value></weight_fraction>
+        </horizontal_acceleration>
+
+        <cruise ID="CR_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>6000.0</value></altitude>
+          <speed><value>180.0</value></speed>
+          <weight_fraction><value>0.98</value></weight_fraction>
+        </cruise>
+
+        <climb ID="CL_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <climb_rate><value>5.0</value></climb_rate>
+          <acceleration><value>0.0</value></acceleration>
+          <weight_fraction><value>0.99</value></weight_fraction>
+        </climb>
+
+        <constant_speed_turn ID="TURN_PROPELLER">
+          <active><value>true</value><default>true</default></active>
+          <altitude><value>3000.0</value></altitude>
+          <speed><value>120.0</value></speed>
+          <load_factor><value>2.5</value></load_factor>
+          <weight_fraction><value>0.98</value></weight_fraction>
+        </constant_speed_turn>
+
+        <range_fuel_fraction ID="RANGE_PROPELLER">
+          <active><value>false</value><default>false</default></active>
+          <available_fuel_fraction><value>0.25</value></available_fuel_fraction>
+        </range_fuel_fraction>
+
+      </standard_set>
+
       <!-- Only runway requirements differ from the baseline case. -->
       <standard_set ID="SHORT_FIELD_STANDARD_SET">
 
@@ -533,7 +619,7 @@
         </design_space>
 
         <constraints>
-          <constraint_set_ref><value>BASELINE_STANDARD_SET</value></constraint_set_ref>
+          <constraint_set_ref><value>PROPELLER_STANDARD_SET</value></constraint_set_ref>
         </constraints>
       </constraint_case>
 
