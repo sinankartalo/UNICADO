@@ -28,13 +28,9 @@ namespace constraint_analysis
 {
     enum class jet_carpet_parameter
     {
-        cd0,
-        induced_drag_factor,
         takeoff_distance_m,
         acceleration_ms2,
-        climb_rate_ms,
-        acceleration_severity_scale,
-        thrust_lapse_scale
+        climb_rate_ms
     };
 
     struct jet_two_parameter_carpet_point

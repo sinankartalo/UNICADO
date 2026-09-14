@@ -59,10 +59,6 @@ namespace constraint_analysis
         {
             switch (parameter)
             {
-                case jet_carpet_parameter::cd0:
-                    return input.aircraft.polar.cd_0;
-                case jet_carpet_parameter::induced_drag_factor:
-                    return input.aircraft.polar.k;
                 case jet_carpet_parameter::takeoff_distance_m:
                     return input.takeoff.runway_m;
                 case jet_carpet_parameter::acceleration_ms2:
@@ -75,10 +71,6 @@ namespace constraint_analysis
                         throw std::runtime_error(
                             "Climb-rate carpet requires one explicit performance condition.");
                     return input.climb.mission_points.front().roc_ms;
-                case jet_carpet_parameter::acceleration_severity_scale:
-                    return 1.0;
-                case jet_carpet_parameter::thrust_lapse_scale:
-                    return input.installed_thrust_lapse_scale;
             }
             throw std::runtime_error("Unknown jet carpet parameter.");
         }
@@ -95,16 +87,6 @@ namespace constraint_analysis
             }
             switch (parameter)
             {
-                case jet_carpet_parameter::cd0:
-                    input.aircraft.operating_cd0_scale =
-                        value / input.aircraft.polar.cd_0;
-                    input.aircraft.polar.cd_0 = value;
-                    return;
-                case jet_carpet_parameter::induced_drag_factor:
-                    input.aircraft.operating_k_scale =
-                        value / input.aircraft.polar.k;
-                    input.aircraft.polar.k = value;
-                    return;
                 case jet_carpet_parameter::takeoff_distance_m:
                     input.takeoff.runway_m = value;
                     return;
@@ -122,20 +104,6 @@ namespace constraint_analysis
                     input.climb.mission_points.front().roc_ms = value;
                     input.climb.representative_point =
                         input.climb.mission_points.front();
-                    return;
-                case jet_carpet_parameter::acceleration_severity_scale:
-                    // Preserve the mission operating conditions and scale
-                    // only its kinematic specific-energy demand:
-                    //   d(energy)/dt / W = ROC + V/g * dV/dt.
-                    for (auto& point : input.acceleration.mission_points)
-                    {
-                        point.roc_ms *= value;
-                        point.acceleration_ms2 *= value;
-                    }
-                    input.acceleration.acceleration_ms2 *= value;
-                    return;
-                case jet_carpet_parameter::thrust_lapse_scale:
-                    input.installed_thrust_lapse_scale = value;
                     return;
             }
             throw std::runtime_error("Unknown jet carpet parameter.");

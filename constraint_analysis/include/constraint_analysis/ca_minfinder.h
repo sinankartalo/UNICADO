@@ -47,20 +47,6 @@ namespace constraint_analysis
 }
 
 // ============================================================
-// merged from: feasible_design_point_finder.h
-// ============================================================
-namespace constraint_analysis
-{
-    class feasible_design_point_finder
-    {
-    public:
-        static design_point find_feasible_minimum_point(
-            const constraint_curve& envelope,
-            const std::vector<vertical_constraint>& vertical_constraints);
-    };
-}
-
-// ============================================================
 // merged from: active_constraint_analyzer.h
 // ============================================================
 #include <string>
