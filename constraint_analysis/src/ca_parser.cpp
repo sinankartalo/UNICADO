@@ -249,42 +249,28 @@ namespace constraint_analysis
             "wing_loading_step",
             "design_space/wing_loading_step");
 
-        // A case may either contain its own <standard_set> (legacy format)
-        // or reference a shared set through <constraint_set_ref>.
-        // Shared sets keep repeated constraint definitions out of every case.
-        node* standard_set_node = selected_case->find("constraints/standard_set");
+        node* set_ref_node = selected_case->find(
+            "constraints/constraint_set_ref");
+        if (set_ref_node == nullptr)
+        {
+            throw std::runtime_error(
+                "Selected case must define constraints/constraint_set_ref.");
+        }
 
+        const std::string set_id = xml_node_text(*set_ref_node);
+        node* constraint_sets_node = document->find("constraint_selection");
+        if (constraint_sets_node == nullptr)
+        {
+            throw std::runtime_error(
+                "XML config is missing program_settings/constraint_selection.");
+        }
+
+        node* standard_set_node = constraint_sets_node->find(
+            "standard_set@ID=" + set_id, 1);
         if (standard_set_node == nullptr)
         {
-            node* set_ref_node = selected_case->find("constraints/constraint_set_ref");
-            if (set_ref_node == nullptr)
-            {
-                throw std::runtime_error(
-                    "Selected case must define constraints/standard_set or "
-                    "constraints/constraint_set_ref.");
-            }
-
-            const std::string set_id = xml_node_text(*set_ref_node);
-
-            // Prefer the original UNICADO <constraint_selection> container.
-            // The former <constraint_sets> name remains accepted so existing
-            // case files continue to run unchanged. Search inside the selected
-            // container because aixml does not reliably handle the combined
-            // document path and ID lookup in one call.
-            node* constraint_sets_node = document->find("constraint_selection");
-            if (constraint_sets_node == nullptr)
-                constraint_sets_node = document->find("constraint_sets");
-            if (constraint_sets_node != nullptr)
-            {
-                standard_set_node = constraint_sets_node->find(
-                    "standard_set@ID=" + set_id, 1);
-            }
-
-            if (standard_set_node == nullptr)
-            {
-                throw std::runtime_error(
-                    "Could not find referenced standard_set with ID: " + set_id);
-            }
+            throw std::runtime_error(
+                "Could not find referenced standard_set with ID: " + set_id);
         }
 
         const std::string standard_set = "";

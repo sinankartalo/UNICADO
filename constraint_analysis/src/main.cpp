@@ -172,21 +172,11 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_directory =
             output_root / active_case_id;
         std::filesystem::create_directories(output_directory);
-        // Remove every earlier study schema before producing fresh carpet data.
+        // Remove optional outputs before rerunning so disabled studies or
+        // verification cannot leave stale current-schema evidence behind.
         for (const char* study_file : {
-                 "carpet_plot_full.csv",
-                 "carpet_plot_study.csv",
-                 "true_carpet_constraints.csv",
-                 "jet_cd0_k_carpet.csv",
-                 "jet_cd0_takeoff_distance_carpet.csv",
-                 "jet_cd0_thrust_lapse_carpet.csv",
-                 "jet_acceleration_takeoff_distance_carpet.csv",
                  "jet_performance_carpet.csv",
                  "propeller_performance_carpet.csv",
-                 "jet_k_sensitivity_curves.csv",
-                 "propeller_cd0_sensitivity_curves.csv",
-                 "propeller_cd0_k_carpet.csv",
-                 "propeller_k_sensitivity_curves.csv",
                  "mission_verification.csv"})
         {
             std::filesystem::remove(output_directory / study_file);
@@ -197,11 +187,6 @@ int main(int argc, char* argv[])
             if (!entry.is_regular_file())
                 continue;
             const std::string filename = entry.path().filename().string();
-            const bool legacy_mission_curve =
-                filename == "jet_climb_constraint.csv" ||
-                filename == "jet_cruise_constraint.csv" ||
-                filename == "propeller_climb_constraint.csv" ||
-                filename == "propeller_cruise_constraint.csv";
             const bool regime_mission_curve =
                 filename.ends_with("_climb_constraint.csv") ||
                 filename.ends_with("_cruise_constraint.csv");
@@ -210,8 +195,7 @@ int main(int argc, char* argv[])
                  filename.starts_with("propeller_")) &&
                 (filename.ends_with("_constraint.csv") ||
                  filename.ends_with("_limit.csv"));
-            if (legacy_mission_curve || regime_mission_curve ||
-                generated_constraint_output)
+            if (regime_mission_curve || generated_constraint_output)
                 std::filesystem::remove(entry.path());
         }
 
@@ -331,28 +315,10 @@ int main(int argc, char* argv[])
             std::cout << "Matching-chart y-axis: required shaft P/W [W/N].\n";
             std::cout << "Propeller deck status: supplied authoritative analysis data.\n";
 
-            // Do not let files from an earlier jet run masquerade as propeller
-            // evidence when the plotting script is run in the same directory.
-            for (const char* stale_file : {
-                     "carpet_plot_study.csv", "true_carpet_constraints.csv",
-                     "jet_cd0_k_carpet.csv",
-                     "jet_k_sensitivity_curves.csv",
-                     "jet_range_fuel_fraction_constraint.csv",
-                     "propeller_model_limitations.csv"})
-            {
-                std::filesystem::remove(
-                    output_directory / stale_file);
-            }
         }
         else
         {
             std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
-            for (const char* stale_file : {
-                     "jet_supercruise_constraint.csv",
-                     "jet_k_acceleration_carpet.csv"})
-            {
-                std::filesystem::remove(output_directory / stale_file);
-            }
         }
 
         // ============================================================

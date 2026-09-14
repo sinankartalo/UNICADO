@@ -23,13 +23,14 @@ if selected_case_id is None and os.path.exists(latest_case_path):
     with open(latest_case_path, encoding="utf-8") as latest_case_file:
         selected_case_id = latest_case_file.read().strip()
 
-if selected_case_id:
-    output_dir = os.path.join(output_root, selected_case_id)
-    save_dir = os.path.join(plots_root, selected_case_id)
-else:
-    # Backward-compatible fallback for output generated before case folders.
-    output_dir = output_root
-    save_dir = plots_root
+if not selected_case_id:
+    raise FileNotFoundError(
+        "No case selected and output/latest_case.txt is missing. "
+        "Run the C++ application or pass CASE_ID explicitly."
+    )
+
+output_dir = os.path.join(output_root, selected_case_id)
+save_dir = os.path.join(plots_root, selected_case_id)
 
 if not os.path.isdir(output_dir):
     raise FileNotFoundError(
@@ -400,16 +401,6 @@ if propeller_mode:
     y_axis_label = "Required Shaft Power Loading, P/W [W/N]"
     y_symbol = "P/W"
     design_value_column = "shaft_power_to_weight"
-    for stale_name in (
-        "03_cd0_carpet_plot.png",
-        "04_optimum_tw_vs_cd0.png",
-        "05_optimum_ws_vs_cd0.png",
-        "06_range_fuel_fraction_and_ld.png",
-        "07_constraint_envelope_carpet_plot.png",
-    ):
-        stale_path = os.path.join(save_dir, stale_name)
-        if os.path.exists(stale_path):
-            os.remove(stale_path)
 else:
     constraint_files = {
         "Acceleration": "jet_acceleration_constraint.csv",
@@ -420,11 +411,6 @@ else:
     y_axis_label = "Required Thrust-to-Weight Ratio, T/W [-]"
     y_symbol = "T/W"
     design_value_column = "thrust_to_weight"
-    stale_duplicate = os.path.join(
-        save_dir, "07_constraint_envelope_carpet_plot.png"
-    )
-    if os.path.exists(stale_duplicate):
-        os.remove(stale_duplicate)
 
 activation_by_label = {
     "Acceleration": "acceleration",
@@ -1447,17 +1433,6 @@ ax.text(
 fig.tight_layout()
 save_plot("03_design_point_margins")
 
-
-# Remove graphics from the retired extended diagnostic package. The C++
-# analysis still exports the underlying carpet and mission-verification CSVs.
-for stale_name in (
-    "04_performance_requirement_design_map.png",
-    "04_performance_carpet_plot.png",
-    "06_mission_verification.png",
-):
-    stale_path = os.path.join(save_dir, stale_name)
-    if os.path.exists(stale_path):
-        os.remove(stale_path)
 
 print()
 print("Plot generation completed.")
