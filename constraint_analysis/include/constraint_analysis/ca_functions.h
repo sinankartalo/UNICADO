@@ -32,7 +32,7 @@ namespace constraint_analysis
         aerodynamics::Propeller* model = nullptr;
         std::string deck_path;
         double diameter_m = 0.0;
-        double tip_mach_limit = 0.95;
+        double tip_mach_limit = 0.9999;
         int count = 1;
         propeller_setting takeoff;
         propeller_setting continuous;

@@ -25,7 +25,7 @@ DIAMETER_M = 3.96
 RPM = 1200.0
 WS = 4000.0
 G0 = 9.80665
-TIP_MACH_LIMIT = 0.95
+TIP_MACH_LIMIT = 0.9999
 
 
 def isa_density(altitude_m: float) -> float:
