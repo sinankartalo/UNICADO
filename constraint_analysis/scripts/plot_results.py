@@ -88,7 +88,6 @@ def load_xy_csv(filename):
 
 
 plot_allowlist = None
-generate_jet_design_maps = False
 
 
 def save_plot(name, tight=True):
@@ -231,22 +230,6 @@ def add_gradient_vertical_band(
             nominal_x * (1.0 + upper_fraction),
             color=color, linewidth=1.05, alpha=0.82, zorder=2,
         )
-
-
-def add_design_point(ax, x, y, label, annotation, offset=(-22, -62)):
-    point = ax.scatter(
-        x, y, marker="*", s=165, color="#007f5f", edgecolor="white",
-        linewidth=1.2, label=label, zorder=9,
-    )
-    ax.annotate(
-        annotation, xy=(x, y), xytext=offset, textcoords="offset points",
-        ha="right" if offset[0] < 0 else "left", fontsize=9.5,
-        arrowprops=dict(arrowstyle="-", color="#4d4d4d", linewidth=1.0),
-        bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
-                  edgecolor="#b3b3b3", alpha=0.96),
-        zorder=10,
-    )
-    return point
 
 
 # ============================================================
@@ -407,120 +390,6 @@ for existing_plot in os.listdir(save_dir):
 def analysis_title(title):
     return f"{analysis_label}: {title}"
 
-
-def readable_constraint_name(raw_name):
-    return str(raw_name).replace("jet_", "").replace(
-        "propeller_", ""
-    ).replace(
-        "_constraint", ""
-    ).replace("_", " ").title()
-
-
-def plot_performance_carpet(
-        carpet, parameter_a, parameter_b, parameter_a_label,
-        parameter_b_label, parameter_a_formatter, parameter_b_formatter):
-    """Map user requirements directly to the selected aircraft design."""
-    required = {
-        parameter_a, parameter_b, "best_wing_loading",
-        "best_required_loading", "is_baseline",
-        "active_constraint_name", "second_constraint_name",
-        "constraint_margin",
-    }
-    if not required.issubset(carpet.columns):
-        missing = sorted(required.difference(carpet.columns))
-        raise RuntimeError(
-            "Performance carpet CSV is outdated; rerun C++ with "
-            f"--with-studies. Missing: {', '.join(missing)}"
-        )
-    values_a = np.sort(carpet[parameter_a].unique())
-    values_b = np.sort(carpet[parameter_b].unique())
-    if len(values_a) != 9 or len(values_b) != 9 or len(carpet) != 81:
-        raise RuntimeError("Performance carpet must contain a complete 9x9 grid.")
-    def grid(column):
-        return carpet.pivot(
-            index=parameter_a, columns=parameter_b, values=column,
-        ).reindex(index=values_a, columns=values_b).to_numpy()
-
-    loading_grid = grid("best_required_loading").astype(float)
-    ws_grid = grid("best_wing_loading").astype(float)
-    active_grid_raw = grid("active_constraint_name").astype(str)
-    x_grid, y_grid = np.meshgrid(values_b, values_a)
-
-    fig, ax = plt.subplots(figsize=(11.2, 7.2))
-    heatmap = ax.pcolormesh(
-        x_grid, y_grid, loading_grid, shading="nearest", cmap="viridis",
-    )
-    colorbar = fig.colorbar(heatmap, ax=ax, pad=0.025)
-    colorbar.set_label(y_axis_label.replace("Required ", "Selected "))
-
-    if np.ptp(ws_grid) > 1.0:
-        ws_levels = np.unique(np.round(
-            np.linspace(float(np.min(ws_grid)), float(np.max(ws_grid)), 6),
-            -1,
-        ))
-        if len(ws_levels) >= 2:
-            ws_contours = ax.contour(
-                x_grid, y_grid, ws_grid, levels=ws_levels,
-                colors="white", linewidths=1.15, alpha=0.9,
-            )
-            ax.clabel(
-                ws_contours, inline=True, fontsize=8,
-                fmt=lambda value: f"W/S {value:.0f}",
-            )
-
-    active_names = sorted(np.unique(active_grid_raw))
-    active_codes = np.zeros(active_grid_raw.shape, dtype=float)
-    for code, active_name in enumerate(active_names):
-        active_codes[active_grid_raw == active_name] = code
-        positions = np.argwhere(active_grid_raw == active_name)
-        center = positions[len(positions) // 2]
-        ax.text(
-            values_b[center[1]], values_a[center[0]],
-            readable_constraint_name(active_name), ha="center", va="center",
-            fontsize=8.2, color="white", fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.22", facecolor="#0f172a",
-                      edgecolor="white", alpha=0.72), zorder=6,
-        )
-    if len(active_names) > 1:
-        ax.contour(
-            x_grid, y_grid, active_codes,
-            levels=np.arange(len(active_names) - 1) + 0.5,
-            colors="#f8fafc", linewidths=2.4, alpha=0.95,
-        )
-
-    baseline = carpet[carpet["is_baseline"] == 1]
-    if len(baseline) != 1:
-        raise RuntimeError("Performance carpet must contain one nominal point.")
-    row = baseline.iloc[0]
-    ax.scatter(
-        row[parameter_b], row[parameter_a],
-        marker="*", s=190, color="#fbbf24", edgecolor="#0f172a",
-        linewidth=0.9, zorder=8,
-    )
-    ax.annotate(
-        "Nominal requirement\n"
-        f"W/S = {float(row['best_wing_loading']):.0f} N/m²\n"
-        f"{y_symbol} = {float(row['best_required_loading']):.3f}\n"
-        f"Control: {readable_constraint_name(row['active_constraint_name'])}",
-        (row[parameter_b], row[parameter_a]),
-        xytext=(14, 15), textcoords="offset points", fontsize=8.7,
-        arrowprops=dict(arrowstyle="->", color="#64748b", linewidth=1.0),
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                  edgecolor="#cbd5e1", alpha=0.96), zorder=9,
-    )
-
-    ax.set_title(analysis_title("Performance-Requirement Design Map"))
-    ax.set_xlabel(parameter_b_label)
-    ax.set_ylabel(parameter_a_label)
-    clean_axes(ax)
-    fig.text(
-        0.5, 0.025,
-        "Colour = selected engine/propulsion loading; white contours = "
-        "selected W/S; labelled regions = governing requirement.",
-        fontsize=8.8, color="#475569", ha="center", va="bottom",
-    )
-    fig.tight_layout(rect=(0.0, 0.07, 1.0, 1.0))
-    save_plot("04_performance_requirement_design_map", tight=False)
 
 if propeller_mode:
     constraint_files = {
@@ -1579,159 +1448,16 @@ fig.tight_layout()
 save_plot("03_design_point_margins")
 
 
-# ============================================================
-# Plot 4: User-performance requirement design map (--with-studies)
-# ============================================================
-if propeller_mode:
-    performance_carpet_filename = "propeller_performance_carpet.csv"
-    performance_carpet_parameters = (
-        "climb_rate_ms", "takeoff_distance_m",
-        "climb rate, ROC [m/s]", "take-off distance [m]",
-        lambda value: f"ROC = {value:.1f} m/s",
-        lambda value: f"s_TO = {value:.0f} m",
-    )
-else:
-    performance_carpet_filename = "jet_performance_carpet.csv"
-    performance_carpet_parameters = (
-        "acceleration_ms2", "takeoff_distance_m",
-        "required acceleration [m/s²]", "take-off distance [m]",
-        lambda value: f"a = {value:.2f} m/s²",
-        lambda value: f"s_TO = {value:.0f} m",
-    )
-
-performance_carpet_path = os.path.join(
-    output_dir, performance_carpet_filename,
-)
-# Retain CSV compatibility, but keep the dense study graphic out of the
-# compact review package requested for the current workflow.
-generate_extended_diagnostic_plots = False
-if (generate_extended_diagnostic_plots and
-        os.path.exists(performance_carpet_path)):
-    plot_performance_carpet(
-        pd.read_csv(performance_carpet_path).dropna(),
-        *performance_carpet_parameters,
-    )
-else:
-    stale_design_map = os.path.join(
-        save_dir, "04_performance_requirement_design_map.png",
-    )
-    if os.path.exists(stale_design_map):
-        os.remove(stale_design_map)
-
-legacy_carpet_plot = os.path.join(save_dir, "04_performance_carpet_plot.png")
-if os.path.exists(legacy_carpet_plot):
-    os.remove(legacy_carpet_plot)
-
-
-# ============================================================
-# Plot 6: Independent mission verification
-# ============================================================
-mission_verification_path = os.path.join(
-    output_dir, "mission_verification.csv",
-)
-if generate_extended_diagnostic_plots and os.path.exists(
-        mission_verification_path):
-    verification = pd.read_csv(mission_verification_path)
-    evaluated = verification[
-        verification["status"].isin(["PASS", "FAIL"])
-    ].copy().sort_values("time_s")
-    if not evaluated.empty:
-        use_range = np.ptp(evaluated["range_m"].to_numpy(dtype=float)) > 1.0
-        if use_range:
-            evaluated["mission_progress"] = evaluated["range_m"] / 1000.0
-            progress_label = "Mission distance [km]"
-        else:
-            evaluated["mission_progress"] = evaluated["time_s"] / 60.0
-            progress_label = "Mission time [min]"
-
-        fig, (ax_profile, ax) = plt.subplots(
-            2, 1, figsize=(11.4, 7.4), sharex=True,
-            gridspec_kw={"height_ratios": [1.0, 2.1], "hspace": 0.08},
-        )
-        segment_styles = {
-            "acceleration": ("#dc2626", "Acceleration"),
-            "climb": ("#2563eb", "Climb"),
-            "cruise": ("#16a34a", "Cruise"),
-        }
-        ax_profile.plot(
-            evaluated["mission_progress"], evaluated["altitude_m"] / 1000.0,
-            color="#64748b", linewidth=1.5, zorder=1,
-        )
-        ax.plot(
-            evaluated["mission_progress"], evaluated["utilization_percent"],
-            color="#94a3b8", linewidth=1.0, alpha=0.65, zorder=1,
-        )
-        for segment, (color, label) in segment_styles.items():
-            points = evaluated[evaluated["segment"] == segment]
-            if points.empty:
-                continue
-            ax_profile.scatter(
-                points["mission_progress"], points["altitude_m"] / 1000.0,
-                s=12, color=color, alpha=0.8, zorder=2,
-            )
-            ax.scatter(
-                points["mission_progress"], points["utilization_percent"],
-                s=20, color=color, edgecolor="white", linewidth=0.25,
-                alpha=0.92, label=label, zorder=3,
-            )
-
-        critical = evaluated.loc[evaluated["utilization_percent"].idxmax()]
-        critical_label = str(critical["segment"]).title()
-        ax.scatter(
-            [critical["mission_progress"]],
-            [critical["utilization_percent"]], marker="*", s=190,
-            color="#fbbf24", edgecolor="#111827", linewidth=0.8,
-            zorder=6, label="Critical mission point",
-        )
-        ax.annotate(
-            f"Critical: {critical_label}\n"
-            f"h = {float(critical['altitude_m']):.0f} m, "
-            f"V = {float(critical['speed_ms']):.1f} m/s\n"
-            f"Utilization = {float(critical['utilization_percent']):.1f}%",
-            (critical["mission_progress"], critical["utilization_percent"]),
-            xytext=(14, 14), textcoords="offset points", fontsize=8.8,
-            arrowprops=dict(arrowstyle="->", color="#64748b"),
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                      edgecolor="#cbd5e1", alpha=0.96),
-        )
-        ax.axhline(
-            100.0, color="#b91c1c", linewidth=1.8,
-            label="Available design capacity (100%)",
-        )
-        utilization_top = max(
-            110.0, float(evaluated["utilization_percent"].max()) * 1.08,
-        )
-        utilization_bottom = min(
-            0.0, float(evaluated["utilization_percent"].min()) * 0.95,
-        )
-        ax.axhspan(100.0, utilization_top, color="#fee2e2", alpha=0.42)
-        ax.set_ylim(utilization_bottom, utilization_top)
-        ax_profile.set_title(analysis_title(
-            "Mission Verification of the Performance-Sized Design"
-        ))
-        ax_profile.set_ylabel("Altitude [km]")
-        ax.set_xlabel(progress_label)
-        ax.set_ylabel("Required / available capacity [%]")
-        clean_axes(ax_profile)
-        clean_axes(ax)
-        ax.legend(frameon=False, loc="upper left", ncol=2, fontsize=8.3)
-        outside_count = int(
-            (verification["status"] == "OUTSIDE_MODEL_DOMAIN").sum()
-        )
-        fig.text(
-            0.5, 0.025,
-            "Below 100% = mission point satisfied; above 100% = failed. "
-            f"Points outside the model/deck domain: {outside_count}.",
-            ha="center", fontsize=8.8, color="#475569",
-        )
-        fig.tight_layout(rect=(0.0, 0.06, 1.0, 1.0))
-        save_plot("06_mission_verification", tight=False)
-else:
-    stale_verification_plot = os.path.join(
-        save_dir, "06_mission_verification.png",
-    )
-    if os.path.exists(stale_verification_plot):
-        os.remove(stale_verification_plot)
+# Remove graphics from the retired extended diagnostic package. The C++
+# analysis still exports the underlying carpet and mission-verification CSVs.
+for stale_name in (
+    "04_performance_requirement_design_map.png",
+    "04_performance_carpet_plot.png",
+    "06_mission_verification.png",
+):
+    stale_path = os.path.join(save_dir, stale_name)
+    if os.path.exists(stale_path):
+        os.remove(stale_path)
 
 print()
 print("Plot generation completed.")
