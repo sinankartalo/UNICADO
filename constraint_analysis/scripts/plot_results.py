@@ -255,10 +255,7 @@ else:
     case_id = "PROPELLER_UNICADO_BASELINE" if propeller_mode else "JET_CASE"
 
 case_labels = {
-    "JET_V2527A5_BASELINE": "Jet — V2527-A5 Test Engine: Baseline Case",
     "JET_PW1127GJM_BASELINE": "Jet — PW1127G-JM Real Engine: Baseline Case",
-    "JET_PW1127GJM_SHORT_FIELD": "Jet — PW1127G-JM Real Engine: Short-Field Case",
-    "JET_PW1127GJM_LONG_FIELD": "Jet — PW1127G-JM Real Engine: Long-Field Case",
     "PROPELLER_UNICADO_BASELINE": "Propeller — UNICADO: Baseline Case",
 }
 analysis_label = case_labels.get(
