@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(constraint_analysis_photo_style LANGUAGES CXX)
+project(constraint_analysis LANGUAGES CXX)
 
 find_package(Eigen3 REQUIRED)
 find_package(CGAL 5.6 REQUIRED)
