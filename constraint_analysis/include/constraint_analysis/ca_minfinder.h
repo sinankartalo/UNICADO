@@ -1,12 +1,9 @@
-// This file merges the declarations that were previously split over multiple small headers.
 #pragma once
 
 #include "constraint_analysis/ca_functions.h"
 
 
-// ============================================================
-// merged from: design_point_finder.h
-// ============================================================
+// Design-point search
 namespace constraint_analysis
 {
     struct design_point
@@ -21,22 +18,18 @@ namespace constraint_analysis
         // Finds the minimum only among the sampled envelope points.
         static design_point find_minimum_point(const constraint_curve& envelope);
 
-        // Treats every constraint segment between two neighbouring grid points
-        // as a straight line and also checks all curve intersections.
-        // This removes the design-point error caused by a coarse W/S grid.
+        // Checks line segments and curve intersections between grid points.
         static design_point find_interpolated_minimum_point(
             const constraint_output& output);
 
-        // Same interpolation method, but restricted by vertical W/S limits.
+        // Applies the same search inside the vertical W/S limits.
         static design_point find_interpolated_feasible_minimum_point(
             const constraint_output& output,
             const std::vector<vertical_constraint>& vertical_constraints);
     };
 }
 
-// ============================================================
-// merged from: constraint_envelope_analyzer.h
-// ============================================================
+// Constraint envelope
 namespace constraint_analysis
 {
     class constraint_envelope_analyzer
@@ -46,9 +39,7 @@ namespace constraint_analysis
     };
 }
 
-// ============================================================
-// merged from: active_constraint_analyzer.h
-// ============================================================
+// Active-constraint identification
 #include <string>
 #include <vector>
 

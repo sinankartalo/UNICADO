@@ -1,9 +1,7 @@
 #include "constraint_analysis/ca_minfinder.h"
 
 
-// ============================================================
-// merged from: src/constraint_envelope_analyzer.cpp
-// ============================================================
+// Constraint envelope
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -53,9 +51,7 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: src/design_point_finder.cpp
-// ============================================================
+// Design-point search
 #include <stdexcept>
 
 namespace constraint_analysis
@@ -132,8 +128,7 @@ namespace constraint_analysis
         {
             const std::size_t point_count = curve.points.size();
 
-            // With only two available points, quadratic interpolation is not
-            // possible, so ordinary linear interpolation is used.
+            // Fall back to linear interpolation when only two points are available.
             if (point_count < 3)
             {
                 return linear_interpolate(
@@ -142,8 +137,7 @@ namespace constraint_analysis
                     x);
             }
 
-            // Select three neighbouring samples around the current interval.
-            // At the left edge use points 0,1,2; elsewhere use i-1,i,i+1.
+            // Select three neighbouring samples around the interval.
             std::size_t first_index = 0;
             if (interval_index > 0)
             {
@@ -208,11 +202,7 @@ namespace constraint_analysis
             double best_y = std::numeric_limits<double>::infinity();
             bool found = false;
 
-            // Each original W/S interval is scanned finely. The individual
-            // constraints are reconstructed with local quadratic interpolation,
-            // then their maximum is taken to form the envelope. This captures a
-            // smooth minimum between grid points, which piecewise-linear
-            // interpolation cannot detect when one active curve is U-shaped.
+            // Scan each interval with local quadratic interpolation and rebuild the envelope.
             constexpr std::size_t subdivisions_per_interval = 1000;
 
             for (std::size_t i = 0; i + 1 < point_count; ++i)
@@ -292,9 +282,7 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: src/active_constraint_analyzer.cpp
-// ============================================================
+// Active-constraint identification
 #include <stdexcept>
 
 namespace constraint_analysis

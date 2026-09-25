@@ -282,9 +282,7 @@ namespace constraint_analysis
                 config, *standard_set_node, config_key, xml_path);
         }
 
-        // Cases share one standard set. Only propulsion-dependent activation
-        // differences are overridden at case level; all numerical requirement
-        // values continue to have a single source of truth in the set.
+        // Cases share one requirement set; only architecture-specific flags are overridden.
         for (const auto& [config_key, xml_path] :
              std::initializer_list<std::pair<const char*, const char*>>{
                  {"max_mach_active",
@@ -482,9 +480,7 @@ namespace constraint_analysis
 
         readMission mission_data(mission_csv_path);
 
-        // Keep mission history on a separate verification-only data path.
-        // In performance mode none of these points may define a matching-chart
-        // constraint; they are evaluated only after the design is selected.
+        // Keep mission history separate from performance-based sizing.
         input.mission_verification.points =
             mission_data.get_mission_verification_points();
 
@@ -550,10 +546,7 @@ namespace constraint_analysis
         input.landing.cd_brake = xml_double(config, "landing_cd_brake");
         input.landing.beta_landing = xml_double(config, "landing_beta");
 
-        // Stall-speed constraint uses the same condition as landing.
-        // Only the maximum allowed stall speed remains a requirement input.
-        // Altitude and beta are inherited automatically from the landing case
-        // to avoid entering the same physical condition twice.
+        // Stall speed uses the landing altitude and weight fraction.
         input.stall_speed.altitude_m = input.landing.altitude_m;
         input.stall_speed.speed_limit_ms = xml_double(config, "stall_speed_limit_ms");
         input.stall_speed.beta_stall = input.landing.beta_landing;
@@ -975,8 +968,7 @@ namespace constraint_analysis
                 upper = i + 1;
             }
 
-            // A central difference is used inside a climb segment. At either
-            // end, the available one-sided pair is used instead.
+            // Use central differences inside a climb segment and one-sided differences at its ends.
             const double time_delta = this->time_s[upper] - this->time_s[lower];
             if (lower == upper || time_delta <= 0.0)
             {
@@ -1083,9 +1075,7 @@ namespace constraint_analysis
                 std::isfinite(point.speed_ms) && point.speed_ms > 0.0 &&
                 std::isfinite(point.beta_climb) && point.beta_climb > 0.0)
             {
-                // At fixed altitude and TAS, the largest beta is the
-                // conservative cruise sizing condition. Collapse thousands
-                // of repeated mission rows without changing the envelope.
+                // At fixed altitude and TAS, retain the largest beta.
                 const auto existing = std::find_if(
                     conditions.begin(), conditions.end(),
                     [&](const climb_mission_point& candidate)

@@ -67,11 +67,7 @@ namespace constraint_analysis
 
         jet_constraint_analysis jet_analysis(atmosphere_);
 
-        // Vertical constraints are independent of the sampled W/S grid.  Use
-        // them, together with the imported aircraft point, to expand the grid
-        // before computing any curve.  This prevents matching-chart curves
-        // from ending before a landing, stall, gust, or aircraft marker that
-        // the plot must display.
+        // Expand the W/S grid to include all vertical limits and the aircraft point.
         if (input.active.landing_field_length)
         {
             auto limit = jet_analysis.compute_landing_constraint_limit(input);

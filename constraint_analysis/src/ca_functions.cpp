@@ -10,9 +10,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-// ============================================================
-// merged from: src/constraint_utilities.cpp
-// ============================================================
+// Utility functions
 namespace constraint_analysis
 {
     double constraint_utilities::compute_dynamic_pressure(double density, double speed)
@@ -31,9 +29,7 @@ namespace constraint_analysis
     }
 }
 
-// ============================================================
-// Propeller power-loading constraint analysis
-// ============================================================
+// Propeller power-loading analysis
 namespace constraint_analysis
 {
     namespace
@@ -50,11 +46,7 @@ namespace constraint_analysis
         const std::vector<propeller_deck_row>& read_propeller_deck(
             const std::string& deck_path)
         {
-            // The UNICADO Propeller class uses a general two-dimensional
-            // Delaunay interpolator.  This deck, however, consists of three
-            // independent constant-pitch curves.  Cache the raw rows so the
-            // constraint analysis can interpolate on the selected 1-D curve
-            // without repeatedly reading the CSV or querying a hull boundary.
+            // Cache the constant-pitch curves for direct one-dimensional interpolation.
             static std::unordered_map<
                 std::string, std::vector<propeller_deck_row>> cache;
 
@@ -74,8 +66,7 @@ namespace constraint_analysis
                 if (line.empty())
                     continue;
 
-                // prop.csv is UTF-8 with a BOM. Remove it before parsing the
-                // first pitch value so the J=0 row is not silently discarded.
+                // Remove the UTF-8 BOM before parsing the first row.
                 if (line.size() >= 3 &&
                     static_cast<unsigned char>(line[0]) == 0xEF &&
                     static_cast<unsigned char>(line[1]) == 0xBB &&
@@ -125,10 +116,7 @@ namespace constraint_analysis
                     previous->advance_ratio <= advance_ratio &&
                     advance_ratio <= row.advance_ratio)
                 {
-                    // Do not interpolate across the transition from the
-                    // propulsive branch into windmilling/negative-thrust data.
-                    // Both tabulated endpoints must describe a positive,
-                    // power-consuming propulsive operating segment.
+                    // Interpolate only between positive-thrust, positive-power points.
                     if (previous->thrust_coefficient <= 0.0 ||
                         previous->power_coefficient <= 0.0 ||
                         row.thrust_coefficient <= 0.0 ||
@@ -175,8 +163,7 @@ namespace constraint_analysis
                     "Propeller deck returned non-positive thrust or power.");
             }
 
-            // P/W = (T/W)*(P/T).  P/T is taken from the same CT/CP
-            // interpolation used by aerodynamics::Propeller.
+            // Convert T/W to P/W with P/T from the selected deck point.
             return thrust_to_weight *
                 operating_point.shaft_power_W / operating_point.thrust_N;
         }
@@ -289,9 +276,7 @@ namespace constraint_analysis
         point.advance_ratio =
             speed_ms / (rotations_per_second * input.propeller.diameter_m);
 
-        // The deck itself is the authority for the available pitch/J domain.
-        // Avoid duplicated hard-coded slice limits, which can disagree with
-        // exact deck rows selected by the automatic RPM calculation.
+        // Use the deck rows as the valid pitch and advance-ratio domain.
         const auto deck_row = interpolate_propeller_pitch_slice(
             input.propeller.deck_path,
             setting.pitch_deg,
@@ -330,10 +315,7 @@ namespace constraint_analysis
             throw std::runtime_error(
                 "Automatic propeller selection requires positive speed and diameter.");
 
-        // The same mission condition is queried while building the curve,
-        // writing coverage diagnostics and exporting operating points. Keep
-        // the deterministic selection result instead of repeating the deck
-        // search for every consumer.
+        // Cache operating-point selections reused by reporting steps.
         static std::unordered_map<std::string, propeller_operating_point> cache;
         std::ostringstream cache_key_stream;
         cache_key_stream << std::setprecision(17)
@@ -349,9 +331,7 @@ namespace constraint_analysis
         double best_power_per_thrust =
             std::numeric_limits<double>::infinity();
 
-        // Each positive deck row supplies J and pitch. With mission TAS and
-        // diameter known, n = V/(J D), hence RPM = 60 V/(J D). This removes
-        // the manually prescribed continuous-flight RPM and pitch.
+        // Derive RPM from each deck row using RPM = 60*V/(J*D).
         for (const auto& row : read_propeller_deck(input.propeller.deck_path))
         {
             if (row.advance_ratio <= 0.0 ||
@@ -370,9 +350,7 @@ namespace constraint_analysis
             const double rotational_tip_speed_ms = std::numbers::pi *
                 input.propeller.diameter_m * rotations_per_second;
 
-            // candidate RPM is derived from this exact deck row, so calling
-            // evaluate() would search/interpolate the complete pitch slice
-            // only to recover the same CT/CP/eta values.
+            // This row already contains the required CT, CP and efficiency values.
             propeller_operating_point point;
             point.altitude_m = altitude_m;
             point.speed_ms = speed_ms;
@@ -490,9 +468,7 @@ namespace constraint_analysis
                 const double speed_ms = (index + 0.5) * dv;
                 const double speed_of_sound_ms =
                     atmosphere_.getSpeedOfSound(input.takeoff.altitude_m);
-                // A variable-speed controller uses the highest RPM allowed by
-                // the configured helical tip-Mach limit. A small margin avoids
-                // rejecting a point because of floating-point roundoff.
+                // Use the highest RPM below the tip-Mach limit, with a small numerical margin.
                 const double allowed_helical_tip_speed_ms =
                     0.995 * input.propeller.tip_mach_limit *
                     speed_of_sound_ms;
@@ -908,9 +884,7 @@ namespace constraint_analysis
 #include <cmath>
 #include <numbers>
 
-// ============================================================
-// merged from: src/mattingly_takeoff_ground_roll.cpp
-// ============================================================
+// Takeoff ground-roll model
 #include <cmath>
 #include <stdexcept>
 
@@ -958,15 +932,7 @@ namespace constraint_analysis
 
         mattingly_takeoff_ground_roll_result result;
 
-        /*
-         * Effective takeoff ground-roll coefficient:
-         *
-         * xi_TO = C_D + C_DR - mu_TO C_L
-         *
-         * This term appears because aerodynamic drag resists acceleration,
-         * while lift reduces the normal force and therefore reduces rolling
-         * friction.
-         */
+        // Effective drag and rolling-resistance coefficient.
         result.xi_to =
             input.cd
             + input.cdr
@@ -982,13 +948,7 @@ namespace constraint_analysis
         const double mu = input.mu;
         const double xi = result.xi_to;
 
-        /*
-         * Special limiting case:
-         *
-         * When xi_TO is very close to zero, the logarithmic form becomes
-         * numerically ill-conditioned. In that limit, the equation reduces
-         * to a simpler acceleration/friction expression.
-         */
+        // Use the analytical limit when xi_TO is too small for the logarithmic form.
         if (std::abs(xi) < 1.0e-8)
         {
             const double acceleration_term =
@@ -1002,16 +962,7 @@ namespace constraint_analysis
             return result;
         }
 
-        /*
-         * Rearranged logarithmic takeoff ground-roll relation.
-         *
-         * This returns the required sea-level static thrust loading:
-         *
-         *      T_SL / W_TO
-         *
-         * as a function of:
-         *      W_TO/S, S_G, rho, CLmax, k_TO, mu, alpha, beta, xi_TO
-         */
+        // Rearranged ground-roll relation for the required T_SL/W_TO.
         const double exponent =
             (sg * rho * g * xi)
             / (beta * ws);
@@ -1031,9 +982,7 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: src/mattingly_landing_braking_roll.cpp
-// ============================================================
+// Landing braking-roll model
 #include <stdexcept>
 
 namespace constraint_analysis
@@ -1070,18 +1019,7 @@ namespace constraint_analysis
 
         mattingly_landing_braking_roll_result result;
 
-        /*
-         * Mattingly Eq. 2.33 landing/braking-roll relation:
-         *
-         *              beta (W_TO/S)       /        xi_L        \
-         *      S_B = ------------------- ln|1 + ----------------|
-         *                rho g xi_L        \    mu CLmax/k_TD^2 /
-         *
-         *      xi_L = CD + CDR - mu CL
-         *
-         * Solving for takeoff wing loading gives the vertical
-         * matching-chart constraint used below.
-         */
+        // Mattingly Eq. 2.33, solved for the takeoff wing-loading limit.
         result.xi_landing =
             input.cd + input.cdr - input.mu * input.cl;
 
@@ -1147,9 +1085,7 @@ namespace constraint_analysis
 
 
 
-// ============================================================
-// UNICADO engine helper functions
-// ============================================================
+// UNICADO engine helpers
 namespace constraint_analysis
 {
     namespace
@@ -1201,17 +1137,14 @@ namespace constraint_analysis
 
             input.engine->set_operating_point(op);
 
-            // UNICADO Engine::get_tsfc() returns kg/(N*s).
-            // The Breguet implementation below uses c in 1/s, so multiply by g0.
+            // Convert TSFC from kg/(N*s) to 1/s for the Breguet equation.
             constexpr double g0 = 9.80665;
             return input.engine->get_tsfc() * g0;
         }
     }
 }
 
-// ============================================================
-// merged from: src/jet_constraint_analysis.cpp
-// ============================================================
+// Jet constraint analysis
 #include <cmath>
 
 namespace constraint_analysis
@@ -1253,9 +1186,7 @@ namespace constraint_analysis
             case_input.cd = input.takeoff.cd_ground;
             case_input.cdr = 0.0;
 
-            // Representative ground-roll lift coefficient.
-            // For a first exact Case-6 implementation we use the traditional
-            // ground-roll representative value before full CLmax is reached.
+            // Use 0.8*CLmax as the representative ground-roll lift coefficient.
             case_input.cl = 0.8 * input.aircraft.cl_max_takeoff;
 
             case_input.mu = input.takeoff.mu_ro;
@@ -1281,8 +1212,7 @@ namespace constraint_analysis
         case_input.ground_roll_m = input.landing.runway_m;
         case_input.density = rho;
 
-        // Şimdilik landing için beta = 1.0 kabul ediyoruz.
-        // Bir sonraki adımda input.landing.beta_landing ekleyip bunu mission weight fraction yapabiliriz.
+        // Use the landing weight fraction from the selected input case.
         case_input.beta = input.landing.beta_landing;
 
         case_input.cl_max = input.aircraft.cl_max_landing;
@@ -1291,9 +1221,7 @@ namespace constraint_analysis
         case_input.cd = input.landing.cd_brake;
         case_input.cdr = 0.0;
 
-        // Braking sırasında lift genelde touchdown sonrası azalır.
-        // Temsilî değer olarak 0.2*CLmax kullanıyoruz.
-        // Eğer spoiler full deploy ise bu değer daha da düşük olabilir.
+        // Use 0.2*CLmax as the representative lift coefficient during braking.
         case_input.cl = 0.2 * input.aircraft.cl_max_landing;
 
         case_input.mu = input.landing.mu_brake;
@@ -1332,21 +1260,7 @@ namespace constraint_analysis
         const double cl_max = input.aircraft.cl_max_landing;
         const double beta = input.stall_speed.beta_stall;
 
-        /*
-         * Stall-speed constraint:
-         *
-         *      V_stall = sqrt(2 W / (rho S CLmax))
-         *
-         * Because this matching chart uses takeoff wing loading W_TO/S,
-         * while the stall condition may occur at a reduced mission weight,
-         * W = beta * W_TO. Therefore:
-         *
-         *      beta * W_TO/S <= 0.5 rho V_stall_limit^2 CLmax
-         *
-         * and the vertical limit is:
-         *
-         *      W_TO/S <= 0.5 rho V_stall_limit^2 CLmax / beta
-         */
+        // Convert the stall-speed requirement to a takeoff wing-loading limit.
         vc.x_limit =
             0.5 * rho * v_stall_limit * v_stall_limit * cl_max / beta;
 
@@ -1362,20 +1276,14 @@ namespace constraint_analysis
 
         double automatic_transport_gust_load_factor_limit()
         {
-            // Default positive limit maneuver load factor for a transport-category sizing case.
+            // Default positive limit load factor for transport-aircraft sizing.
             return 2.5;
         }
 
         double automatic_design_gust_velocity_ms(double altitude_m)
         {
-            /*
-             * CS-25.341 reference gust velocity U_ref for transport aircraft:
-             * 17.07 m/s EAS at sea level, 13.41 m/s at 15,000 ft and
-             * 6.36 m/s at 60,000 ft, linearly interpolated with altitude.
-             * Flight-profile alleviation F_g is conservatively 1.0 because
-             * the mission file does not carry the certification mass/altitude
-             * envelope needed to derive it.
-             */
+            // Interpolate the CS-25.341 reference gust velocity with altitude.
+            // Use F_g = 1 because the certification envelope is unavailable.
             const double altitude_ft = altitude_m * ft_per_m;
             if (altitude_ft <= 0.0)
                 return 17.07;
@@ -1394,24 +1302,14 @@ namespace constraint_analysis
             double mean_aerodynamic_chord_m,
             double induced_drag_factor)
         {
-            /*
-             * Prefer the aspect ratio provided by the aircraft/aerodynamics data.
-             * If the XML has no explicit AR, area and mean chord are used for
-             * an equivalent rectangular-wing estimate. Only if geometry is
-             * unavailable is AR estimated from the induced drag factor k:
-             *     k = 1 / (pi * e * AR)
-             * using a typical preliminary Oswald efficiency e = 0.85. This avoids
-             * requiring another manual gust input while keeping the calculation
-             * tied to the aerodynamic polar.
-             */
+            // Prefer the supplied aspect ratio, then geometry, and finally
+            // estimate AR from k with e = 0.85.
             if (aspect_ratio > 0.0)
             {
                 return aspect_ratio;
             }
 
-            // The polar XML supplies reference area and mean chord. Their
-            // equivalent rectangular-wing ratio is more aircraft-specific
-            // than assuming an Oswald efficiency from k alone.
+            // Estimate AR from reference area and mean chord when available.
             if (wing_area_m2 > 0.0 && mean_aerodynamic_chord_m > 0.0)
                 return wing_area_m2 /
                     (mean_aerodynamic_chord_m * mean_aerodynamic_chord_m);
@@ -1428,19 +1326,13 @@ namespace constraint_analysis
 
         double automatic_lift_curve_slope_per_rad(double aspect_ratio)
         {
-            /*
-             * Finite-wing estimate, unswept preliminary form:
-             *     a = 2*pi*AR/(AR + 2)
-             */
+            // Unswept finite-wing lift-curve slope estimate.
             return 2.0 * std::numbers::pi * aspect_ratio / (aspect_ratio + 2.0);
         }
 
         double automatic_mean_aerodynamic_chord_m(double wing_area_m2, double aspect_ratio)
         {
-            /*
-             * Equivalent rectangular wing estimate:
-             *     b = sqrt(AR*S), c_bar = S/b = sqrt(S/AR)
-             */
+            // Equivalent rectangular-wing mean chord.
             if (wing_area_m2 <= 0.0 || aspect_ratio <= 0.0)
             {
                 throw std::runtime_error(
@@ -1492,16 +1384,7 @@ namespace constraint_analysis
             throw std::runtime_error("Gust limit error: automatic gust parameters are invalid.");
         }
 
-        /*
-         * Discrete-gust load increment:
-         *
-         *      Delta n = K_g rho V a U_de / (2 W/S_actual)
-         *
-         * The chart x-axis is takeoff wing loading x = W_TO/S, while the
-         * gust condition occurs at W/S_actual = beta*x.
-         * K_g also depends on W/S_actual through the mass ratio, so the limit
-         * is solved as a scalar root instead of using a fixed K_g value.
-         */
+        // Solve the gust limit numerically because K_g depends on beta*W_TO/S.
         const auto solve_point_limit = [&](const climb_mission_point& point)
         {
             if (point.speed_ms <= 0.0 || point.beta_climb <= 0.0)
@@ -1558,8 +1441,7 @@ namespace constraint_analysis
             return 0.5 * (lower + upper);
         };
 
-        // Gust is a lower W/S limit, so the largest limit across the mission
-        // cruise segment is the governing condition.
+        // The largest mission gust limit governs the minimum W/S.
         vc.x_limit = 0.0;
         for (const auto& point : input.gust.mission_points)
             vc.x_limit = std::max(vc.x_limit, solve_point_limit(point));
@@ -1876,9 +1758,7 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: src/range_constraint_analysis.cpp
-// ============================================================
+// Range constraint analysis
 #include <cmath>
 
 namespace constraint_analysis

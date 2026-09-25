@@ -1,11 +1,8 @@
-// This file merges the declarations that were previously split over multiple small headers.
 #pragma once
 
 #include "constraint_analysis/ca_functions.h"
 
-// ============================================================
-// merged from: constraint_output_writer.h
-// ============================================================
+// CSV output
 #include <string>
 
 namespace constraint_analysis
