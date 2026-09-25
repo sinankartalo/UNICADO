@@ -2,6 +2,10 @@
 
 This module generates matching charts for jet and propeller-driven aircraft. It reads the selected case from `config/constraint_analysis_conf.xml`, evaluates the active constraints, selects a feasible design point, and exports the results as CSV files.
 
+## Project context
+
+This module was developed for the term project as an extension of the UNICADO sizing workflow. The UNICADO libraries and the aircraft, aerodynamic, engine, and propeller input data used in the study were provided by the supervisor. The constraint-analysis implementation, case setup, evaluation, and plots were developed within the project.
+
 ## Inputs
 
 The analysis uses:
