@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
             std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
         }
 
-        // 1. Run constraint analysis
+        // Constraint analysis
         atmosphere atm;
         constraint_analysis_tool tool{atm};
 
@@ -521,7 +521,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // 2. Post-processing
+        // Post-processing
         const constraint_curve envelope =
             constraint_envelope_analyzer::build_envelope(output);
 
@@ -557,7 +557,7 @@ int main(int argc, char* argv[])
         const auto active_constraints =
             active_constraint_analyzer::analyze(output);
 
-        // 3. Verify the selected design along the mission history
+        // Mission verification
         if (input.condition_source == "performance")
         {
             std::ofstream verification(
@@ -723,7 +723,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // 4. Write CSV outputs
+        // CSV output
         constraint_output_writer::write_all_curves_to_csv(
             output, output_directory.string());
 
@@ -781,7 +781,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // 5. Export propeller operating-point data
+        // Propeller operating-point data
         if (is_propeller)
         {
             propeller_constraint_analysis propeller_analysis{atm};
@@ -1071,7 +1071,7 @@ int main(int argc, char* argv[])
                       << "\n";
         }
 
-        // 6. Print results
+        // Results
         std::cout << std::fixed << std::setprecision(4);
 
         for (const auto& curve : output.curves)
