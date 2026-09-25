@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
                 xml_double(config, "propeller_diameter_m");
             propeller_model = std::make_unique<aerodynamics::Propeller>(
                 propeller_deck, diameter_m);
-            std::cout << "Using UNICADO aerodynamics Propeller deck: "
+            std::cout << "Using propeller deck: "
                       << propeller_deck << '\n';
         }
 
@@ -283,8 +283,6 @@ int main(int argc, char* argv[])
         if (is_propeller)
         {
             std::cout << "Matching-chart y-axis: required shaft P/W [W/N].\n";
-            std::cout << "Propeller deck status: supplied authoritative analysis data.\n";
-
         }
         else
         {
