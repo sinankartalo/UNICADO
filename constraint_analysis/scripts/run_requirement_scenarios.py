@@ -1,10 +1,4 @@
-"""Run requirement-profile cases for governing-constraint comparison.
-
-The existing C++ executable remains the only source of sizing physics. This
-script creates temporary XML configurations, runs both propulsion
-architectures, calls the standard plotting script, and exports one traceable
-summary CSV.
-"""
+"""Run the requirement scenarios used for the constraint comparison."""
 
 from __future__ import annotations
 
