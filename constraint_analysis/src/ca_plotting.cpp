@@ -1,9 +1,7 @@
 #include "constraint_analysis/ca_plotting.h"
 
 
-// ============================================================
-// merged from: src/constraint_output_writer.cpp
-// ============================================================
+// CSV output
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>

@@ -1,4 +1,3 @@
-// This file merges the declarations that were previously split over multiple small headers.
 #pragma once
 
 #include "constraint_analysis/ca_functions.h"
@@ -7,9 +6,7 @@
 #include <atmosphere/atmosphere.h>
 
 
-// ============================================================
-// merged from: constraint_analysis_tool.h
-// ============================================================
+// Constraint-analysis tool
 namespace constraint_analysis
 {
     class constraint_analysis_tool

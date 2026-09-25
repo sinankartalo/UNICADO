@@ -109,15 +109,8 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_root = "output";
         std::filesystem::create_directories(output_root);
 
-        // Command-line arguments are optional.
-        // Supported forms:
-        //   app.exe
-        //   app.exe CASE_ID
-        //   app.exe "config\\another_config.xml"
-        //   app.exe "config\\another_config.xml" CASE_ID
-        //
-        // The engine directory is always read from engine/engine_directory_path
-        // in the selected XML constraint case.
+        // Optional arguments: [config_path] [case_id].
+        // The engine path is read from the selected XML case.
         std::filesystem::path config_path = "config/constraint_analysis_conf.xml";
         std::string case_override_id;
         std::vector<std::string> positional_arguments;
@@ -161,8 +154,7 @@ int main(int argc, char* argv[])
         const std::filesystem::path output_directory =
             output_root / active_case_id;
         std::filesystem::create_directories(output_directory);
-        // Remove optional verification output before rerunning so a disabled
-        // verification pass cannot leave stale evidence behind.
+        // Remove stale verification output before rerunning.
         std::filesystem::remove(
             output_directory / "mission_verification.csv");
         for (const auto& entry :
@@ -299,9 +291,7 @@ int main(int argc, char* argv[])
             std::cout << "Thrust lapse and TSFC are read from the UNICADO Engine deck.\n";
         }
 
-        // ============================================================
-        // 1. RUN CONSTRAINT ANALYSIS
-        // ============================================================
+        // 1. Run constraint analysis
         atmosphere atm;
         constraint_analysis_tool tool{atm};
 
@@ -533,9 +523,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // ============================================================
-        // 2. POST-PROCESSING
-        // ============================================================
+        // 2. Post-processing
         const constraint_curve envelope =
             constraint_envelope_analyzer::build_envelope(output);
 
@@ -556,10 +544,7 @@ int main(int argc, char* argv[])
                 "Aerodynamic reference wing area must be positive.");
         }
 
-        // The aircraft wing area is an authoritative input from the UNICADO
-        // aerodynamics model. The matching chart therefore evaluates the
-        // existing aircraft at W_TO / S_ref instead of sizing a new wing area
-        // from the envelope optimum.
+        // Evaluate the existing aircraft with the supplied reference wing area.
         const double aircraft_wing_loading =
             input.aircraft.takeoff_weight_N / input.aircraft.wing_area_m2;
         const double aircraft_required_thrust_to_weight =
@@ -574,12 +559,7 @@ int main(int argc, char* argv[])
         const auto active_constraints =
             active_constraint_analyzer::analyze(output);
 
-        // ============================================================
-        // 3. MISSION VERIFICATION OF THE PERFORMANCE-SIZED DESIGN
-        // ============================================================
-        // The selected design remains the result of the user-defined
-        // performance requirements. Mission history is used only here, as an
-        // independent pass/fail check at that fixed design point.
+        // 3. Verify the selected design along the mission history
         if (input.condition_source == "performance")
         {
             std::ofstream verification(
@@ -610,9 +590,7 @@ int main(int argc, char* argv[])
                     try
                     {
                         constraint_input point_input = input;
-                        // Verification needs only the already-selected W/S,
-                        // not a complete matching-chart grid for every
-                        // mission sample.
+                        // Verify only the selected W/S at each mission point.
                         point_input.wing_loading_min =
                             feasible_best_point.wing_loading;
                         point_input.wing_loading_max =
@@ -747,9 +725,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // ============================================================
-        // 4. WRITE MAIN CSV OUTPUTS
-        // ============================================================
+        // 4. Write CSV outputs
         constraint_output_writer::write_all_curves_to_csv(
             output, output_directory.string());
 
@@ -758,9 +734,7 @@ int main(int argc, char* argv[])
         constraint_output_writer::write_all_curves_to_csv(
             envelope_output, output_directory.string());
 
-        // Keep both engineering interpretations in one traceable plotting
-        // interface: the existing aircraft from aerodynamic Sref and the
-        // minimum feasible point proposed by the constraint analysis.
+        // Export both the existing-aircraft and minimum-feasible points.
         {
             std::ofstream file(output_directory / "design_point.csv");
             file << "wing_loading,"
@@ -809,9 +783,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // ============================================================
-        // 4. PROPELLER OPERATING-POINT EVIDENCE
-        // ============================================================
+        // 5. Export propeller operating-point data
         if (is_propeller)
         {
             propeller_constraint_analysis propeller_analysis{atm};
@@ -1101,9 +1073,7 @@ int main(int argc, char* argv[])
                       << "\n";
         }
 
-        // ============================================================
-        // 7. PRINT RESULTS
-        // ============================================================
+        // 6. Print results
         std::cout << std::fixed << std::setprecision(4);
 
         for (const auto& curve : output.curves)

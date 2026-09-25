@@ -7,9 +7,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 
-# ============================================================
 # Case-specific paths
-# ============================================================
 output_root = "output"
 plots_root = "plots"
 
@@ -41,9 +39,7 @@ if not os.path.isdir(output_dir):
 os.makedirs(save_dir, exist_ok=True)
 
 
-# ============================================================
-# Global plot style
-# ============================================================
+# Plot style
 plt.rcParams.update({
     "figure.figsize": (11, 6.5),
     "font.size": 11,
@@ -64,9 +60,7 @@ plt.rcParams.update({
 })
 
 
-# ============================================================
 # Helper functions
-# ============================================================
 def load_xy_csv(filename):
     path = os.path.join(output_dir, filename)
 
@@ -121,10 +115,7 @@ def clean_axes(ax):
     ax.grid(axis="y", alpha=0.24)
 
 
-# Output-space tolerance assigned to each matching-chart constraint. The two
-# values are the fractional distances below and above the nominal boundary.
-# Keeping them separate allows asymmetric uncertainty intervals later without
-# changing the plotting implementation.
+# Lower and upper fractional tolerance for each constraint.
 constraint_tolerances = {
     "Acceleration": (0.10, 0.10),
     "Climb": (0.10, 0.10),
@@ -147,9 +138,7 @@ def add_gradient_curve_band(
     x = np.asarray(x, dtype=float)
     nominal_y = np.asarray(nominal_y, dtype=float)
 
-    # Adjacent, non-overlapping slices avoid the visible nested bands produced
-    # by repeatedly painting smaller regions on top of one another. Every
-    # slice uses the same RGB colour; only opacity changes continuously.
+    # Draw adjacent slices so the tolerance band has a smooth opacity gradient.
     normalized_edges = np.linspace(-1.0, 1.0, layers + 1)
     for normalized_low, normalized_high in zip(
             normalized_edges[:-1], normalized_edges[1:]):
@@ -233,9 +222,7 @@ def add_gradient_vertical_band(
         )
 
 
-# ============================================================
 # Load constraint data
-# ============================================================
 metadata_path = os.path.join(output_dir, "analysis_metadata.csv")
 metadata_row = None
 if os.path.exists(metadata_path):
@@ -370,8 +357,7 @@ if propeller_mode:
                 "inside supplied propeller deck"
             )
 
-# Keep only the compact review package. Removed plots are deliberately absent
-# from this allowlist, so stale PNGs are deleted on the next plotting run.
+# Remove stale plots that are not part of the review package.
 plot_allowlist = {
     "01_design_matching_chart",
     "02_governing_constraint_envelope",
@@ -464,8 +450,7 @@ if envelope is None:
     raise FileNotFoundError("constraint_envelope.csv not found.")
 
 
-# Read both the existing aircraft point and the minimum feasible design point.
-# Older output folders with a single row remain supported.
+# Read both design points while supporting older single-row files.
 design_point_path = os.path.join(output_dir, "design_point.csv")
 
 if os.path.exists(design_point_path):
@@ -603,10 +588,7 @@ if wing_control_candidates:
     )
 
 
-# Axis limits. Build the visible domain from every finite curve point, every
-# vertical constraint, and both marked design points. This is deliberately a
-# union: a matching chart must never hide valid analysis data merely to obtain
-# a visually tighter crop.
+# Include all curves, limits and design points in the visible domain.
 vertical_limits = [
     value for value in (landing_ws_limit, stall_ws_limit, gust_ws_limit)
     if value is not None and np.isfinite(value)
@@ -681,9 +663,7 @@ tolerance_y_max = max(
 tolerance_y_max *= 1.15
 
 
-# ============================================================
-# Plot 1: Professional constraint envelope
-# ============================================================
+# Plot 1: constraint envelope
 fig, ax = plt.subplots(figsize=(13.5, 6.8))
 
 color_map = {
@@ -719,8 +699,7 @@ for name, df in constraints.items():
         zorder=2,
     )
 
-# Wing loading must remain between the lower and upper vertical limits.
-# For a required-power chart, only the area above the envelope is feasible.
+# The feasible region lies between the W/S limits and above the envelope.
 upper_ws_limits = [
     value for value in (landing_ws_limit, stall_ws_limit)
     if value is not None
@@ -728,10 +707,7 @@ upper_ws_limits = [
 feasible_ws_min = gust_ws_limit if gust_ws_limit is not None else x_min
 feasible_ws_max = min(upper_ws_limits) if upper_ws_limits else x_max
 
-# Conservative feasible region: every performance constraint is moved to its
-# upper tolerance edge, while the vertical W/S limits are tightened inward.
-# This definition is shared by the nominal matching chart and the detailed
-# tolerance chart so both figures report the same robust design space.
+# Shift propulsion constraints upward and vertical limits inward for the robust region.
 robust_ws_min = (
     gust_ws_limit * (1.0 + constraint_tolerances["Gust"][1])
     if gust_ws_limit is not None else feasible_ws_min
@@ -1008,12 +984,7 @@ fig.subplots_adjust(right=0.77)
 save_plot("01_design_matching_chart")
 
 
-# ============================================================
-# Plot 1b: Matching chart with gradient tolerance bands
-# ============================================================
-# This is intentionally a design-detail view. The nominal matching chart
-# already provides the complete analysis domain; the tolerance chart focuses
-# on the neighbourhood that contains both marked design points.
+# Plot 1b: tolerance bands near the design points
 point_x_low = min(best_ws, aircraft_ws)
 point_x_high = max(best_ws, aircraft_ws)
 point_x_span = max(point_x_high - point_x_low, 1.0)
@@ -1063,8 +1034,7 @@ if robust_design_available:
         tolerance_zoom_y_max, 1.12 * robust_best_y,
     )
 
-# Always show the complete stall tolerance region. The previous point-centred
-# zoom could crop one edge of this upper W/S boundary.
+# Keep the complete stall tolerance region visible.
 if stall_ws_limit is not None:
     stall_lower_fraction, stall_upper_fraction = constraint_tolerances[
         "Stall speed"
@@ -1236,9 +1206,7 @@ fig.subplots_adjust(right=0.77)
 save_plot("05_tolerance_robustness")
 
 
-# ============================================================
-# Plot 2: Active constraint map
-# ============================================================
+# Plot 2: active constraint map
 x_env = envelope["wing_loading"].values
 y_env = envelope["thrust_to_weight"].values
 
@@ -1280,7 +1248,7 @@ performance_legend_handles = [
     for name in constraints
 ]
 
-# Continuous envelope background to avoid visual gaps
+# Continuous envelope background
 ax.plot(
     x_env,
     y_env,
@@ -1409,9 +1377,7 @@ fig.subplots_adjust(right=0.76)
 save_plot("02_governing_constraint_envelope")
 
 
-# ============================================================
-# Plot 3: Design-point constraint margins
-# ============================================================
+# Plot 3: design-point margins
 requirements = best_constraint_values
 ordered = sorted(requirements.items(), key=lambda item: item[1])
 names = [item[0] for item in ordered]

@@ -191,15 +191,13 @@
         <engine>
           <propulsion_type><value>propeller</value></propulsion_type>
           <propeller>
-            <!-- Authoritative inputs for the available-data propeller analysis. -->
+            <!-- Propeller model inputs. -->
             <deck_path><value>../libraries/aerodynamics/test/stubs/engine/propeller/prop.csv</value></deck_path>
             <diameter><value>3.96</value></diameter>
-            <!-- Supervisor-defined maximum helical blade-tip Mach number. -->
+            <!-- Maximum helical blade-tip Mach number. -->
             <tip_mach_limit><value>0.9999</value></tip_mach_limit>
             <count><value>2</value></count>
-            <!-- The supplied jet mission has no cruise point inside this
-                 propeller deck. Used only when automatic cruise coverage is
-                 exactly zero; the program reports the fallback explicitly. -->
+            <!-- Used only when the propeller deck has no valid cruise point. -->
             <cruise_fallback>
               <altitude><value>6000.0</value></altitude>
               <speed><value>180.0</value></speed>

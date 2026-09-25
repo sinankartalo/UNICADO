@@ -1,4 +1,3 @@
-// This file merges the declarations that were previously split over multiple small headers.
 #pragma once
 
 #include <string>
@@ -10,9 +9,7 @@
 
 #include "energy_based/energy_based.h"
 
-// ============================================================
-// merged from: constraint_input.h
-// ============================================================
+// Analysis inputs
 namespace constraint_analysis
 {
     enum class propulsion_type
@@ -108,11 +105,10 @@ namespace constraint_analysis
 
     struct climb_constraint
     {
-        // Complete mission climb history used to build a worst-case envelope.
+        // Mission climb history used to build the worst-case envelope.
         std::vector<climb_mission_point> mission_points;
 
-        // Point with the largest kinematic energy demand. Retained only for
-        // diagnostics that need one representative climb operating condition.
+        // Representative climb point with the largest kinematic demand.
         climb_mission_point representative_point;
     };
 
@@ -148,8 +144,7 @@ namespace constraint_analysis
 
     struct stall_speed_constraint
     {
-        // Altitude and beta are inherited from the landing case in the parser.
-        // speed_limit_ms is the only independent stall-speed requirement.
+        // Altitude and weight fraction are inherited from the landing case.
         double altitude_m = 0.0;
         double speed_limit_ms = 0.0;
         double beta_stall = 1.0;
@@ -157,9 +152,7 @@ namespace constraint_analysis
 
     struct gust_constraint
     {
-        // Every mission cruise condition is scanned. The design gust
-        // velocity, lift-curve slope, alleviation factor and load-factor
-        // limit are derived inside compute_gust_constraint_limit().
+        // Mission cruise points used to determine the governing gust limit.
         std::vector<climb_mission_point> mission_points;
     };
 
@@ -183,8 +176,7 @@ namespace constraint_analysis
 
     struct mission_verification_data
     {
-        // Chronological mission samples retained only for post-design
-        // verification. They never construct the performance matching chart.
+        // Mission samples used only for post-design verification.
         std::vector<mission_verification_point> points;
     };
 
@@ -204,19 +196,15 @@ namespace constraint_analysis
 
     struct constraint_input
     {
-        // "performance" evaluates user-defined sizing conditions; "mission"
-        // scans the mission history. The former is the matching-chart default.
+        // Constraint source: user-defined performance cases or mission history.
         std::string condition_source = "performance";
         constraint_activation active;
         propulsion_type propulsion = propulsion_type::jet;
         aircraft_data aircraft;
 
-        // Real UNICADO engine-library object.
-        // This must point to a valid Engine object. The solver reads
-        // thrust lapse and TSFC directly from the UNICADO engine library.
+        // Engine model used for thrust-lapse and TSFC data.
         Engine* engine = nullptr;
-        // Multiplicative study factor applied after the engine library returns
-        // the installed thrust lapse. Nominal analyses keep this at 1.0.
+        // Optional thrust-lapse scale factor; 1.0 is nominal.
         double installed_thrust_lapse_scale = 1.0;
         propeller_data propeller;
 
@@ -300,9 +288,7 @@ namespace constraint_analysis
     };
 }
 
-// ============================================================
-// merged from: constraint_output.h
-// ============================================================
+// Analysis outputs
 #include <string>
 #include <vector>
 
@@ -325,8 +311,7 @@ namespace constraint_analysis
         std::string name;
         double x_limit = 0.0;
 
-        // true  => W/S must be lower than x_limit, e.g. landing and stall-speed limits.
-        // false => W/S must be higher than x_limit, e.g. gust minimum wing-loading limit.
+        // Upper limits bound W/S from above; lower limits bound it from below.
         bool is_upper_limit = true;
     };
 
@@ -353,9 +338,7 @@ namespace constraint_analysis
     };
 }
 
-// ============================================================
-// merged from: constraint_utilities.h
-// ============================================================
+// Utility functions
 namespace constraint_analysis
 {
     class constraint_utilities
@@ -368,37 +351,11 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: mattingly_takeoff_ground_roll.h
-// ============================================================
+// Takeoff ground-roll model
 namespace constraint_analysis
 {
-    /*
-     * Mattingly-style takeoff ground-roll model.
-     *
-     * This model is used for Case 6 type takeoff sizing.
-     *
-     * The goal is to compute the required sea-level static thrust loading:
-     *
-     *      T_SL / W_TO
-     *
-     * for a given takeoff ground-roll distance and wing loading.
-     *
-     * Important variables:
-     *
-     * wing_loading = W_TO / S
-     * alpha        = installed thrust lapse during takeoff
-     * beta         = takeoff weight fraction
-     * mu           = rolling friction coefficient
-     * k_to         = takeoff speed factor, V_TO = k_to * V_stall
-     *
-     * The effective ground-roll drag/friction correction is:
-     *
-     *      xi_TO = C_D + C_DR - mu_TO C_L
-     *
-     * The final equation is the logarithmic ground-roll relation
-     * rearranged to solve for T_SL / W_TO.
-     */
+    /* Mattingly Case 6 ground-roll model, solved for T_SL/W_TO.
+       The correction term is xi_TO = C_D + C_DR - mu_TO*C_L. */
     struct mattingly_takeoff_ground_roll_input
     {
         double wing_loading = 0.0;      // W_TO / S [N/m^2]
@@ -431,40 +388,11 @@ namespace constraint_analysis
     };
 }
 
-// ============================================================
-// merged from: mattingly_landing_braking_roll.h
-// ============================================================
+// Landing braking-roll model
 namespace constraint_analysis
 {
-    /*
-     * Mattingly-style landing/braking ground-roll model.
-     *
-     * This model estimates the maximum allowable takeoff wing loading:
-     *
-     *      W_TO / S
-     *
-     * from a specified landing/braking ground-roll distance.
-     *
-     * Landing is treated as a vertical constraint in the W/S - T/W diagram:
-     *
-     *      W_TO / S <= landing wing-loading limit
-     *
-     * Important variables:
-     *
-     * beta       = landing weight fraction W_L / W_TO
-     * k_landing  = touchdown / stall speed factor
-     * mu         = braking friction coefficient
-     * CLmax      = landing maximum lift coefficient
-     *
-     * The implementation follows Mattingly Eq. 2.33:
-     *
-     *      S_B = beta (W_TO/S) / (rho g xi_L)
-     *            ln(1 + xi_L / (mu CLmax / k_TD^2))
-     *
-     * where xi_L = CD + CDR - mu CL.
-     *
-     * A lower landing weight fraction increases the allowable W_TO/S.
-     */
+    /* Mattingly Eq. 2.33 braking-roll model, solved for the
+       maximum takeoff wing loading W_TO/S. */
     struct mattingly_landing_braking_roll_input
     {
         double ground_roll_m = 0.0;     // landing/braking ground roll [m]
@@ -495,9 +423,7 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: jet_constraint_analysis.h
-// ============================================================
+// Jet constraint analysis
 namespace constraint_analysis
 {
     class jet_constraint_analysis
@@ -574,9 +500,7 @@ namespace constraint_analysis
 }
 
 
-// ============================================================
-// merged from: range_constraint_analysis.h
-// ============================================================
+// Range constraint analysis
 namespace constraint_analysis
 {
     class range_constraint_analysis
